@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Base surfaces */
+  --paper: #F5F6F8;
+  --paper-raised: #FFFFFF;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Text */
+  --ink: #1B1E2A;
+  --ink-soft: #565B6E;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  /* Brand colors */
+  --indigo: #3542CC;
+  --indigo-deep: #262FA0;
+  --amber: #E8A33D;
+  --amber-deep: #B87A1F;
 
+  /* Borders / dividers */
+  --mist: #D8DBE3;
+
+  /* Board mockup (dark panel) */
+  --board-ink: #14172A;
+  --board-panel: #1E2238;
+  --board-line: #30354F;
+
+  /* Card label / tag colors */
+  --sage: #7FB77E;
+  --coral: #E2725B;
+  --sky: #5FA8D3;
+
+  /* Fonts */
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+}
 body {
-  background: var(--background);
+  background: var(--paper);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Fraunces", sans-serif;
+}
+@layer components {
+  .nav-link {
+    @apply text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)];
+  }
+  
+}
+ .btn-primary {
+    @apply rounded-[7px] bg-[var(--ink)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
+  }
+ 
+  .btn-primary {
+    background: var(--indigo);
+    color: #fff !important;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    display: inline-block;
+    
+  }
+ 
+  .btn-primary:hover { background: var(--indigo-deep); }
+ 
+  .btn-text {
+    background-color: #fff !important;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    display: inline-block;
+    color: var(--ink);
+    border: 1px solid var(--mist);
+  
+  }
+  .boardCard:hover{
+    @apply
+    border-dashed
+    border-[var(--amber)]
+    bg-[var(--amber)]/[0.06]
+   
+  }
+  .boardCard {
+  transition: border-color 0.2s ease;
+}
+
+
+.boardCard:hover .board-col-label {
+  color: var(--amber-deep);
+}
+
+.boardCard:hover .board-card-inner {
+  @apply 
+  border-dashed
+  border-[var(--amber)]
+    bg-[var(--amber)]/[0.06]
+  
+}
+
+.price-btn {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.price-btn:hover {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #ffffff;
 }
