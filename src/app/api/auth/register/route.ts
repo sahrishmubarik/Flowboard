@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users } from "@/db/authSchema";
+import { users , emailVerificationTokens} from "@/db/authSchema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-
+import { generateToken } from "@/lib/token/generateToken";
+import { hashToken } from "@/lib/token/hashToken";
+import { sendVerificationEmail } from "@/lib/email/verificationEmail";
 import {
   registerSchema,
   validateData,
@@ -55,12 +57,29 @@ export async function POST(request: Request) {
       email,
       password: hashedPassword,
     });
-
+  
     
     return NextResponse.json(
       { message: "Registration successful!" },
       { status: 201 }
     );
+    const token = generateToken();
+
+const tokenHash = hashToken(token);
+
+await db.insert(emailVerificationTokens).values({
+  userId: users.id,
+  token: tokenHash,
+  expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+});
+
+const verificationUrl =
+  `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
+
+await sendVerificationEmail({
+  email: users.email,
+  verificationUrl,
+});
   } catch (error) {
     console.error("REGISTRATION_API_ERROR:", error);
 
