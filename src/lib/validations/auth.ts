@@ -22,7 +22,7 @@ export const passwordRule = z
 
 export const nameRule = z
   .string()
-  .min(2, "Name must be at least 3 characters.")
+  .min(3, "Name must be at least 3 characters.")
   .max(50, "Name cannot exceed 50 characters.")
   .trim();
 
