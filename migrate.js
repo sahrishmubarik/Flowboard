@@ -1,36 +1,66 @@
-import pg from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import pg from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import dotenv from "dotenv";
 
-// ✨ Clean ES Module import for dotenv config
-import 'dotenv/config'; 
-
-// Next.js uses .env.local by default, so we specify it manually via process.env
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
-
+dotenv.config({ path: ".env.local" });
 
 async function run() {
-  console.log('Connecting to remote database...');
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    console.error(" DATABASE_URL is not defined");
+    process.exit(1);
+  }
+
+  console.log(" Connecting to database...");
+
   const client = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
   });
 
+  try {
+    await client.connect();
 
-  await client.connect();
-  const db = drizzle(client);
+    console.log("Database connected");
+    console.log("Applying migrations...\n");
 
-  console.log('Applying migrations... ');
-  
-  // This reads your generated .sql files and pushes them to your cloud DB
-  await migrate(db, { migrationsFolder: './src/db/migrations' });
+    const db = drizzle(client);
 
-  console.log('Done! Migrations completed successfully. ');
-  await client.end(); // This stops the terminal from hanging!
-  process.exit(0);
+    await migrate(db, {
+      migrationsFolder: "./src/db/migrations",
+    });
+
+    console.log("\ Migrations completed successfully");
+  } catch (error) {
+    console.error("\n MIGRATION FAILED\n");
+
+    console.error("Error name:");
+    console.error(error?.name);
+
+    console.error("\nError message:");
+    console.error(error?.message);
+
+    console.error("\nError code:");
+    console.error(error?.code);
+
+    if (error?.cause) {
+      console.error("\n PostgreSQL cause:");
+      console.error("Message:", error.cause.message);
+      console.error("Code:", error.cause.code);
+      console.error("Detail:", error.cause.detail);
+      console.error("Hint:", error.cause.hint);
+      console.error("Table:", error.cause.table);
+      console.error("Column:", error.cause.column);
+    }
+
+    console.error("\nFull error:");
+    console.error(error);
+
+    process.exitCode = 1;
+  } finally {
+    await client.end();
+  }
 }
 
-run().catch((err) => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+run();
