@@ -1,12 +1,4 @@
-import formData from "form-data";
-import mail from "./mailgun";
-
-const mailgun = new mail(formData);
-
-const mg = mailgun.client({
-  username: "api",
-  key: process.env.MAILGUN_API_KEY!,
-});
+import mailgun from "./mailgun";
 
 type SendEmailOptions = {
   to: string;
@@ -26,7 +18,7 @@ export async function sendEmail({
     html,
   };
 
-  const result = await mg.messages.create(
+  const result = await mailgun.messages.create(
     process.env.MAILGUN_DOMAIN!,
     mailOptions
   );
