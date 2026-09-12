@@ -67,19 +67,17 @@ export default function RegisterPage() {
       return data;
     },
 
-    onSuccess: (data) => {
-      showToast(
-        data.message || "Registration successful!",
-        "success"
-      );
+  onSuccess: (data) => {
+  showToast(
+    data.message ||
+      "Please check your email to verify your account.",
+    "success"
+  );
 
-      // Give the toast a moment to appear
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 800);
-    },
-
-    onError: (error) => {
+  router.push("/auth/verify-email");
+},
+   
+onError: (error) => {
       showToast(
         error.message || "Registration failed",
         "error"
