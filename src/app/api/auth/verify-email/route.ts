@@ -6,33 +6,48 @@ import {
 } from "@/db/authSchema";
 import { eq } from "drizzle-orm";
 
+import { hashToken } from "@/lib/token/hashToken";
+
 export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
+    // 1. Get token from URL
+    const { searchParams } =
+      new URL(request.url);
 
     const token = searchParams.get("token");
 
     if (!token) {
       return NextResponse.json(
         {
-          message: "Verification token is required.",
+          message:
+            "Verification token is required.",
         },
         { status: 400 }
       );
     }
 
+    // 2. Hash token
+    const tokenHash = hashToken(token);
+
+    // 3. Find verification token
     const verificationToken = await db
       .select({
         id: emailVerificationTokens.id,
-        userId: emailVerificationTokens.userId,
-        expiresAt: emailVerificationTokens.expiresAt,
+        userId:
+          emailVerificationTokens.userId,
+        expiresAt:
+          emailVerificationTokens.expiresAt,
       })
       .from(emailVerificationTokens)
       .where(
-        eq(emailVerificationTokens.token, token)
+        eq(
+          emailVerificationTokens.token,
+          tokenHash
+        )
       )
       .limit(1);
 
+    // 4. Token doesn't exist
     if (verificationToken.length === 0) {
       return NextResponse.json(
         {
@@ -43,9 +58,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const tokenData = verificationToken[0];
+    const tokenData =
+      verificationToken[0];
 
-    if (tokenData.expiresAt < new Date()) {
+    // 5. Check expiration
+    if (
+      tokenData.expiresAt < new Date()
+    ) {
       await db
         .delete(emailVerificationTokens)
         .where(
@@ -64,13 +83,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // 6. Verify user's email
     await db
       .update(users)
       .set({
         emailVerified: new Date(),
       })
-      .where(eq(users.id, tokenData.userId));
+      .where(
+        eq(
+          users.id,
+          tokenData.userId
+        )
+      );
 
+    // 7. Delete used token
     await db
       .delete(emailVerificationTokens)
       .where(
@@ -80,6 +106,7 @@ export async function POST(request: Request) {
         )
       );
 
+    // 8. Success
     return NextResponse.json(
       {
         message:
@@ -88,7 +115,10 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("VERIFY_EMAIL_API_ERROR:", error);
+    console.error(
+      "VERIFY_EMAIL_API_ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
