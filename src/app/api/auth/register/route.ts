@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users , emailVerificationTokens} from "@/db/authSchema";
+import {
+  users,
+  emailVerificationTokens,
+} from "@/db/authSchema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+
 import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
+
 import { sendVerificationEmail } from "@/lib/email/verificationEmail";
+
 import {
   registerSchema,
   validateData,
@@ -13,15 +19,20 @@ import {
 
 export async function POST(request: Request) {
   try {
-  
+    // 1. Get request body
     const body = await request.json();
 
-  
-    const validation = validateData(registerSchema, body);
+    // 2. Validate request body
+    const validation = validateData(
+      registerSchema,
+      body
+    );
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: validation.error },
+        {
+          message: validation.error,
+        },
         { status: 400 }
       );
     }
@@ -32,59 +43,97 @@ export async function POST(request: Request) {
       password,
     } = validation.data;
 
-   const existingUser = await db
-  .select({
-    id: users.id,
-  })
-  .from(users)
-  .where(eq(users.email, email))
-  .limit(1);
+    // 3. Check if email already exists
+    const existingUser = await db
+      .select({
+        id: users.id,
+      })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (existingUser.length > 0) {
       return NextResponse.json(
-        { message: "Email already registered." },
+        {
+          message:
+            "Email already registered.",
+        },
         { status: 400 }
       );
     }
 
-  
+    // 4. Hash password
     const saltRounds = 12;
-    const salt = await bcrypt.genSalt(saltRounds);
-    const hashedPassword = await bcrypt.hash(password, salt);
 
-    await db.insert(users).values({
-      name,
-      email,
-      password: hashedPassword,
-    });
-  
-    
-    return NextResponse.json(
-      { message: "Registration successful!" },
-      { status: 201 }
+    const salt = await bcrypt.genSalt(
+      saltRounds
     );
+
+    const hashedPassword =
+      await bcrypt.hash(password, salt);
+
+    // 5. Create user
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        name,
+        email,
+        password: hashedPassword,
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+      });
+
+    // 6. Generate verification token
     const token = generateToken();
 
-const tokenHash = hashToken(token);
+    // 7. Hash token before storing it
+    const tokenHash = hashToken(token);
 
-await db.insert(emailVerificationTokens).values({
-  userId: users.id,
-  token: tokenHash,
-  expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-});
+    // 8. Calculate expiration
+    const expiresAt = new Date(
+      Date.now() + 30 * 60 * 1000
+    );
 
-const verificationUrl =
-  `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
+    // 9. Store verification token
+    await db
+      .insert(emailVerificationTokens)
+      .values({
+        userId: newUser.id,
+        token: tokenHash,
+        expiresAt,
+      });
 
-await sendVerificationEmail({
-  email: users.email,
-  verificationUrl,
-});
+    // 10. Create verification URL
+    const verificationUrl =
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
+
+    // 11. Send verification email
+    await sendVerificationEmail({
+      email: newUser.email,
+      verificationUrl,
+    });
+
+    // 12. Return success
+    return NextResponse.json(
+      {
+        message:
+          "Registration successful. Please check your email to verify your account.",
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("REGISTRATION_API_ERROR:", error);
+    console.error(
+      "REGISTRATION_API_ERROR:",
+      error
+    );
 
     return NextResponse.json(
-      { message: "Internal server error. Please try again." },
+      {
+        message:
+          "Internal server error. Please try again.",
+      },
       { status: 500 }
     );
   }
