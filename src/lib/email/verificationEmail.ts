@@ -33,3 +33,30 @@ export async function sendVerificationEmail({
     `,
   });
 }
+
+export async function resetPasswordEmail({
+  email,
+  resetPasswordUrl,
+}: VerificationEmailOptions) {
+  return sendEmail({
+    to: email,
+    subject: "Reset your password email",
+    html: `
+      <h1>Reset Password</h1>
+
+   
+
+      <p>
+        Click the button below to reset your password:
+      </p>
+
+      <a href="${resetPasswordUrl}">
+      Reset password
+      </a>
+
+      <p>
+        This link will expire in 15 minutes.
+      </p>
+    `,
+  });
+}
