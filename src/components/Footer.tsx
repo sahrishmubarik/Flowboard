@@ -25,7 +25,9 @@ export default function Footer() {
       pathName === "/register" ||
       pathName === "/login" ||
       pathName === "/auth/register" ||
-      pathName === "/auth/login";
+      pathName === "/auth/login" ||
+      pathName === "/auth/forget-password" ||
+      pathName === "/auth/reset-password";
   
 
   return (

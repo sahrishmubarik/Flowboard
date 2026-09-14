@@ -149,7 +149,7 @@ onError: (error) => {
                         }`}
                         placeholder="••••••••"
                       />
-        
+                    
                       <button
                         type="button"
                         onClick={() =>
@@ -180,7 +180,12 @@ onError: (error) => {
                     )}
                   </div>
         
-                
+                  <a
+                      href="/auth/forget-password"
+                      className="font-semibold text-[var(--board-ink)] flex justify-end"
+                    >
+                      Forget?
+                    </a>
                   
                   {/* Submit */}
                <button

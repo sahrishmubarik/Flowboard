@@ -20,7 +20,9 @@ export default function Header() {
     pathName === "/register" ||
     pathName === "/login" ||
     pathName === "/auth/register" ||
-    pathName === "/auth/login";
+    pathName === "/auth/login" ||
+    pathName ===  "/auth/forget-password "||
+    pathName === "/auth/reset-password " ;
 
   return (
     <header className="border-b border-[var(--mist)] bg-[var(--paper)]">
@@ -61,7 +63,7 @@ export default function Header() {
               ))}
 
               <Link
-                href="/login"
+                href="/auth/login"
                 className="text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
               >
                 Sign in
