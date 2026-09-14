@@ -46,11 +46,43 @@ export const loginSchema = z.object({
   email: emailRule,
   password: passwordRule,
 });
+export const forgotPasswordSchema = z.object({
+  email: emailRule,
+});
+export const  resetPasswordSchema=z .object({
+   token: z.string().min(1, "Reset token is required"),
+  password:passwordRule,
+  confirmPassword:z.string().min(1,"confirm password is required"),
+})// Password Match Verification Constraint
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"], // Error exactly confirmPassword input point par allocate hoga
+  });
 
 // Infer TypeScript structural types
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer< typeof forgotPasswordSchema>;
+export type ResetPasswordInput=z.infer<typeof resetPasswordSchema>;
 
+export const resetPasswordFormSchema = z
+  .object({
+    password: passwordRule,
+
+    confirmPassword: z
+      .string()
+      .min(1, "Confirm password is required"),
+  })
+  .refine(
+    (data) => data.password === data.confirmPassword,
+    {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    }
+  );
+
+export type ResetPasswordFormInput =
+  z.infer<typeof resetPasswordFormSchema>;
 // ==========================================
 // 3. GLOBAL STANDARDIZED VALIDATOR FUNCTION
 // ==========================================
