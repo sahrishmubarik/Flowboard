@@ -38,7 +38,10 @@ export const registerSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"], // Error exactly confirmPassword input point par allocate hoga
   });
-
+export const verifyEmailSchema = z.object({
+  token: z
+    .string(),
+});
 export const loginSchema = z.object({
   email: emailRule,
   password: passwordRule,
@@ -55,7 +58,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown) {
   const result = schema.safeParse(data);
   
   if (!result.success) {
-    const errorMessage = result.error.errors.map((err) => err.message).join(", ");
+    const errorMessage = result.error.issues.map((err) => err.message).join(", ");
     return { success: false as const, error: errorMessage, data: null };
   }
   
