@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -22,7 +21,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function RegisterPage() {
-  const router = useRouter();
+ 
   const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -48,12 +47,15 @@ export default function RegisterPage() {
 
   const mutation = useMutation({
     mutationFn: async (formData: RegisterInput) => {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/api/auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        }, 
+        
+        body: JSON.stringify({
+          action: "register",
+          ...formData}),
       });
 
       const data = await response.json();
@@ -73,8 +75,6 @@ export default function RegisterPage() {
       "Please check your email to verify your account.",
     "success"
   );
-
-  router.push("/auth/verify-email");
 },
    
 onError: (error) => {
