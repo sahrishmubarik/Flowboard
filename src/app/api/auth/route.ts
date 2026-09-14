@@ -1,7 +1,9 @@
 
 import { NextResponse } from "next/server";
 
-import { registerUser,verifyUserEmail,loginUser } from "@/services/auth";
+import { registerUser,verifyUserEmail,loginUser,forgotPassword,
+  resetPassword
+  } from "@/services/auth";
 
 export async function POST(request: Request) {
   try {
@@ -19,11 +21,11 @@ export async function POST(request: Request) {
       case "verify-email":
         return await verifyUserEmail(body);
 
-      // case "forgot-password":
-      //   return await forgotPassword(body);
+      case "forgot-password":
+         return await forgotPassword(body);
 
-      // case "reset-password":
-      //   return await resetPassword(body);
+      case "reset-password":
+         return await resetPassword(body);
 
       default:
         return NextResponse.json(

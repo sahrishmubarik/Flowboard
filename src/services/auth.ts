@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 
 import { users,emailVerificationTokens,
+  resetPasswordTokens,
 } from "@/db/authSchema";
 
 import { eq } from "drizzle-orm";
@@ -11,11 +12,14 @@ import bcrypt from "bcryptjs";
 import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
 
-import { sendVerificationEmail } from "@/lib/email/verificationEmail";
+import { sendVerificationEmail,
+  resetPasswordEmail,
+ } from "@/lib/email/verificationEmail";
 
 import {
   registerSchema,
-  validateData,verifyEmailSchema,loginSchema 
+  validateData,verifyEmailSchema,loginSchema, resetPasswordSchema,forgotPasswordSchema,
+
 } from "@/lib/validations/auth";
 import jwt from "jsonwebtoken";
 
@@ -325,3 +329,186 @@ export async function loginUser(body: unknown) {
     { status: 200 }
   );
 }
+
+export async function forgotPassword(body: unknown) {
+  // 1. Validate request
+  const validation = validateData(
+    forgotPasswordSchema,
+    body
+  );
+
+  if (!validation.success) {
+    return Response.json(
+      {
+        message: validation.error,
+      },
+      { status: 400 }
+    );
+  }
+
+  // 2. Get email
+  const { email } = validation.data;
+
+  // 3. Find user
+  const user = await userRepo.findByEmail(email);
+
+  if (!user) {
+    return Response.json(
+      {
+        message: "User not found.",
+      },
+      { status: 404 }
+    );
+  }
+
+  // 4. Generate reset token
+  const token = generateToken();
+
+  // 5. Hash token
+  const tokenHash = hashToken(token);
+
+  // 6. Expiration - 15 minutes
+  const expiresAt = new Date(
+    Date.now() + 15 * 60 * 1000
+  );
+
+  // 7. Store token
+  await db
+    .insert(resetPasswordTokens)
+    .values({
+      userId: user.id,
+      token: tokenHash,
+      expiresAt,
+    });
+
+  // 8. Reset password URL
+  const resetPasswordUrl =
+    `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`;
+
+  // 9. Send email
+  await resetPasswordEmail({
+    email: user.email,
+    resetPasswordUrl,
+  });
+
+  // 10. Return response
+  return Response.json(
+    {
+      message:
+        "Please check your email to reset your password.",
+    },
+    { status: 200 }
+  );
+}
+
+export async function resetPassword(body: unknown) {
+  // 1. Validate request body
+  const validation = validateData(
+    resetPasswordSchema,
+    body
+  );
+
+console.log("RESET BODY:", body);
+console.log("RESET VALIDATION:", validation);
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        message: validation.error,
+      },
+      { status: 400 }
+    );
+  }
+
+  const {
+    token,
+    password,
+  } = validation.data;
+
+  // 2. Hash raw token
+  const tokenHash = hashToken(token);
+
+  // 3. Find reset token
+  const resetToken = await db
+    .select({
+      id: resetPasswordTokens.id,
+      userId: resetPasswordTokens.userId,
+      expiresAt: resetPasswordTokens.expiresAt,
+    })
+    .from(resetPasswordTokens)
+    .where(
+      eq(
+        resetPasswordTokens.token,
+        tokenHash
+      )
+    )
+    .limit(1);
+
+  // 4. Token doesn't exist
+  if (resetToken.length === 0) {
+    return NextResponse.json(
+      {
+        message: "Invalid or expired reset link.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const tokenData = resetToken[0];
+
+  // 5. Check expiration
+  if (tokenData.expiresAt < new Date()) {
+    await db
+      .delete(resetPasswordTokens)
+      .where(
+        eq(
+          resetPasswordTokens.id,
+          tokenData.id
+        )
+      );
+
+    return NextResponse.json(
+      {
+        message: "Reset link has expired.",
+      },
+      { status: 400 }
+    );
+  }
+
+  // 6. Hash new password
+  const hashedPassword = await bcrypt.hash(
+    password,
+    12
+  );
+
+  // 7. Update user's password
+  await db
+    .update(users)
+    .set({
+      password: hashedPassword,
+    })
+    .where(
+      eq(users.id, tokenData.userId)
+    );
+
+  // 8. Delete used reset token
+  await db
+    .delete(resetPasswordTokens)
+    .where(
+      eq(
+        resetPasswordTokens.id,
+        tokenData.id
+      )
+    );
+
+  // 9. Success
+  return NextResponse.json(
+    {
+      message:
+        "Password reset successfully. You can now login.",
+    },
+    { status: 200 }
+  );
+}
+
+
+
