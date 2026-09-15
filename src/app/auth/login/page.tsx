@@ -22,7 +22,7 @@ import { useRouter } from "next/navigation";
 
 
 export default function login(){
-
+// store JWT token in cookies
 
   const { showToast } = useToast();
 
@@ -68,8 +68,10 @@ export default function login(){
         );
       }
        // Store JWT only after successful login
-    sessionStorage.setItem("token", data.token);
-      return data;
+    // sessionStorage.setItem("token", data.token);next js 16 not read the browser session storage 
+      
+    
+    return data;
     },
 
   onSuccess: (data) => {
@@ -210,7 +212,7 @@ onError: (error) => {
                     Do not have an account?{" "}
         
                     <a
-                      href="/auth/login"
+                      href="/auth/register"
                       className="font-semibold text-[var(--board-ink)]"
                     >
                       Signup
