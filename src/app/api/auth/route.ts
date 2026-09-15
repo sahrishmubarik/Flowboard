@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 
 import { registerUser,verifyUserEmail,loginUser,forgotPassword,
-  resetPassword
+  resetPassword ,logoutSession
   } from "@/services/auth";
 
 export async function POST(request: Request) {
@@ -26,6 +26,8 @@ export async function POST(request: Request) {
 
       case "reset-password":
          return await resetPassword(body);
+      case "logout":
+         return await logoutSession();
 
       default:
         return NextResponse.json(

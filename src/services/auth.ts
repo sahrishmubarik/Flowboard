@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-
+import { cookies } from "next/headers";
 import { users,emailVerificationTokens,
   resetPasswordTokens,
 } from "@/db/authSchema";
@@ -246,6 +246,8 @@ export async function verifyUserEmail(body: unknown) {
 
 
 export async function loginUser(body: unknown) {
+
+
   // 1. Validate request
   const validation = validateData(
     loginSchema,
@@ -306,7 +308,7 @@ export async function loginUser(body: unknown) {
   // 7. Generate JWT
   const token = jwt.sign(
     {
-      id: user.id,
+      userId: user.id,
       email: user.email,
     },
     process.env.JWT_SECRET!,
@@ -315,6 +317,15 @@ export async function loginUser(body: unknown) {
     }
   );
 
+  const cookieStore = await cookies();
+
+cookieStore.set("token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7,
+});
   // 8. Return JWT
   return Response.json(
     {
@@ -508,6 +519,16 @@ console.log("RESET VALIDATION:", validation);
     },
     { status: 200 }
   );
+}
+
+export async function logoutSession(){
+  const cookieStore = await cookies();
+
+  cookieStore.delete("token");
+
+  return Response.json({
+    message: "Logged out successfully",
+  });
 }
 
 
