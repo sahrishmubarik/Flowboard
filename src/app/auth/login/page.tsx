@@ -18,7 +18,7 @@ import {
   faEye,
   faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
-
+import { useRouter } from "next/navigation";
 
 
 export default function login(){
@@ -27,7 +27,7 @@ export default function login(){
   const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
- 
+ const router = useRouter();
 
   const {
     register,
@@ -67,7 +67,8 @@ export default function login(){
           data.message || "Registration failed"
         );
       }
-
+       // Store JWT only after successful login
+    sessionStorage.setItem("token", data.token);
       return data;
     },
 
@@ -77,6 +78,7 @@ export default function login(){
       "Please check your email to verify your account.",
     "success"
   );
+  router.replace("/dashboard");
 },
    
 onError: (error) => {
