@@ -38,7 +38,7 @@ export default function Footer() {
           <div className="mx-auto max-w-[1160px] px-6 py-14 md:px-10">
 
           
-          <div className="flex flex-col gap-12 md:flex-row md:justify-between">
+          <div className="flex flex-col gap-12 md:flex-row md:justify-between ">
           {/* Logo + tagline */}
           <div className="max-w-xs">
             <Link href="/" className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function Footer() {
     ${
       isAuthPage
         ? "flex items-center justify-center"
-        : "flex sm:flex-row sm:items-center sm:justify-between"
+        : "flex sm:flex-row sm:items-center sm:justify-between px-12"
     }
   `}
 >
