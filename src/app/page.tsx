@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react";
-import {  useRouter } from "next/navigation";
+// import { useEffect } from "react";
+// import {  useRouter } from "next/navigation";
 import Link from "next/link";
 const features = [
   {
@@ -91,13 +91,13 @@ const plans = [
 ];
 
 export default function FlowboardLanding() {
-const router=useRouter();
-useEffect(()=>{
-  const token=sessionStorage.getItem("token");
-  if(token){
-    router.replace("/dashboard")
-  }
-},[router]);
+// const router=useRouter();
+// useEffect(()=>{
+//   const token=sessionStorage.getItem("token");
+//   if(token){
+//     router.replace("/dashboard")
+//   }
+// },[router]);he
 
   return (
     <div className="bg-[var(--paper)] text-[var(--ink)]">
@@ -248,7 +248,7 @@ useEffect(()=>{
             A place to catch ideas before they need a home
           </h2>
 
-          <div className="mt-[52px] grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--mist)] md:grid-cols-2">
+          <div className="mt-[52px] grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--mist)] bg-white md:grid-cols-2">
             {features.map((f) => (
               <div
                 key={f.title}
@@ -279,7 +279,7 @@ useEffect(()=>{
             {steps.map((s) => (
               <div
                 key={s.num}
-                className="rounded-2xl border-[2px] border-gray-200 px-5 py-6 transition-all duration-300  hover:shadow-xl"
+                className="rounded-2xl bg-white border-[2px] border-gray-200 px-5 py-6 transition-all duration-300  hover:shadow-xl"
               >
                 <div
                   className="text-[15px] font-semibold text-[var(--amber-deep)]"
@@ -300,7 +300,7 @@ useEffect(()=>{
       {/* Pricing */}
       <section
         id="pricing"
-        className="border-y border-[var(--mist)] bg-[var(--paper-raised)] py-[100px]"
+        className="border-y border-[var(--mist)] bg-[var(--paper)] py-[100px]"
       >
         <div className="mx-auto max-w-[1160px] px-6 md:px-10 flex flex-col items-center pb-10  text-center">
           <div className="text-[15px] font-medium text-[var(--indigo)]">
@@ -319,15 +319,15 @@ useEffect(()=>{
                 key={p.plan}
                 className={`rounded-2xl p-8 px-[30px] ${
                   p.featured
-                    ? "border-2 border-[var(--indigo)] bg-[var(--paper-raised)]"
-                    : "border border-[var(--mist)] bg-[var(--paper)]"
+                    ? "border-2 border-[var(--board-line)] bg-white"
+                    : "border border-gray-300 bg-white"
                 }`}
               >
                 <div
                   className={`text-[15px] font-medium ${
                     p.featured
-                      ? "text-[var(--indigo)]"
-                      : "text-[var(--ink-soft)]"
+                      ? "text-[var(--board-panel)]"
+                      : "text-[var(--board-ink)]"
                   }`}
                 >
                   {p.plan}

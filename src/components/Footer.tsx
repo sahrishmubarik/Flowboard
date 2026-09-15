@@ -31,7 +31,7 @@ export default function Footer() {
   
 
   return (
-    <footer className=" bg-[var(--paper-raised)]">
+    <footer className=" bg-[var(--board-panel)]">
       <div>
         {!isAuthPage &&
         (
@@ -44,13 +44,13 @@ export default function Footer() {
             <Link href="/" className="flex items-center gap-2">
               <span className="block h-[9px] w-[9px] -translate-y-[1px] rounded-[2px] bg-[var(--amber)]" />
               <span
-                className="text-[19px] font-semibold tracking-tight text-[var(--ink)]"
+                className="text-[19px] font-semibold tracking-tight text-white"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Flowboard
               </span>
             </Link>
-            <p className="mt-3 text-sm text-[var(--ink-soft)]">
+            <p className="mt-3 text-sm text-white">
               Capture ideas in your inbox, then drag them onto a board when
               they&apos;re ready to move.
             </p>
@@ -60,7 +60,7 @@ export default function Footer() {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-16">
             {Object.entries(footerLinks).map(([heading, links]) => (
               <div key={heading}>
-                <p className="text-[13px] font-medium text-[var(--ink)]">
+                <p className="text-[13px] font-medium text-white">
                   {heading}
                 </p>
                 <ul className="mt-3 flex flex-col gap-2.5">
@@ -68,7 +68,7 @@ export default function Footer() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+                        className="text-sm text-white transition-colors hover:text-[var(--paper)]"
                       >
                         {link.label}
                       </Link>
@@ -93,21 +93,21 @@ export default function Footer() {
     }
   `}
 >
-  <p className="text-[13px] text-[var(--ink-soft)]">
+  <p className="text-[13px] text-white">
     © {year} Flowboard.
   </p>
 
   <div className="flex gap-5">
     <Link
       href="/privacy"
-      className="text-[13px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+      className="text-[13px] text-white transition-colors hover:text-[var(--paper)]"
     >
       Privacy
     </Link>
 
     <Link
       href="/terms"
-      className="text-[13px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+      className="text-[13px] text-white transition-colors hover:text-[var(--paper)]"
     >
       Terms
     </Link>

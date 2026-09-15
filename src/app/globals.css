@@ -2,12 +2,12 @@
 
 :root {
   /* Base surfaces */
-  --paper: #F5F6F8;
-  --paper-raised: #FFFFFF;
+  --paper: #eff3f7;
+  --paper-raised: #fefdfd;
 
   /* Text */
   --ink: #1B1E2A;
-  --ink-soft: #565B6E;
+  --ink-soft: #6e727e;
 
   /* Brand colors */
   --indigo: #3542CC;
@@ -16,7 +16,7 @@
   --amber-deep: #B87A1F;
 
   /* Borders / dividers */
-  --mist: #D8DBE3;
+  --mist: #e8eaf0;
 
   /* Board mockup (dark panel) */
   --board-ink: #14172A;
@@ -44,11 +44,11 @@ body {
   
 }
  .btn-primary {
-    @apply rounded-[7px] bg-[var(--ink)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
+    @apply rounded-[7px] bg-[var(--board-panel)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
   }
  
   .btn-primary {
-    background: var(--indigo);
+    background: var(--board-panel);
     color: #fff !important;
     padding: 10px 18px;
     border-radius: 8px;
@@ -58,7 +58,7 @@ body {
     
   }
  
-  .btn-primary:hover { background: var(--indigo-deep); }
+  .btn-primary:hover { background: var(--board-ink); }
  
   .btn-text {
     background-color: #fff !important;
@@ -100,7 +100,7 @@ body {
 }
 
 .price-btn:hover {
-  background: var(--indigo);
-  border-color: var(--indigo);
+  background: var( --board-panel);
+  border-color: var(--board-line);
   color: #ffffff;
 }

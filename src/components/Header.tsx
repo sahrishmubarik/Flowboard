@@ -25,14 +25,20 @@ export default function Header() {
     pathName === "/auth/reset-password";
 
   const isDashboard = pathName.startsWith("/dashboard");
+const handleSignOut = async () => {
+  await fetch("/api/auth", {
+    method: "POST",
+      body: JSON.stringify({
+          action: "logout",
+        }),
+      });
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem("token");
-    router.replace("/auth/login");
-  };
+
+  router.replace("/auth/login");
+};
 
   return (
-    <header className="border-b border-[var(--mist)] bg-[var(--paper)]">
+    <header className="border-b border-[var(--mist)] bg-white">
       <div
         className={`mx-auto flex max-w-[1160px] items-center px-6 py-3 md:px-10 ${
           isAuthPage ? "justify-center" : "justify-between"
@@ -65,6 +71,12 @@ export default function Header() {
               <>
                 {/* Desktop */}
                 <nav className="hidden items-center gap-8 md:flex">
+                   <Link
+                    href="/dashboard/workspace"
+                    className="text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+                  >
+                    Workspace
+                  </Link>
                   <Link
                     href="/dashboard"
                     className="text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
@@ -147,6 +159,13 @@ export default function Header() {
       {/* Mobile dashboard menu */}
       {!isAuthPage && isDashboard && open && (
         <nav className="flex flex-col gap-1 border-t border-[var(--mist)] px-6 py-4 md:hidden">
+          <Link
+                    href="/dashboard/workspace"
+                    className="text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+                  >
+                    Workspace
+                  </Link>
+          
           <Link
             href="/dashboard"
             onClick={() => setOpen(false)}
