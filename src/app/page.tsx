@@ -1,3 +1,7 @@
+"use client"
+
+import { useEffect } from "react";
+import {  useRouter } from "next/navigation";
 import Link from "next/link";
 const features = [
   {
@@ -87,6 +91,14 @@ const plans = [
 ];
 
 export default function FlowboardLanding() {
+const router=useRouter();
+useEffect(()=>{
+  const token=sessionStorage.getItem("token");
+  if(token){
+    router.replace("/dashboard")
+  }
+},[router]);
+
   return (
     <div className="bg-[var(--paper)] text-[var(--ink)]">
       <div className="mx-auto max-w-[1160px] px-6 md:px-10">
