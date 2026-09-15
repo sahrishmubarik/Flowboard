@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 export default defineConfig({
-  schema: "./src/db/authSchema.ts",
+  schema: "./src/db/*Schema.ts",
   out: "./src/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
