@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 
+import { useRouter } from "next/navigation";
 import {
   workspaceValidation,
   workspaceInput,
@@ -15,7 +16,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function CreateWorkspacePage() {
   const { showToast } = useToast();
-
+const router=useRouter();
   const {
     register,
     handleSubmit,
@@ -51,6 +52,8 @@ export default function CreateWorkspacePage() {
 
     onSuccess: (data) => {
       showToast(data.message || "Workspace created successfully!", "success");
+      router.push("/dashboard/workspace");
+      
     },
 
     onError: (error) => {
