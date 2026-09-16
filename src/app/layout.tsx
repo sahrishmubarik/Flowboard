@@ -36,11 +36,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="flex min-h-screen flex-col">
        <Header />
       {/* Wrap children so all pages have access to React Query hooks */}
-       <ToastProvider> 
+     <main className="flex-1">
+        <ToastProvider> 
         <QueryProvider>
           {children} 
           </QueryProvider>
            </ToastProvider>
+     </main>
        <Footer />
        </div>
        </body>

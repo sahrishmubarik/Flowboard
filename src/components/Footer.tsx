@@ -31,7 +31,7 @@ export default function Footer() {
   
 
   return (
-    <footer className=" bg-[var(--board-panel)]">
+    <footer className=" bg-[var(--board-panel)] b-0">
       <div>
         {!isAuthPage &&
         (
