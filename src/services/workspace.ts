@@ -1,16 +1,18 @@
 
 import { getCurrentUser } from "@/lib/middleware/auth";
 import { db } from "@/db";
+
 import { workspace } from "@/db/workspaceSchema";
 import {
   validateData,
   workspaceValidation,
 } from "@/lib/validations/workspace";
 import {  eq, and } from "drizzle-orm";
-
+import { workspaceRepo } from "@/repositories/organizationRepo";
+import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
 export async function createWorkspace(body: unknown) {
   const user = await getCurrentUser();
- 
+
   if (!user) {
     return Response.json(
       {
@@ -21,8 +23,7 @@ export async function createWorkspace(body: unknown) {
       }
     );
   }
- console.log("user:", user);
-console.log("userId:", user.userId);
+
   const validation = validateData(
     workspaceValidation,
     body
@@ -41,33 +42,43 @@ console.log("userId:", user.userId);
 
   const { workspaceName } = validation.data;
 
-  console.log("workspaceName:", workspaceName);
-  console.log("createdBy:", user.userId);
+  const userId = user.userId;
 
-  const [newWorkspace] = await db
-    .insert(workspace)
-    .values({
-      workspaceName: workspaceName,
-      createdBy: user.userId,
-    })
-    .returning({
-      id: workspace.id,
-      workspaceName: workspace.workspaceName,
-      createdBy: workspace.createdBy,
-      createdAt: workspace.createdAt,
+  const result = await db.transaction(async (transaction) => {
+
+    // 1. Create workspace
+    const newWorkspace = await workspaceRepo.create(transaction, {
+      workspaceName,
+      createdBy: userId,
     });
+
+    // 2. Create owner membership
+    const organizationMember =
+      await organizationMemberRepo.create(transaction, {
+        organizationId: newWorkspace.id,
+        userId,
+        role: "owner",
+        assignedBy: userId,
+      });
+
+    return {
+      workspace: newWorkspace,
+      member: organizationMember,
+    };
+  });
 
   return Response.json(
     {
       message: "Workspace created successfully",
-      workspace: newWorkspace,
+      workspace: result.workspace,
+      member: result.member,
     },
     {
       status: 201,
     }
   );
 }
-export async function getWorkspace(workspaceId: string) {
+export async function getWorkspace() {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -83,30 +94,51 @@ export async function getWorkspace(workspaceId: string) {
 
   console.log("user:", user);
   console.log("userId:", user.userId);
+   const user_id=user.userId;
+ 
 
-  if (!workspaceId) {
+  const workspaceData = await workspaceRepo.listForUser(user_id);
+  if (!workspaceData) {
     return Response.json(
       {
-        message: "Workspace ID is required",
+        message: "Workspace not found",
       },
       {
-        status: 400,
+        status: 404,
       }
     );
   }
 
-  const [workspaceData] = await db
-    .select({
-      id: workspace.id,
-      workspaceName: workspace.workspaceName,
-    })
-    .from(workspace)
-    .where(
-      and(
-        eq(workspace.id, workspaceId),
-        eq(workspace.createdBy, user.userId)
-      )
+  return Response.json(
+    {
+      message: "Fetched workspaces successfully",
+      workspace: workspaceData,
+     
+    },
+ 
+    {
+      status: 200,
+    }
+  );
+}
+export async function getWorkspaceById(workspaceId:string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return Response.json(
+      {
+        message: "Unauthorized",
+      },
+      {
+        status: 401,
+      }
     );
+  }
+
+  const workspaceData = await workspaceRepo.getForUser(
+    user.userId,
+    workspaceId
+  );
 
   if (!workspaceData) {
     return Response.json(
@@ -121,6 +153,7 @@ export async function getWorkspace(workspaceId: string) {
 
   return Response.json(
     {
+      message: "Fetched workspace successfully",
       workspace: workspaceData,
     },
     {
