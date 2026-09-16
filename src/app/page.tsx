@@ -118,7 +118,7 @@ export default function FlowboardLanding() {
             <Link href="/signup" className="btn-primary">
               Start free
             </Link>
-            <a href="#board" className="btn-text">
+            <a href="#board" className="btn-text bg-white">
               See a board in action
             </a>
           </div>
