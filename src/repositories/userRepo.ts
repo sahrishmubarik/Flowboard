@@ -9,8 +9,8 @@ export const userRepo={
     return user;
   },
 
-//   async findById(id) {
-//     const [user] = await db.select().from(users).where(eq(users.id, id));
-//     return user;
-//   }
+  async findById(id) {
+     const [user] = await db.select().from(users).where(eq(users.id, id));
+ return user;
+   }
 }
