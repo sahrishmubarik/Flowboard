@@ -1,0 +1,2 @@
+ALTER TABLE "organization_members" ADD COLUMN "assigned_by" uuid NOT NULL;--> statement-breakpoint
+ALTER TABLE "organization_members" ADD CONSTRAINT "organization_members_assigned_by_user_id_fk" FOREIGN KEY ("assigned_by") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
