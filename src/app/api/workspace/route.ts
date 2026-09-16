@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 
-import { createWorkspace, getWorkspace,
+import { createWorkspace, getWorkspace,getWorkspaceById,
   } from "@/services/workspace";
 
 export async function POST(request: Request) {
@@ -36,12 +36,6 @@ export async function POST(request: Request) {
     );
   }
 }
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ workspaceId: string }> }
-) {
-  const { workspaceId } = await params;
-
-  return getWorkspace(workspaceId);
+export async function GET() {
+return getWorkspace();
 }
