@@ -1,5 +1,6 @@
-import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp , pgEnum} from "drizzle-orm/pg-core";
 import { users } from "@/db/authSchema";
+
 export const workspace = pgTable("workspace", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -14,4 +15,38 @@ export const workspace = pgTable("workspace", {
   createdAt: timestamp("created_at")
     .defaultNow()
     .notNull(),
+});
+
+/* role eum array  */
+export const organizationRoleEnum=pgEnum( 
+   "organization_role",
+  ["owner", "admin", "manager", "member"])
+export const organizationMembers = pgTable("organization_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => workspace.id, {
+      onDelete: "cascade",
+    }),
+
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+     assignedBy: uuid("assigned_by")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+
+  role: organizationRoleEnum("role")
+    .notNull()
+    .default("member"),
+
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
+ 
 });
