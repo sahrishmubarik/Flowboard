@@ -1,5 +1,6 @@
-import { pgTable, uuid, varchar, timestamp , pgEnum} from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp , pgEnum, text} from "drizzle-orm/pg-core";
 import { users } from "@/db/authSchema";
+
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -50,3 +51,20 @@ export const organizationMembers = pgTable("organization_members", {
     .notNull(),
  
 });
+
+
+export const invitationSchema=pgTable("invite_members",{
+  id:uuid("id").defaultRandom().notNull().primaryKey(),
+  email: text("email").unique().notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+  expiresAt: timestamp("expires_at").notNull(),
+  role:organizationRoleEnum("role")
+    .notNull()
+    .default("member"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
