@@ -1,0 +1,1 @@
+ALTER TABLE "invite_members" ALTER COLUMN "role" DROP DEFAULT;

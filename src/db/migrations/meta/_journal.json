@@ -71,6 +71,41 @@
       "when": 1789560767934,
       "tag": "20260916121247_great_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789632131557,
+      "tag": "20260917080211_old_kid_colt",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789632605517,
+      "tag": "20260917081005_stormy_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789643607517,
+      "tag": "20260917111327_moaning_roughhouse",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789643708206,
+      "tag": "20260917111508_damp_pixie",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789645495697,
+      "tag": "20260917114455_oval_calypso",
+      "breakpoints": true
     }
   ]
 }

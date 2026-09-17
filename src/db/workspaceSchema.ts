@@ -52,11 +52,20 @@ export const organizationMembers = pgTable("organization_members", {
  
 });
 
-
+export const inviteStatusEnum=pgEnum( 
+   "invitation_status",
+  ["ACCEPTED", "REVOKED", "PENDING", ])
 export const invitationSchema=pgTable("invite_members",{
   id:uuid("id").defaultRandom().notNull().primaryKey(),
-  email: text("email").unique().notNull(),
+  email: text("email").notNull(),
   token: varchar("token", { length: 255 }).notNull().unique(),
+  status:inviteStatusEnum("status").notNull().default("PENDING"),
+
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, {
+      onDelete: "cascade",
+    }),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id, {
@@ -64,7 +73,6 @@ export const invitationSchema=pgTable("invite_members",{
     }),
   expiresAt: timestamp("expires_at").notNull(),
   role:organizationRoleEnum("role")
-    .notNull()
-    .default("member"),
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
