@@ -1,9 +1,7 @@
 
 import { NextResponse } from "next/server";
-
-import { registerUser,verifyUserEmail,loginUser,forgotPassword,
-  resetPassword ,logoutSession
-  } from "@/services/auth";
+import { AppError } from "@/lib/errors/AppError";
+import { registerUser,verifyUserEmail,loginUser,forgotPassword,resetPassword ,logoutSession } from "@/services/auth";
 
 export async function POST(request: Request) {
   try {
@@ -32,20 +30,29 @@ export async function POST(request: Request) {
       default:
         return NextResponse.json(
           {
-            message: "Invalid authentication action.",
+            message: "Page not found .",
           },
-          { status: 400 }
+          { status: 404 }
         );
     }
-  } catch (error) {
-    console.error("AUTH_API_ERROR:", error);
+  } 
+  catch (error) {
+  console.error("AUTH_API_ERROR:", error);
 
+  if (error instanceof AppError) {
     return NextResponse.json(
       {
-        message:
-          "Internal server error. Please try again.",
+        message: error.message,
       },
-      { status: 500 }
+      { status: error.statusCode }
     );
   }
+
+  return NextResponse.json(
+    {
+      message: "Internal server error. Please try again.",
+    },
+    { status: 500 }
+  );
+}
 }

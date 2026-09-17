@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { cookies } from "next/headers";
-import { users,emailVerificationTokens,
+import {
+  users,
+  emailVerificationTokens,
   resetPasswordTokens,
 } from "@/db/authSchema";
 
@@ -9,90 +11,64 @@ import { eq } from "drizzle-orm";
 
 import bcrypt from "bcryptjs";
 
-import { generateToken } from "@/lib/token/generateToken";
+import { generateToken, passwordHashed } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
-
-import { sendVerificationEmail,
+import { AppError } from "@/lib/errors/AppError";
+import {
+  sendVerificationEmail,
   resetPasswordEmail,
- } from "@/lib/email/verificationEmail";
+} from "@/lib/email/verificationEmail";
 
 import {
   registerSchema,
-  validateData,verifyEmailSchema,loginSchema, resetPasswordSchema,forgotPasswordSchema,
-
+  validateData,
+  verifyEmailSchema,
+  loginSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
 } from "@/lib/validations/auth";
 import jwt from "jsonwebtoken";
 
 import { userRepo } from "@/repositories/userRepo";
-
+import {
+  RegisterBody,
+  VerifyEmailBody,
+  LoginBody,
+  ForgotPasswordBody,
+  ResetPasswordBody,
+} from "@/types/auth";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
-export async function registerUser(body: unknown) {
+export async function registerUser(body: RegisterBody) {
   // 1. Validate
-  const validation = validateData(
-    registerSchema,
-    body
-  );
-
+  const validation = validateData(registerSchema, body);
   if (!validation.success) {
-    return Response.json(
-      {
-        message: validation.error,
-      },
-      { status: 400 }
-    );
+    throw new AppError(validation.error, 400);
   }
 
-  const {
-    name,
-    email,
-    password,
-  } = validation.data;
+  const { name, email, password } = validation.data;
 
   // 2. Check existing user
-  const existingUser = await db
-    .select({
-      id: users.id,
-    })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const existingUser = await userRepo.findByEmail(email);
 
-  if (existingUser.length > 0) {
-    return Response.json(
-      {
-        message: "Email already registered.",
-      },
-      { status: 400 }
-    );
+  if (existingUser) {
+    throw new AppError("Email already registered.", 400);
   }
 
   // 3. Hash password
-  const saltRounds = 12;
+  // const saltRounds = 12;
 
-  const salt = await bcrypt.genSalt(
-    saltRounds
-  );
+  // const salt = await bcrypt.genSalt(saltRounds);
 
-  const hashedPassword =
-    await bcrypt.hash(
-      password,
-      salt
-    );
-
+  // const hashedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await passwordHashed(password);
   // 4. Create user
-  const [newUser] = await db
-    .insert(users)
-    .values({
-      name,
-      email,
-      password: hashedPassword,
-    })
-    .returning({
-      id: users.id,
-      email: users.email,
-    });
+  const newUser = await userRepo.create({
+    name,
+    email,
+    password: hashedPassword,
+  });
 
   // 5. Generate verification token
   const token = generateToken();
@@ -101,22 +77,17 @@ export async function registerUser(body: unknown) {
   const tokenHash = hashToken(token);
 
   // 7. Expiration - 30 minutes
-  const expiresAt = new Date(
-    Date.now() + 30 * 60 * 1000
-  );
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
   // 8. Store token
-  await db
-    .insert(emailVerificationTokens)
-    .values({
-      userId: newUser.id,
-      token: tokenHash,
-      expiresAt,
-    });
+  await db.insert(emailVerificationTokens).values({
+    userId: newUser.id,
+    token: tokenHash,
+    expiresAt,
+  });
 
   // 9. Verification URL
-  const verificationUrl =
-    `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
 
   // 10. Send email
   await sendVerificationEmail({
@@ -130,28 +101,16 @@ export async function registerUser(body: unknown) {
       message:
         "Registration successful. Please check your email to verify your account.",
     },
-    { status: 201 }
+    { status: 201 },
   );
- 
 }
 
-
-
-
-export async function verifyUserEmail(body: unknown) {
+export async function verifyUserEmail(body: VerifyEmailBody) {
   // 1. Validate request
-  const validation = validateData(
-    verifyEmailSchema,
-    body
-  );
+  const validation = validateData(verifyEmailSchema, body);
 
   if (!validation.success) {
-    return NextResponse.json(
-      {
-        message: validation.error,
-      },
-      { status: 400 }
-    );
+    throw new AppError(validation.error, 400);
   }
 
   // IMPORTANT:
@@ -170,23 +129,12 @@ export async function verifyUserEmail(body: unknown) {
       expiresAt: emailVerificationTokens.expiresAt,
     })
     .from(emailVerificationTokens)
-    .where(
-      eq(
-        emailVerificationTokens.token,
-        tokenHash
-      )
-    )
+    .where(eq(emailVerificationTokens.token, tokenHash))
     .limit(1);
 
   // 4. Token doesn't exist
   if (verificationToken.length === 0) {
-    return NextResponse.json(
-      {
-        message:
-          "Invalid or expired verification link.",
-      },
-      { status: 400 }
-    );
+    throw new AppError("Invalid or expired verification link", 400);
   }
 
   const tokenData = verificationToken[0];
@@ -195,20 +143,9 @@ export async function verifyUserEmail(body: unknown) {
   if (tokenData.expiresAt < new Date()) {
     await db
       .delete(emailVerificationTokens)
-      .where(
-        eq(
-          emailVerificationTokens.id,
-          tokenData.id
-        )
-      );
+      .where(eq(emailVerificationTokens.id, tokenData.id));
 
-    return NextResponse.json(
-      {
-        message:
-          "Verification link has expired.",
-      },
-      { status: 400 }
-    );
+    throw new AppError("Invalid or expired verification link", 400);
   }
 
   // 6. Verify user's email
@@ -217,50 +154,28 @@ export async function verifyUserEmail(body: unknown) {
     .set({
       emailVerified: new Date(),
     })
-    .where(
-      eq(
-        users.id,
-        tokenData.userId
-      )
-    );
+    .where(eq(users.id, tokenData.userId));
 
   // 7. Delete used token
   await db
     .delete(emailVerificationTokens)
-    .where(
-      eq(
-        emailVerificationTokens.id,
-        tokenData.id
-      )
-    );
+    .where(eq(emailVerificationTokens.id, tokenData.id));
 
   // 8. Success
   return NextResponse.json(
     {
-      message:
-        "Email verified successfully. You can now login.",
+      message: "Email verified successfully. You can now login.",
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
-
-export async function loginUser(body: unknown) {
-
-
+export async function loginUser(body: LoginBody) {
   // 1. Validate request
-  const validation = validateData(
-    loginSchema,
-    body
-  );
+  const validation = validateData(loginSchema, body);
 
   if (!validation.success) {
-    return Response.json(
-      {
-        message: validation.error,
-      },
-      { status: 400 }
-    );
+    throw new AppError(validation.error, 400);
   }
 
   // 2. Get email and password
@@ -271,38 +186,19 @@ export async function loginUser(body: unknown) {
 
   // 4. User doesn't exist
   if (!user) {
-    return Response.json(
-      {
-        message: "Invalid email or password.",
-      },
-      { status: 401 }
-    );
+    throw new AppError("Invalid password or email", 400);
   }
 
   // 5. Check email verification
   if (!user.emailVerified) {
-    return Response.json(
-      {
-        message:
-          "Please verify your email before logging in.",
-      },
-      { status: 403 }
-    );
+    throw new AppError("Please verify your email before logging in.", 403);
   }
 
   // 6. Compare password
-  const validPassword = await bcrypt.compare(
-    password,
-    user.password
-  );
+  const validPassword = await bcrypt.compare(password, user.password);
 
   if (!validPassword) {
-    return Response.json(
-      {
-        message: "Invalid email or password.",
-      },
-      { status: 401 }
-    );
+    throw new AppError("Invalid email or password.", 401);
   }
 
   // 7. Generate JWT
@@ -314,18 +210,18 @@ export async function loginUser(body: unknown) {
     process.env.JWT_SECRET!,
     {
       expiresIn: "72h",
-    }
+    },
   );
 
   const cookieStore = await cookies();
 
-cookieStore.set("token", token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
-  path: "/",
-  maxAge: 60 * 60 * 24 * 7,
-});
+  cookieStore.set("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
   // 8. Return JWT
   return Response.json(
     {
@@ -337,24 +233,16 @@ cookieStore.set("token", token, {
         email: user.email,
       },
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
-export async function forgotPassword(body: unknown) {
+export async function forgotPassword(body: ForgotPasswordBody) {
   // 1. Validate request
-  const validation = validateData(
-    forgotPasswordSchema,
-    body
-  );
+  const validation = validateData(forgotPasswordSchema, body);
 
   if (!validation.success) {
-    return Response.json(
-      {
-        message: validation.error,
-      },
-      { status: 400 }
-    );
+    throw new AppError(validation.error, 400);
   }
 
   // 2. Get email
@@ -364,12 +252,7 @@ export async function forgotPassword(body: unknown) {
   const user = await userRepo.findByEmail(email);
 
   if (!user) {
-    return Response.json(
-      {
-        message: "User not found.",
-      },
-      { status: 404 }
-    );
+    throw new AppError("User not found.", 404);
   }
 
   // 4. Generate reset token
@@ -379,22 +262,17 @@ export async function forgotPassword(body: unknown) {
   const tokenHash = hashToken(token);
 
   // 6. Expiration - 15 minutes
-  const expiresAt = new Date(
-    Date.now() + 15 * 60 * 1000
-  );
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   // 7. Store token
-  await db
-    .insert(resetPasswordTokens)
-    .values({
-      userId: user.id,
-      token: tokenHash,
-      expiresAt,
-    });
+  await db.insert(resetPasswordTokens).values({
+    userId: user.id,
+    token: tokenHash,
+    expiresAt,
+  });
 
   // 8. Reset password URL
-  const resetPasswordUrl =
-    `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`;
+  const resetPasswordUrl: string = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${token}`;
 
   // 9. Send email
   await resetPasswordEmail({
@@ -405,35 +283,21 @@ export async function forgotPassword(body: unknown) {
   // 10. Return response
   return Response.json(
     {
-      message:
-        "Please check your email to reset your password.",
+      message: "Please check your email to reset your password.",
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
-export async function resetPassword(body: unknown) {
+export async function resetPassword(body: ResetPasswordBody) {
   // 1. Validate request body
-  const validation = validateData(
-    resetPasswordSchema,
-    body
-  );
+  const validation = validateData(resetPasswordSchema, body);
 
-console.log("RESET BODY:", body);
-console.log("RESET VALIDATION:", validation);
   if (!validation.success) {
-    return NextResponse.json(
-      {
-        message: validation.error,
-      },
-      { status: 400 }
-    );
+    throw new AppError(validation.error, 400);
   }
 
-  const {
-    token,
-    password,
-  } = validation.data;
+  const { token, password } = validation.data;
 
   // 2. Hash raw token
   const tokenHash = hashToken(token);
@@ -446,22 +310,12 @@ console.log("RESET VALIDATION:", validation);
       expiresAt: resetPasswordTokens.expiresAt,
     })
     .from(resetPasswordTokens)
-    .where(
-      eq(
-        resetPasswordTokens.token,
-        tokenHash
-      )
-    )
+    .where(eq(resetPasswordTokens.token, tokenHash))
     .limit(1);
 
   // 4. Token doesn't exist
   if (resetToken.length === 0) {
-    return NextResponse.json(
-      {
-        message: "Invalid or expired reset link.",
-      },
-      { status: 400 }
-    );
+    throw new AppError("Invalid or expired reset link.", 400);
   }
 
   const tokenData = resetToken[0];
@@ -470,26 +324,13 @@ console.log("RESET VALIDATION:", validation);
   if (tokenData.expiresAt < new Date()) {
     await db
       .delete(resetPasswordTokens)
-      .where(
-        eq(
-          resetPasswordTokens.id,
-          tokenData.id
-        )
-      );
+      .where(eq(resetPasswordTokens.id, tokenData.id));
 
-    return NextResponse.json(
-      {
-        message: "Reset link has expired.",
-      },
-      { status: 400 }
-    );
+    throw new AppError("Reset link has expired.", 400);
   }
 
   // 6. Hash new password
-  const hashedPassword = await bcrypt.hash(
-    password,
-    12
-  );
+  const hashedPassword = await passwordHashed(password);
 
   // 7. Update user's password
   await db
@@ -497,31 +338,23 @@ console.log("RESET VALIDATION:", validation);
     .set({
       password: hashedPassword,
     })
-    .where(
-      eq(users.id, tokenData.userId)
-    );
+    .where(eq(users.id, tokenData.userId));
 
   // 8. Delete used reset token
   await db
     .delete(resetPasswordTokens)
-    .where(
-      eq(
-        resetPasswordTokens.id,
-        tokenData.id
-      )
-    );
+    .where(eq(resetPasswordTokens.id, tokenData.id));
 
   // 9. Success
   return NextResponse.json(
     {
-      message:
-        "Password reset successfully. You can now login.",
+      message: "Password reset successfully. You can now login.",
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
-export async function logoutSession(){
+export async function logoutSession() {
   const cookieStore = await cookies();
 
   cookieStore.delete("token");
@@ -530,6 +363,3 @@ export async function logoutSession(){
     message: "Logged out successfully",
   });
 }
-
-
-

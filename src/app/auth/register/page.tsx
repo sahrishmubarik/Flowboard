@@ -19,14 +19,14 @@ import {
   faEye,
   faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
-
+import { useRouter } from "next/navigation";
 export default function RegisterPage() {
  
   const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+const router=useRouter();
   const {
     register,
     handleSubmit,
@@ -75,6 +75,7 @@ export default function RegisterPage() {
       "Please check your email to verify your account.",
     "success"
   );
+  router.push("/auth/login");
 },
    
 onError: (error) => {
