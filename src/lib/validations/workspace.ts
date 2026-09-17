@@ -11,6 +11,25 @@ export const workspaceValidation = z.object({
 });
 
 export type workspaceInput = z.infer<typeof workspaceValidation>;
+export const emailRule = z
+  .string()
+  .min(1, "Email is required")
+  .email("Please provide a valid email address")
+  .trim()
+  .toLowerCase();
+
+export const  inviteValidation=z.object({
+  email:emailRule,
+  role: z.enum([ "admin", "manager", "member", ]),
+})
+export type inviteInput=z.infer<typeof inviteValidation>;
+
+export const acceptInvitationValidation = z.object({
+  token: z
+    .string()
+    .min(1, "Invitation token is required."),
+});
+
 
 export function validateData<T>(
   schema: z.ZodSchema<T>,

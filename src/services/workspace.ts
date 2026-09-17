@@ -1,27 +1,21 @@
 
 import { getCurrentUser } from "@/lib/middleware/auth";
 import { db } from "@/db";
+import { AppError } from "@/lib/errors/AppError";
 
-import { workspace } from "@/db/workspaceSchema";
 import {
   validateData,
   workspaceValidation,
 } from "@/lib/validations/workspace";
-import {  eq, and } from "drizzle-orm";
+
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
-export async function createWorkspace(body: unknown) {
+
+export async function createWorkspace(body:{name:string}) {
   const user = await getCurrentUser();
 
   if (!user) {
-    return Response.json(
-      {
-        message: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
+   throw new AppError("Unauthorized user", 401); 
   }
 
   const validation = validateData(
@@ -30,14 +24,7 @@ export async function createWorkspace(body: unknown) {
   );
 
   if (!validation.success) {
-    return Response.json(
-      {
-        message: validation.error,
-      },
-      {
-        status: 400,
-      }
-    );
+   throw new AppError(validation.error, 400); 
   }
 
   const { workspaceName } = validation.data;
@@ -82,31 +69,12 @@ export async function getWorkspace() {
   const user = await getCurrentUser();
 
   if (!user) {
-    return Response.json(
-      {
-        message: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
+      throw new AppError("Unauthorized user", 401); 
   }
-
-  console.log("user:", user);
-  console.log("userId:", user.userId);
-   const user_id=user.userId;
- 
-
-  const workspaceData = await workspaceRepo.listForUser(user_id);
+const user_id=user?.userId;
+const workspaceData = await workspaceRepo.listForUser(user_id);
   if (!workspaceData) {
-    return Response.json(
-      {
-        message: "Workspace not found",
-      },
-      {
-        status: 404,
-      }
-    );
+  throw new AppError("Workspace not found.", 401); 
   }
 
   return Response.json(
@@ -125,14 +93,7 @@ export async function getWorkspaceById(workspaceId:string) {
   const user = await getCurrentUser();
 
   if (!user) {
-    return Response.json(
-      {
-        message: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
+    throw new AppError("Unauthorized user", 401); 
   }
 
   const workspaceData = await workspaceRepo.getForUser(
@@ -141,14 +102,7 @@ export async function getWorkspaceById(workspaceId:string) {
   );
 
   if (!workspaceData) {
-    return Response.json(
-      {
-        message: "Workspace not found",
-      },
-      {
-        status: 404,
-      }
-    );
+   throw new AppError("Workspace not found", 404); 
   }
 
   return Response.json(

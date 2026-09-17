@@ -3,7 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-
+import  InviteMemberCard  from "@/components/inviteMemberCard";
 export default function WorkspacePage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
 
@@ -38,6 +38,8 @@ export default function WorkspacePage() {
       <div className="mx-auto max-w-[1160px] px-6  md:px-10">
           <h1 className="text-[var(--board-pannel)] text-2xl">you select some one workspace </h1>
       <h1  className="text-[var(--board-pannel)] text-4xl mt-2 font-bold">{data.workspace.workspaceName}</h1>
+
+  <InviteMemberCard/>
       </div>
       </div>
     </main>

@@ -1,12 +1,9 @@
-
-
-
 import { db } from "@/db";
- import { eq , and} from "drizzle-orm"; 
+import { eq, and } from "drizzle-orm";
 import { workspace } from "@/db/workspaceSchema";
 import { organizationMembers } from "@/db/workspaceSchema";
 export const workspaceRepo = {
-/* get all user workspaces */
+  /* get all user workspaces */
   async listForUser(userId) {
     return db
       .select({
@@ -16,36 +13,48 @@ export const workspaceRepo = {
         createdAt: workspace.createdAt,
       })
       .from(organizationMembers)
-      .innerJoin(workspace, eq(organizationMembers.organizationId, workspace.id))
+      .innerJoin(
+        workspace,
+        eq(organizationMembers.organizationId, workspace.id),
+      )
       .where(eq(organizationMembers.userId, userId));
   },
-   async getForUser(userId, workspaceId) {
-  const [workspaceData] = await db
-    .select({
-      workspaceId: workspace.id,
-      workspaceName: workspace.workspaceName,
-      role: organizationMembers.role,
-      createdAt: workspace.createdAt,
-    })
-    .from(organizationMembers)
-    .innerJoin(
-      workspace,
-      eq(organizationMembers.organizationId, workspace.id)
-    )
-    .where(
-      and(
-        eq(organizationMembers.userId, userId),
-        eq(workspace.id, workspaceId)
+  async getForUser(userId, workspaceId) {
+    const [workspaceData] = await db
+      .select({
+        workspaceId: workspace.id,
+        workspaceName: workspace.workspaceName,
+        role: organizationMembers.role,
+        createdAt: workspace.createdAt,
+      })
+      .from(organizationMembers)
+      .innerJoin(
+        workspace,
+        eq(organizationMembers.organizationId, workspace.id),
       )
-    );
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(workspace.id, workspaceId),
+        ),
+      );
 
-  return workspaceData;
-},
-
-  async create(
-    transaction: typeof db,
-    { workspaceName, createdBy }
-  ) {
+    return workspaceData;
+  },
+  /* get workspace by id */ 
+  async findById(workspaceId) {
+    const [workspaceData] = await db
+      .select({
+        id: workspace.id,
+        workspaceName: workspace.workspaceName,
+        createdBy: workspace.createdBy,
+        createdAt: workspace.createdAt,
+      })
+      .from(workspace)
+      .where(eq(workspace.id, workspaceId));
+    return workspaceData;
+  },
+  async create(transaction: typeof db, { workspaceName, createdBy }) {
     const [row] = await transaction
       .insert(workspace)
       .values({
