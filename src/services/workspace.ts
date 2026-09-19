@@ -2,7 +2,7 @@
 import { getCurrentUser } from "@/lib/middleware/auth";
 import { db } from "@/db";
 import { AppError } from "@/lib/errors/AppError";
-
+import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
 import {
   validateData,
   workspaceValidation,
@@ -10,6 +10,7 @@ import {
 
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
+
 
 export async function createWorkspace(body:{name:string}) {
   const user = await getCurrentUser();
@@ -112,6 +113,59 @@ export async function getWorkspaceById(workspaceId:string) {
     },
     {
       status: 200,
+    }
+  );
+}
+
+export async function updateWorkspaceName(workspaceId:string, workspaceName:string){
+    const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user", 401); 
+  }
+const user_id=user.userId;
+const validation = validateData(
+    workspaceValidation,
+    {workspaceName,}
+  );
+
+  if (!validation.success) {
+   throw new AppError(validation.error, 400); 
+  }
+
+  const { workspaceName:validateWorkspaceName }  = validation.data;
+
+await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
+const result= workspaceRepo.updateWorkspaceName(workspaceId,validateWorkspaceName);
+return Response.json(
+    {
+      message: "Workspace Name update successfully",
+      workspace: result,
+      
+    },
+    {
+      status: 201,
+    }
+  );
+}
+
+export async function deleteWorkspace(workspaceId:string){
+    const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user", 401); 
+  }
+const user_id=user.userId;
+await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
+const result= workspaceRepo.deleteWorkspace(workspaceId);
+return Response.json(
+    {
+      message: "Workspace DELETE successfully",
+      workspace: result,
+      
+    },
+    {
+      status: 201,
     }
   );
 }
