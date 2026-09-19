@@ -5,6 +5,7 @@ import {
   validateData,
   inviteValidation,
   acceptInvitationValidation,
+  revokeInvitationValidation,
 } from "@/lib/validations/workspace";
 import { sendInvitationEmail } from "@/lib/email/verificationEmail";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
@@ -12,7 +13,9 @@ import { workspaceRepo } from "@/repositories/organizationRepo";
 import { invitationRepo } from "@/repositories/invitationRepo";
 import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
-import { db } from "@/db";
+
+
+
 export async function inviteMember(
   workspaceId: string,
   body: {
@@ -61,6 +64,7 @@ export async function inviteMember(
     expiresAt,
     createdBy: user_id,
   });
+  const assignRole=invitation.role;
   console.log(invitation);
   // 9. Verification URL
 
@@ -71,7 +75,7 @@ export async function inviteMember(
 
   await sendInvitationEmail({
     email,
-    role,
+    assignRole,
     organizationName,
     invitationUrl,
   });
@@ -129,10 +133,28 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
 
   // 6. Status
 
-  if (invitation.status !== "PENDING") {
-    throw new AppError("This invitation is no longer available.", 400);
-  }
+// 6. Status
 
+if (invitation.status === "REVOKED") {
+  throw new AppError(
+    "This invitation has been cancelled by the workspace administrator.",
+    400,
+  );
+}
+
+if (invitation.status === "ACCEPTED") {
+  throw new AppError(
+    "This invitation has already been accepted.",
+    400,
+  );
+}
+
+if (invitation.status !== "PENDING") {
+  throw new AppError(
+    "This invitation is no longer available.",
+    400,
+  );
+}
   // 7. Expiry
 
   if (new Date() > invitation.expiresAt) {
@@ -178,4 +200,100 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
     message: "Invitation accepted successfully.",
     workspaceId,
   };
+}
+
+export async function revokeInvitation(
+  workspaceId: string,
+  body: {
+    status: string;
+    email: string;
+  },
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user.", 401);
+  }
+
+  const user_id = user.userId;
+
+ const validation = validateData(
+  revokeInvitationValidation,
+  body,
+);
+
+  if (!validation.success) {
+    throw new AppError(validation.error, 400);
+  }
+
+  const workspaceData = await workspaceRepo.findById(workspaceId);
+
+  if (!workspaceData) {
+    throw new AppError("Workspace not found.", 404);
+  }
+
+  await requireWorkspaceRole(
+    user_id,
+    workspaceId,
+    ["owner", "admin"],
+  );
+
+  const { email } = validation.data;
+
+  const cancelInvitation =
+    await invitationRepo.revokeInvitation(
+      workspaceId,
+      email,
+    );
+  if (!cancelInvitation) {
+  throw new AppError("Invitation not found.", 404);
+}
+  return Response.json(
+    {
+      message: "Invitation revoked successfully",
+      invitation: cancelInvitation,
+    },
+    {
+      status: 200,
+    },
+  );
+}
+export async function getInvitationStatus(
+  workspaceId: string,
+   page: number,
+  limit: number,
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user.", 401);
+  }
+
+  const user_id = user.userId;
+
+  const workspaceData =
+    await workspaceRepo.findById(workspaceId);
+
+  if (!workspaceData) {
+    throw new AppError("Workspace not found.", 404);
+  }
+
+  await requireWorkspaceRole(
+    user_id,
+    workspaceId,
+    ["owner", "admin"],
+  );
+
+  const invitations =
+    await invitationRepo.getInvitationByWorkspaceId(workspaceId, page , limit);
+
+  return Response.json(
+    {
+      message: "Invitation status fetched successfully",
+      invitations,
+    },
+    {
+      status: 200,
+    },
+  );
 }

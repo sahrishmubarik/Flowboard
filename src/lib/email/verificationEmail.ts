@@ -60,3 +60,37 @@ export async function resetPasswordEmail({
     `,
   });
 }
+
+export async function sendInvitationEmail ({
+    email,
+    assignRole,
+    organizationName,
+    invitationUrl,
+}: VerificationEmailOptions)
+{
+return sendEmail({
+    to: email,
+    subject: `Flowboard invite from ${organizationName}`,
+    html: `
+      <h1>${organizationName} invitation</h1>
+      <p>
+        Join the ${organizationName} organization  as a ${assignRole}:
+      </p>
+
+   
+
+      <p>
+        Click the  below link  and join the ${organizationName} organization :
+      </p>
+
+      <a href="${invitationUrl}">
+      accept invite
+      </a>
+
+      <p>
+        This link will expire in  12 hours.
+      </p>
+    `,
+  });
+
+}

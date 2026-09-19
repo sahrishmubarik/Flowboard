@@ -4,6 +4,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import  InviteMemberCard  from "@/components/inviteMemberCard";
+import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
+import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
+import InvitationCard from "@/components/invitationStatusCard";
+import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 export default function WorkspacePage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
 
@@ -40,6 +44,10 @@ export default function WorkspacePage() {
       <h1  className="text-[var(--board-pannel)] text-4xl mt-2 font-bold">{data.workspace.workspaceName}</h1>
 
   <InviteMemberCard/>
+  <UpdateWorkspaceCard/>
+  <WorkspaceMemberCard />
+    <DeleteWorkspaceCard/>
+     <InvitationCard/>
       </div>
       </div>
     </main>

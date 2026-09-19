@@ -69,4 +69,31 @@ export const workspaceRepo = {
 
     return row;
   },
+  async updateWorkspaceName(
+    workspaceId: string,
+    workspaceName: string,
+  ) {
+    const [updatedWorkspace] = await db
+      .update(workspace)
+      .set({
+        workspaceName,
+      })
+      .where(eq(workspace.id, workspaceId))
+      .returning();
+
+    return updatedWorkspace;
+  },
+ 
+    async deleteWorkspace(workspaceId: string) {
+  const [deletedWorkspace] = await db
+    .delete(workspace)
+    .where(eq(workspace.id, workspaceId))
+    .returning({
+      id: workspace.id,
+      workspaceName: workspace.workspaceName,
+    });
+
+  return deletedWorkspace;
+
+  },
 };
