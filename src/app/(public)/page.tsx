@@ -237,7 +237,7 @@ export default function FlowboardLanding() {
         </div>
 
         {/* Features */}
-        <section className="py-[100px] flex flex-col items-center pb-10 pt-16 text-center">
+        <section id="docs" className="py-[100px] flex flex-col items-center pb-10 pt-16 text-center">
           <div className="text-[15px] font-medium text-[var(--indigo)]">
             What you get
           </div>
