@@ -40,6 +40,7 @@ import {
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
+import { getCurrentUser } from "@/lib/middleware/auth";
 export async function registerUser(body: RegisterBody) {
   // 1. Validate
   const validation = validateData(registerSchema, body);
@@ -362,4 +363,19 @@ export async function logoutSession() {
   return Response.json({
     message: "Logged out successfully",
   });
+}
+export async function getCurrentUserDetails() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    throw new AppError("Unauthorized user", 401);
+  }
+
+  const userData = await userRepo.getUserData(currentUser.userId);
+
+  if (!userData) {
+    throw new AppError("User not found", 404);
+  }
+
+  return userData;
 }
