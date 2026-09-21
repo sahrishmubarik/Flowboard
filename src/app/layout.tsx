@@ -3,8 +3,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from  "@/components/Footer";
+
 import QueryProvider from "@/components/QueryProvider";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 const geistSans = Geist({
@@ -34,16 +33,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       
        <body className="min-h-full flex flex-col">
         <div className="flex min-h-screen flex-col">
-       <Header />
+      
       {/* Wrap children so all pages have access to React Query hooks */}
-     <main className="flex-1">
+ 
         <ToastProvider> 
         <QueryProvider>
           {children} 
           </QueryProvider>
            </ToastProvider>
-     </main>
-       <Footer />
+   
+      
        </div>
        </body>
     </html>
