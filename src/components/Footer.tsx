@@ -85,11 +85,11 @@ export default function Footer() {
         {/* Bottom bar */}
        
      <div
-  className={`mt-12 flex gap-4 border-t border-[var(--mist)] pt-6
+  className={`flex gap-6 pt-4 pl-11 pr-11
     ${
       isAuthPage
-        ? "flex items-center justify-center"
-        : "flex sm:flex-row sm:items-center sm:justify-between px-12"
+        ? "flex items-center justify-center  "
+        : "flex sm:flex-row sm:items-center sm:justify-between gap-12 pb-6  pt-12 pb-12 border-t border-[var(--mist)]"
     }
   `}
 >
