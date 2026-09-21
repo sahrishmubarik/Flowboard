@@ -201,7 +201,6 @@ if (invitation.status !== "PENDING") {
     workspaceId,
   };
 }
-
 export async function revokeInvitation(
   workspaceId: string,
   body: {
@@ -217,10 +216,10 @@ export async function revokeInvitation(
 
   const user_id = user.userId;
 
- const validation = validateData(
-  revokeInvitationValidation,
-  body,
-);
+  const validation = validateData(
+    revokeInvitationValidation,
+    body,
+  );
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
@@ -245,9 +244,9 @@ export async function revokeInvitation(
       workspaceId,
       email,
     );
-  if (!cancelInvitation) {
-  throw new AppError("Invitation not found.", 404);
-}
+ if (!cancelInvitation) {
+    throw new AppError("Invitation not found.", 404);
+  }
   return Response.json(
     {
       message: "Invitation revoked successfully",
@@ -258,10 +257,12 @@ export async function revokeInvitation(
     },
   );
 }
+\
+
 export async function getInvitationStatus(
   workspaceId: string,
-   page: number,
-  limit: number,
+  page: number,
+ limit: number,
 ) {
   const user = await getCurrentUser();
 
@@ -284,13 +285,25 @@ export async function getInvitationStatus(
     ["owner", "admin"],
   );
 
-  const invitations =
-    await invitationRepo.getInvitationByWorkspaceId(workspaceId, page , limit);
+
+  const result =
+    await invitationRepo.getInvitationByWorkspaceId(
+      workspaceId,
+      page,
+      limit,
+    );
+
 
   return Response.json(
     {
       message: "Invitation status fetched successfully",
-      invitations,
+         invitations: result.invitations,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / limit),
+      }
     },
     {
       status: 200,
