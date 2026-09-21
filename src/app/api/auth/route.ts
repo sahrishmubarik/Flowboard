@@ -1,7 +1,9 @@
 
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors/AppError";
-import { registerUser,verifyUserEmail,loginUser,forgotPassword,resetPassword ,logoutSession } from "@/services/auth";
+import { registerUser,verifyUserEmail,loginUser,forgotPassword,resetPassword ,
+  logoutSession , getCurrentUserDetails,
+} from "@/services/auth";
 
 export async function POST(request: Request) {
   try {
@@ -55,4 +57,38 @@ export async function POST(request: Request) {
     { status: 500 }
   );
 }
+}
+
+export async function GET(request: Request) {
+  try {
+    const userData = await getCurrentUserDetails();
+
+    return NextResponse.json(
+      {
+        message: "User details fetched successfully",
+        user: userData,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        {
+          status: error.statusCode,
+        },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: "Internal server error",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
 }
