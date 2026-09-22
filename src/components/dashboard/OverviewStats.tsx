@@ -34,12 +34,12 @@ export default function DashboardOverviewStats() {
       },
     });
 
-  const organizations =
-    data?.stats.organizations ?? 0;
 
-  const members =
-    data?.stats.members ?? 0;
+const organizations =
+  data?.stats?.organizations ?? 0;
 
+const members =
+  data?.stats?.members ?? 0;
   const stats = [
     {
       label: "Organizations",

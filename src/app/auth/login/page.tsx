@@ -4,11 +4,12 @@ import { Suspense } from 'react';
 import LoginCard from '@/components/loginCard';
 export default function login() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+    <main >
       {/* The Suspense boundary fixes the Next.js build error */}
-      <Suspense fallback={<div>Loading verification screen...</div>}>
+      <Suspense fallback={<div>Loading login card...</div>}>
         <LoginCard/>
       </Suspense>
     </main>
   );
 }
+
