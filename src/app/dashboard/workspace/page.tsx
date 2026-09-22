@@ -115,27 +115,19 @@ import Link from "next/link";
 //     </div>
 //     </>
 //   )
-  
-
-
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 export default function Workspace() {
   const router = useRouter();
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["workspaces"],
     queryFn: async () => {
       const response = await fetch("/api/workspace");
 
       const data = await response.json();
-     console.log(data)
+      console.log(data);
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch workspaces");
       }
@@ -186,10 +178,7 @@ export default function Workspace() {
             </option>
 
             {workspaces.map((workspace) => (
-              <option
-                key={workspace.workspaceId}
-                value={workspace.workspaceId}
-              >
+              <option key={workspace.workspaceId} value={workspace.workspaceId}>
                 {workspace.workspaceName} ({workspace.role})
               </option>
             ))}
@@ -205,4 +194,3 @@ export default function Workspace() {
     </main>
   );
 }
-

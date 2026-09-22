@@ -41,7 +41,7 @@ export const workspaceRepo = {
 
     return workspaceData;
   },
-  /* get workspace by id */ 
+  /* get workspace by id */
   async findById(workspaceId) {
     const [workspaceData] = await db
       .select({
@@ -68,5 +68,32 @@ export const workspaceRepo = {
       });
 
     return row;
+  },
+  async updateWorkspaceName(
+    workspaceId: string,
+    workspaceName: string,
+  ) {
+    const [updatedWorkspace] = await db
+      .update(workspace)
+      .set({
+        workspaceName,
+      })
+      .where(eq(workspace.id, workspaceId))
+      .returning();
+
+    return updatedWorkspace;
+  },
+ 
+    async deleteWorkspace(workspaceId: string) {
+  const [deletedWorkspace] = await db
+    .delete(workspace)
+    .where(eq(workspace.id, workspaceId))
+    .returning({
+      id: workspace.id,
+      workspaceName: workspace.workspaceName,
+    });
+
+  return deletedWorkspace;
+
   },
 };

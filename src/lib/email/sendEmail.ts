@@ -12,7 +12,7 @@ export async function sendEmail({
   html,
 }: SendEmailOptions) {
   const mailOptions = {
-    from: `Auth System <mailgun@${process.env.MAILGUN_DOMAIN}>`,
+    from: `Flowboard <mailgun@${process.env.MAILGUN_DOMAIN}>`,
     to: [to],
     subject,
     html,

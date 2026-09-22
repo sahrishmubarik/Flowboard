@@ -1,9 +1,12 @@
-
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import  InviteMemberCard  from "@/components/inviteMemberCard";
+import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
+import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
+import InvitationCard from "@/components/invitationStatusCard";
+import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 export default function WorkspacePage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
 
@@ -38,8 +41,18 @@ export default function WorkspacePage() {
       <div className="mx-auto max-w-[1160px] px-6  md:px-10">
           <h1 className="text-[var(--board-pannel)] text-2xl">you select some one workspace </h1>
       <h1  className="text-[var(--board-pannel)] text-4xl mt-2 font-bold">{data.workspace.workspaceName}</h1>
-
-  <InviteMemberCard/>
+ <div className="mb-12 mt-4">
+  <InviteMemberCard/></div> 
+  <div className="mb-12 mt-4">
+  <UpdateWorkspaceCard/></div>
+  <div className="mb-12 mt-4">
+  <WorkspaceMemberCard /></div>
+ 
+  <div className="mb-12 mt-4">
+       <InvitationCard/>
+  </div>
+   <div className="mb-12 mt-4">
+    <DeleteWorkspaceCard/></div>
       </div>
       </div>
     </main>

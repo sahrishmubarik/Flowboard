@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -31,7 +30,7 @@ export default function ForgotPasswordPage() {
 
   const mutation = useMutation({
     mutationFn: async (formData: ForgotPasswordInput) => {
-        console.log(formData.email);
+      console.log(formData.email);
       const response = await fetch("/api/auth", {
         method: "POST",
         headers: {
@@ -39,16 +38,14 @@ export default function ForgotPasswordPage() {
         },
         body: JSON.stringify({
           action: "forgot-password",
-        email: formData.email,
+          email: formData.email,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Unable to send password reset email."
-        );
+        throw new Error(data.message || "Unable to send password reset email.");
       }
 
       return data;
@@ -58,14 +55,14 @@ export default function ForgotPasswordPage() {
       showToast(
         data.message ||
           "If this email exists, a password reset link has been sent.",
-        "success"
+        "success",
       );
     },
 
     onError: (error) => {
       showToast(
         error.message || "Unable to send password reset email.",
-        "error"
+        "error",
       );
     },
   });
@@ -77,7 +74,6 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-md">
-
         {/* Heading */}
         <div className="mb-8 text-center">
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
@@ -85,8 +81,8 @@ export default function ForgotPasswordPage() {
           </h2>
 
           <p className="mt-2 text-sm text-zinc-500">
-            Enter your email address and we&apos;ll send you a link
-            to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset
+            your password.
           </p>
         </div>
 
@@ -138,7 +134,6 @@ export default function ForgotPasswordPage() {
           {/* Back to Login */}
           <p className="text-center text-sm text-zinc-500">
             Remember your password?{" "}
-
             <a
               href="/auth/login"
               className="font-semibold text-[var(--board-ink)]"

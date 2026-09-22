@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { invitationSchema } from "@/db/workspaceSchema";
-import { eq, and } from "drizzle-orm";
+import { eq, and ,count} from "drizzle-orm";
 import type { DbTransaction } from "@/db/types";
 export const invitationRepo = {
   async findPendingByEmailAndWorkspace(email: string, workspaceId: string) {
@@ -55,4 +55,70 @@ export const invitationRepo = {
 
     return invitation;
   },
+async revokeInvitation(
+  workspaceId: string,
+  email: string,
+) {
+  const [invitationRevoke] = await db
+    .update(invitationSchema)
+    .set({
+      status: "REVOKED",
+    })
+    .where(
+      and(
+        eq(invitationSchema.workspaceId, workspaceId),
+        eq(invitationSchema.email, email),
+      ),
+    )
+    .returning();
+
+  return invitationRevoke;
+},
+// async getInvitationByWorkspaceId(workspaceId: string) {
+//   return db
+//     .select({
+//       id: invitationSchema.id,
+//       email: invitationSchema.email,
+//       role: invitationSchema.role,
+//       status: invitationSchema.status,
+//       expiresAt: invitationSchema.expiresAt,
+//       createdAt: invitationSchema.createdAt,
+//     })
+//     .from(invitationSchema)
+//     .where(
+//       eq(invitationSchema.workspaceId, workspaceId),
+//     );
+// },
+async getInvitationByWorkspaceId(
+  workspaceId: string,
+  page: number,
+  limit: number,
+) {
+  const offset = (page - 1) * limit;
+
+  const invitations = await db
+    .select()
+    .from(invitationSchema)
+    .where(
+      eq(invitationSchema.workspaceId, workspaceId),
+    )
+    .limit(limit)
+    .offset(offset);
+
+  const totalResult = await db
+    .select({
+      count: count(),
+    })
+    .from(invitationSchema)
+    .where(
+      eq(invitationSchema.workspaceId, workspaceId),
+    );
+
+  const total = Number(totalResult[0]?.count ?? 0);
+
+  return {
+    invitations,
+    total,
+  };
+}
 };

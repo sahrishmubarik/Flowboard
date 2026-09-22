@@ -1,8 +1,14 @@
-
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors/AppError";
-import { registerUser,verifyUserEmail,loginUser,forgotPassword,resetPassword ,
-  logoutSession , getCurrentUserDetails,
+
+import {
+  registerUser,
+  verifyUserEmail,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+  logoutSession,
+   getCurrentUserDetails
 } from "@/services/auth";
 
 export async function POST(request: Request) {
@@ -15,49 +21,49 @@ export async function POST(request: Request) {
       case "register":
         return await registerUser(body);
 
-     case "login":
-         return await loginUser(body);
+      case "login":
+        return await loginUser(body);
 
       case "verify-email":
         return await verifyUserEmail(body);
 
       case "forgot-password":
-         return await forgotPassword(body);
+        return await forgotPassword(body);
 
       case "reset-password":
-         return await resetPassword(body);
+        return await resetPassword(body);
       case "logout":
-         return await logoutSession();
+        return await logoutSession();
 
       default:
         return NextResponse.json(
           {
             message: "Page not found .",
           },
-          { status: 404 }
+          { status: 404 },
         );
     }
-  } 
-  catch (error) {
-  console.error("AUTH_API_ERROR:", error);
+  } catch (error) {
+    console.error("AUTH_API_ERROR:", error);
 
-  if (error instanceof AppError) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        {
+          message: error.message,
+        },
+        { status: error.statusCode },
+      );
+    }
+
     return NextResponse.json(
       {
-        message: error.message,
+        message: "Internal server error. Please try again.",
       },
-      { status: error.statusCode }
+      { status: 500 },
     );
   }
+}
 
-  return NextResponse.json(
-    {
-      message: "Internal server error. Please try again.",
-    },
-    { status: 500 }
-  );
-}
-}
 
 export async function GET(request: Request) {
   try {

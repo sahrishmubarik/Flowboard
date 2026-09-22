@@ -21,16 +21,31 @@ export const emailRule = z
 export const  inviteValidation=z.object({
   email:emailRule,
   role: z.enum([ "admin", "manager", "member", ]),
-})
+});
 export type inviteInput=z.infer<typeof inviteValidation>;
 
 export const acceptInvitationValidation = z.object({
-  token: z
-    .string()
-    .min(1, "Invitation token is required."),
+  token: z.string().min(1, "Invitation token is required."),
 });
 
+export const revokeInvitationValidation = z.object({
+  email: emailRule,
+});
 
+export type revokeInvitationInput = z.infer<
+  typeof revokeInvitationValidation
+>;
+
+
+export const workspaceMemberRoleValidation = z.enum([
+  "owner",
+  "admin",
+  "manager",
+  "member",
+]);
+export type WorkspaceMemberRole = z.infer<
+  typeof workspaceMemberRoleValidation
+>;
 export function validateData<T>(
   schema: z.ZodSchema<T>,
   data: unknown

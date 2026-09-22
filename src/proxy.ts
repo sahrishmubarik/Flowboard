@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
 export function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Invitation acceptance page is public
+  if (
+    pathname.startsWith("/dashboard/workspace/") &&
+    pathname.endsWith("/invitation/accept")
+  ) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get("token")?.value;
 
   if (!token) {
-    return NextResponse.redirect(
-      new URL("/auth/login", request.url)
-    );
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   try {
@@ -15,9 +23,7 @@ export function proxy(request: NextRequest) {
 
     return NextResponse.next();
   } catch {
-    return NextResponse.redirect(
-      new URL("/auth/login", request.url)
-    );
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 }
 

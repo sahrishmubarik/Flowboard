@@ -6,31 +6,31 @@
   --paper-raised: #fefdfd;
 
   /* Text */
-  --ink: #1B1E2A;
+  --ink: #1b1e2a;
   --ink-soft: #6e727e;
 
   /* Brand colors */
-  --indigo: #3542CC;
-  --indigo-deep: #262FA0;
-  --amber: #E8A33D;
-  --amber-deep: #B87A1F;
+  --indigo: #3542cc;
+  --indigo-deep: #262fa0;
+  --amber: #e8a33d;
+  --amber-deep: #b87a1f;
 
   /* Borders / dividers */
   --mist: #e8eaf0;
 
   /* Board mockup (dark panel) */
-  --board-ink: #14172A;
-  --board-panel: #1E2238;
-  --board-line: #30354F;
+  --board-ink: #14172a;
+  --board-panel: #1e2238;
+  --board-line: #30354f;
 
   /* Card label / tag colors */
-  --sage: #7FB77E;
-  --coral: #E2725B;
-  --sky: #5FA8D3;
+  --sage: #7fb77e;
+  --coral: #e2725b;
+  --sky: #5fa8d3;
 
   /* Fonts */
-  --font-display: 'Fraunces', serif;
-  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", -apple-system, sans-serif;
 }
 body {
   background: var(--paper);
@@ -41,66 +41,63 @@ body {
   .nav-link {
     @apply text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)];
   }
-  
 }
- .btn-primary {
-    @apply rounded-[7px] bg-[var(--board-panel)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
-  }
- 
-  .btn-primary {
-    background: var(--board-panel);
-    color: #fff !important;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    display: inline-block;
-    
-  }
- 
-  .btn-primary:hover { background: var(--board-ink); }
- 
-  .btn-text {
-    background-color: #fff !important;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    display: inline-block;
-    color: var(--ink);
-    border: 1px solid var(--mist);
-  
-  }
-  .boardCard:hover{
-    @apply
-    border-dashed
-    border-[var(--amber)]
-    bg-[var(--amber)]/[0.06]
-   
-  }
-  .boardCard {
-  transition: border-color 0.2s ease;
+.btn-primary {
+  @apply rounded-[7px] bg-[var(--board-panel)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
 }
 
+.btn-primary {
+  background: var(--board-panel);
+  color: #fff !important;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background: var(--board-ink);
+}
+
+.btn-text {
+  background-color: #fff !important;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  display: inline-block;
+  color: var(--ink);
+  border: 1px solid var(--mist);
+}
+.boardCard:hover {
+  @apply border-dashed
+    border-[var(--amber)]
+    bg-[var(--amber)]/[0.06];
+}
+.boardCard {
+  transition: border-color 0.2s ease;
+}
 
 .boardCard:hover .board-col-label {
   color: var(--amber-deep);
 }
 
 .boardCard:hover .board-card-inner {
-  @apply 
-  border-dashed
+  @apply border-dashed
   border-[var(--amber)]
-    bg-[var(--amber)]/[0.06]
-  
+    bg-[var(--amber)]/[0.06];
 }
 
 .price-btn {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .price-btn:hover {
-  background: var( --board-panel);
+  background: var(--board-panel);
   border-color: var(--board-line);
   color: #ffffff;
 }
