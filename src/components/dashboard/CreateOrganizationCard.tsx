@@ -1,18 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function CreateOrganizationCard() {
-  const router = useRouter();
-
-  const handleCreateOrganization = () => {
-    router.push("/dashboard/workspace/create-workspace");
-  };
-
   return (
-    <button
-      type="button"
-      onClick={handleCreateOrganization}
+    <Link
+      href="/dashboard/workspace/create-workspace"
       className="group flex w-full items-center justify-between rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] px-5 py-4 text-left transition hover:border-[var(--indigo)] hover:shadow-sm"
     >
       <div className="flex items-center gap-4">
@@ -34,6 +27,6 @@ export default function CreateOrganizationCard() {
       <span className="text-lg text-[var(--ink-soft)] transition group-hover:translate-x-1 group-hover:text-[var(--indigo)]">
         →
       </span>
-    </button>
+    </Link>
   );
 }
