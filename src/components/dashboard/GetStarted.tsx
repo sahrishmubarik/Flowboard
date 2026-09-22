@@ -42,7 +42,7 @@ export default function DashboardGettingStarted() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] p-6">
+      <div className="rounded-xl border border-[var(--mist)] bg-white p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-[var(--ink)]">

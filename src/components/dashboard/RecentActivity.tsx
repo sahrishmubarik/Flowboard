@@ -38,7 +38,7 @@ export default function DashboardRecentActivity() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--mist)] bg-white">
         {activities.map((activity, index) => (
           <div
             key={activity.id}
