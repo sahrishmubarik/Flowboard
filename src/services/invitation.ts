@@ -13,7 +13,7 @@ import { workspaceRepo } from "@/repositories/organizationRepo";
 import { invitationRepo } from "@/repositories/invitationRepo";
 import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
-
+import { db } from "@/db";
 
 
 export async function inviteMember(

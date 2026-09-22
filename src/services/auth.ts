@@ -97,7 +97,7 @@ export async function registerUser(body: RegisterBody) {
     email: newUser.email,
     verificationUrl,
   });
-
+console.log("Verification email send in your gmail.", verificationUrl);
   // 11. Return result
   return Response.json(
     {
