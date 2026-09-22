@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors/AppError";
+
 import {
   registerUser,
   verifyUserEmail,
