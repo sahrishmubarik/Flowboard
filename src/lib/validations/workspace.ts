@@ -25,9 +25,7 @@ export const  inviteValidation=z.object({
 export type inviteInput=z.infer<typeof inviteValidation>;
 
 export const acceptInvitationValidation = z.object({
-  token: z
-    .string()
-    .min(1, "Invitation token is required."),
+  token: z.string().min(1, "Invitation token is required."),
 });
 
 export const revokeInvitationValidation = z.object({

@@ -16,7 +16,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function CreateWorkspacePage() {
   const { showToast } = useToast();
-const router=useRouter();
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -37,8 +37,9 @@ const router=useRouter();
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            action:"create-workspace",
-            ...formData}),
+          action: "create-workspace",
+          ...formData,
+        }),
       });
 
       const data = await response.json();
@@ -53,7 +54,6 @@ const router=useRouter();
     onSuccess: (data) => {
       showToast(data.message || "Workspace created successfully!", "success");
       router.push("/dashboard/workspace");
-      
     },
 
     onError: (error) => {
@@ -67,8 +67,6 @@ const router=useRouter();
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--paper)] px-4">
-    
-
       <div className="w-full max-w-md rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] p-8 shadow-sm">
         {/* Heading */}
         <div className="mb-8 text-center">

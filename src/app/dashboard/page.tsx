@@ -1,4 +1,4 @@
-// // import Link from "next/link";
+ import Link from "next/link";
 // // import CreateOrganizationCard from "@/components/dashboard/CreateOrganizationCard";
 // // // Placeholder data — replace with real data fetched via Drizzle
 // // // (Server Component, so this can later become an `await db.query...` call)
@@ -240,9 +240,7 @@
 // //     </div>
 // //   );
 // // }
-"use client";
 
-import { useState } from "react";
 const boards = [
   {
     boardName: "Website Redesign",
@@ -276,22 +274,11 @@ const boards = [
 
 import CreateOrganizationCard from "@/components/dashboard/CreateOrganizationCard";
 import DashboardStats from "@/components/dashboard/DashboardStats";
-import InviteMemberCard from "@/components/inviteMemberCard";
+
 import BoardSummaryCard from "@/components/dashboard/BoardSummaryCard";
-type DashboardAction =
-  | "invite"
-  | "members"
-  | "invitations"
-  | "update"
-  | "delete"
-  | null;
 
 export default function DashboardPage() {
-  const [activeAction, setActiveAction] =
-    useState<DashboardAction>(null);
 
-  const [selectedWorkspaceId, setSelectedWorkspaceId] =
-    useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-[var(--paper)]">
@@ -333,24 +320,54 @@ export default function DashboardPage() {
         
 
 
-        {/* Dashboard Stats */}
-        <div className="mt-8">
-          <DashboardStats
-            selectedWorkspaceId={selectedWorkspaceId}
-            onWorkspaceSelect={setSelectedWorkspaceId}
-            onActionSelect={setActiveAction}
-          />
+      
+
+      
+      
+
+        {/* Boards header */}
+        <div className="mt-12 flex items-center justify-between">
+          <h2 className="text-lg font-medium text-[var(--ink)]">Your boards</h2>
+          {/* <Link
+            href="/dashboard/boards/new"
+            className="rounded-[7px] bg-[var(--ink)] px-4 py-2 text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90"
+          >
+            New board
+          </Link> */}
+        </div> 
+
+        {/* Boards grid */}
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {boards.map((board) => (
+            <Link
+              key={board.id}
+              href={`/dashboard/workspaces/${board.workspace}/boards/${board.id}`}
+              className="group overflow-hidden rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] transition-shadow hover:shadow-lg"
+            >
+              <div
+                className="h-20 w-full transition-transform duration-300 group-hover:scale-[1.03]"
+                style={{ backgroundColor: board.color }}
+              />
+              <div className="px-4 py-3.5">
+                <p className="text-[15px] font-medium text-[var(--ink)]">
+                  {board.title}
+                </p>
+                <p className="mt-0.5 text-[13px] text-[var(--ink-soft)]">
+                  {board.workspace}
+                </p>
+              </div>
+            </Link>
+          ))}
+
+          {/* Create board card */}
+          <Link
+            href="/dashboard/boards/new"
+            className="flex min-h-[128px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--mist)] text-[var(--ink-soft)] transition-colors hover:border-[var(--indigo)] hover:text-[var(--indigo)]"
+          >
+            <span className="text-2xl leading-none">+</span>
+            <span className="text-sm font-medium">Create new board</span>
+          </Link>
         </div>
-
-        {/* Action Card */}
-        {activeAction === "invite" && selectedWorkspaceId && (
-          <div className="mt-8">
-            <InviteMemberCard
-              workspaceId={selectedWorkspaceId}
-            />
-          </div>
-        )}
-
       </div>
     </div>
   );

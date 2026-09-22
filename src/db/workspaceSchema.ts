@@ -1,6 +1,12 @@
-import { pgTable, uuid, varchar, timestamp , pgEnum, text} from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  pgEnum,
+  text,
+} from "drizzle-orm/pg-core";
 import { users } from "@/db/authSchema";
-
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -13,15 +19,16 @@ export const workspace = pgTable("workspace", {
       onDelete: "cascade",
     }),
 
-  createdAt: timestamp("created_at")
-    .defaultNow()
-    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 /* role eum array  */
-export const organizationRoleEnum=pgEnum( 
-   "organization_role",
-  ["owner", "admin", "manager", "member"])
+export const organizationRoleEnum = pgEnum("organization_role", [
+  "owner",
+  "admin",
+  "manager",
+  "member",
+]);
 export const organizationMembers = pgTable("organization_members", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -36,30 +43,27 @@ export const organizationMembers = pgTable("organization_members", {
     .references(() => users.id, {
       onDelete: "cascade",
     }),
-     assignedBy: uuid("assigned_by")
+  assignedBy: uuid("assigned_by")
     .notNull()
     .references(() => users.id, {
       onDelete: "cascade",
     }),
 
-  role: organizationRoleEnum("role")
-    .notNull()
-    .default("member"),
+  role: organizationRoleEnum("role").notNull().default("member"),
 
-  createdAt: timestamp("created_at")
-    .defaultNow()
-    .notNull(),
- 
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const inviteStatusEnum=pgEnum( 
-   "invitation_status",
-  ["ACCEPTED", "REVOKED", "PENDING", ])
-export const invitationSchema=pgTable("invite_members",{
-  id:uuid("id").defaultRandom().notNull().primaryKey(),
+export const inviteStatusEnum = pgEnum("invitation_status", [
+  "ACCEPTED",
+  "REVOKED",
+  "PENDING",
+]);
+export const invitationSchema = pgTable("invite_members", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
   email: text("email").notNull(),
   token: varchar("token", { length: 255 }).notNull().unique(),
-  status:inviteStatusEnum("status").notNull().default("PENDING"),
+  status: inviteStatusEnum("status").notNull().default("PENDING"),
 
   workspaceId: uuid("workspace_id")
     .notNull()
@@ -72,7 +76,6 @@ export const invitationSchema=pgTable("invite_members",{
       onDelete: "cascade",
     }),
   expiresAt: timestamp("expires_at").notNull(),
-  role:organizationRoleEnum("role")
-    .notNull(),
+  role: organizationRoleEnum("role").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+});

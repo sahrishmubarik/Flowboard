@@ -20,7 +20,7 @@ import {
 } from "@/lib/email/verificationEmail";
 
 import {
-  registerSchema,
+  registerRequestSchema,
   validateData,
   verifyEmailSchema,
   loginSchema,
@@ -43,12 +43,12 @@ dotenv.config({ path: ".env.local" });
 import { getCurrentUser } from "@/lib/middleware/auth";
 export async function registerUser(body: RegisterBody) {
   // 1. Validate
-  const validation = validateData(registerSchema, body);
+  const validation = validateData(registerRequestSchema, body);
   if (!validation.success) {
     throw new AppError(validation.error, 400);
   }
 
-  const { name, email, password } = validation.data;
+  const { name, email, password, redirect } = validation.data;
 
   // 2. Check existing user
   const existingUser = await userRepo.findByEmail(email);
@@ -88,8 +88,10 @@ export async function registerUser(body: RegisterBody) {
   });
 
   // 9. Verification URL
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
-
+  // const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
+  const verificationUrl = redirect
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}&redirect=${encodeURIComponent(redirect)}`
+    : `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
   // 10. Send email
   await sendVerificationEmail({
     email: newUser.email,

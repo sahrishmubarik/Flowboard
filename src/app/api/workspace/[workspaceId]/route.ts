@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getWorkspaceById, updateWorkspaceName, deleteWorkspace } from "@/services/workspace";
 import { AppError } from "@/lib/errors/AppError";
+
+
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ workspaceId: string }> }
+  { params }: { params: Promise<{ workspaceId: string }> },
 ) {
   const { workspaceId } = await params;
 

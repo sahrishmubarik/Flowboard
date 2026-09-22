@@ -41,7 +41,7 @@ export const workspaceRepo = {
 
     return workspaceData;
   },
-  /* get workspace by id */ 
+  /* get workspace by id */
   async findById(workspaceId) {
     const [workspaceData] = await db
       .select({

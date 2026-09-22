@@ -3,6 +3,7 @@ export type RegisterBody = {
   name: string;
   email: string;
   password: string;
+  redirect:string | null;
 };
 
 export type LoginBody = {
