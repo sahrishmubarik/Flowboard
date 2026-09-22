@@ -149,7 +149,7 @@ export default function DashboardSidebar() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[270px] flex-col border-r border-[var(--mist)] bg-[var(--paper-raised)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[270px] flex-col border-r border-gray-300 bg-[var(--paper-raised)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -185,6 +185,9 @@ export default function DashboardSidebar() {
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {/* Organization */}
           <div>
+           
+    
+          
             <div className="mb-2 flex items-center justify-between px-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
                 Organization
