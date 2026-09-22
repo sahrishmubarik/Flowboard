@@ -1,24 +1,66 @@
 import { db } from "@/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, countDistinct, inArray} from "drizzle-orm";
 import { workspace } from "@/db/workspaceSchema";
 import { organizationMembers } from "@/db/workspaceSchema";
 export const workspaceRepo = {
   /* get all user workspaces */
-  async listForUser(userId) {
-    return db
-      .select({
-        workspaceId: workspace.id,
-        workspaceName: workspace.workspaceName,
-        role: organizationMembers.role,
-        createdAt: workspace.createdAt,
-      })
-      .from(organizationMembers)
-      .innerJoin(
-        workspace,
-        eq(organizationMembers.organizationId, workspace.id),
-      )
-      .where(eq(organizationMembers.userId, userId));
-  },
+ async listForUser(userId: string) {
+  const workspaces = await db
+    .select({
+      workspaceId: workspace.id,
+      workspaceName: workspace.workspaceName,
+      role: organizationMembers.role,
+      createdAt: workspace.createdAt,
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      workspace,
+      eq(
+        organizationMembers.organizationId,
+        workspace.id,
+      ),
+    )
+    .where(
+      eq(organizationMembers.userId, userId),
+    );
+
+  const workspaceIds = workspaces.map(
+    (item) => item.workspaceId,
+  );
+
+  if (workspaceIds.length === 0) {
+    return {
+      workspace: [],
+      stats: {
+        organizations: 0,
+        members: 0,
+      },
+    };
+  }
+
+  const [memberCount] = await db
+    .select({
+      members: countDistinct(
+        organizationMembers.userId,
+      ),
+    })
+    .from(organizationMembers)
+    .where(
+      inArray(
+        organizationMembers.organizationId,
+        workspaceIds,
+      ),
+    );
+
+  return {
+    workspace: workspaces,
+
+    stats: {
+      organizations: workspaceIds.length,
+      members: Number(memberCount.members),
+    },
+  };
+},
   async getForUser(userId, workspaceId) {
     const [workspaceData] = await db
       .select({
