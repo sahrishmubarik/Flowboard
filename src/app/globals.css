@@ -3,8 +3,9 @@
 :root {
   /* Base surfaces */
   --paper: #eff3f7;
-  --paper-raised: #fefdfd;
-
+  /* --paper-raised: #fefdfd; */
+  
+  --paper-raised: #EAEFEF;
   /* Text */
   --ink: #1b1e2a;
   --ink-soft: #6e727e;
@@ -19,10 +20,12 @@
   --mist: #e8eaf0;
 
   /* Board mockup (dark panel) */
-  --board-ink: #14172a;
+  /* --board-ink: #14172a;
   --board-panel: #1e2238;
-  --board-line: #30354f;
-
+  --board-line: #30354f; */
+ --board-ink: #25343F;
+  --board-panel: #1A3263;
+  --board-line: #30364F;
   /* Card label / tag colors */
   --sage: #7fb77e;
   --coral: #e2725b;
