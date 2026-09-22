@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 const navLinks = [
-  { label: "Product", href: "/product" },
+  { label: "Product", href: "/#board" },
   { label: "Pricing", href: "/#pricing" },
-  { label: "Docs", href: "/docs" },
+  { label: "Docs", href: "/#docs" },
 ];
 
 export default function Header() {

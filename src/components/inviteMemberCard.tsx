@@ -192,20 +192,18 @@ const roles = [
   },
 ];
 
-type InviteMemberCardProps = {
-  workspaceId: string;
-};
 
-export default function InviteMemberCard({
-  workspaceId,
-}: InviteMemberCardProps){
+export default function InviteMemberCard()
+{
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const params = useParams();
 
+  const workspaceId = params.workspaceId as string;
   async function handleInvite() {
     setMessage("");
     setError("");

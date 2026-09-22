@@ -26,7 +26,18 @@ export const userRepo = {
 
     return user;
   },
+  async getUserData(id: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+    })
+    .from(users)
+    .where(eq(users.id, id));
 
+  return user;
+},
   async create({ name, email, password }: CreateUserData) {
     const [row] = await db
       .insert(users)

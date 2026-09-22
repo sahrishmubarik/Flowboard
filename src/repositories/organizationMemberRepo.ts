@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { users } from "@/db/authSchema";
 import { organizationMembers } from "@/db/workspaceSchema";
 import { eq, and, count } from "drizzle-orm";
-
 import type { DbTransaction } from "@/db/types";
 
 export const organizationMemberRepo = {
@@ -40,115 +39,181 @@ export const organizationMemberRepo = {
 
     return member;
   },
+// async getByWorkspaceId(workspaceId: string,
+//   page:number,
+//   limit:number,
+// ) {
+//   const offset=(page-1)*limit;
+//   const members=await db
+//     .select({
+//       id: organizationMembers.id,
+//       userId: organizationMembers.userId,
+//       name: users.name,
+//       email: users.email,
+//       role: organizationMembers.role,
+//       createdAt: organizationMembers.createdAt,
+//     })
+//     .from(organizationMembers)
+//     .innerJoin(
+//       users,
+//       eq(organizationMembers.userId, users.id),
+//     )
+//     .where(
+//       eq(
+//         organizationMembers.organizationId,
+//         workspaceId,
+//       ),
+//     ).limit(limit).offset(offset);
+//     const totalResult=await db 
+//     .select({
+//       count:count(),
+//     }).from(organizationMembers)
+//     .innerJoin(
+//       users,
+//       eq(organizationMembers.organizationId, 
+//         workspaceId)
+//   );
+//   const total=Number(totalResult[0]?.count ?? 0);
+//   return{
+//     members,total,
+//   };
+// },
+async getByWorkspaceId(
+  workspaceId: string,
+  page: number,
+  limit: number,
+) {
+  const offset = (page - 1) * limit;
 
-  async getByWorkspaceId(
-    workspaceId: string,
-    page: number,
-    limit: number,
-  ) {
-    const offset = (page - 1) * limit;
+  const members = await db
+    .select({
+      id: organizationMembers.id,
+      userId: organizationMembers.userId,
+      name: users.name,
+      email: users.email,
+      role: organizationMembers.role,
+      createdAt: organizationMembers.createdAt,
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      users,
+      eq(organizationMembers.userId, users.id),
+    )
+    .where(
+      eq(
+        organizationMembers.organizationId,
+        workspaceId,
+      ),
+    )
+    .limit(limit)
+    .offset(offset);
 
-    const members = await db
-      .select({
-        id: organizationMembers.id,
-        userId: organizationMembers.userId,
-        name: users.name,
-        email: users.email,
-        role: organizationMembers.role,
-        createdAt: organizationMembers.createdAt,
-      })
-      .from(organizationMembers)
-      .innerJoin(
-        users,
-        eq(organizationMembers.userId, users.id),
-      )
-      .where(
+  const totalResult = await db
+    .select({
+      count: count(),
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      users,
+      eq(organizationMembers.userId, users.id),
+    )
+    .where(
+      eq(
+        organizationMembers.organizationId,
+        workspaceId,
+      ),
+    );
+
+  const total = Number(totalResult[0]?.count ?? 0);
+
+  return {
+    members,
+    total,
+  };
+},
+
+// async getByWorkspaceIdAndRole(
+//   workspaceId: string,
+//   role: WorkspaceMemberRole,
+// ) {
+//   return db
+//     .select({
+//       id: organizationMembers.id,
+//       userId: organizationMembers.userId,
+//       name: users.name,
+//       email: users.email,
+//       role: organizationMembers.role,
+//       createdAt: organizationMembers.createdAt,
+//     })
+//     .from(organizationMembers)
+//     .innerJoin(
+//       users,
+//       eq(organizationMembers.userId, users.id),
+//     )
+//     .where(
+//       and(
+//         eq(
+//           organizationMembers.organizationId,
+//           workspaceId,
+//         ),
+//         eq(organizationMembers.role, role),
+//       ),
+//     );
+// }
+async getByWorkspaceIdAndRole(
+  workspaceId: string,
+  role: WorkspaceMemberRole,
+  page: number,
+  limit: number,
+) {
+  const offset = (page - 1) * limit;
+
+  const members = await db
+    .select({
+      id: organizationMembers.id,
+      userId: organizationMembers.userId,
+      name: users.name,
+      email: users.email,
+      role: organizationMembers.role,
+      createdAt: organizationMembers.createdAt,
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      users,
+      eq(organizationMembers.userId, users.id),
+    )
+    .where(
+      and(
         eq(
           organizationMembers.organizationId,
           workspaceId,
         ),
-      )
-      .limit(limit)
-      .offset(offset);
+        eq(organizationMembers.role, role),
+      ),
+    )
+    .limit(limit)
+    .offset(offset);
 
-    const totalResult = await db
-      .select({
-        count: count(),
-      })
-      .from(organizationMembers)
-      .innerJoin(
-        users,
-        eq(organizationMembers.userId, users.id),
-      )
-      .where(
+  const totalResult = await db
+    .select({
+      count: count(),
+    })
+    .from(organizationMembers)
+    .where(
+      and(
         eq(
           organizationMembers.organizationId,
           workspaceId,
         ),
-      );
+        eq(organizationMembers.role, role),
+      ),
+    );
 
-    const total = Number(totalResult[0]?.count ?? 0);
+  const total = Number(totalResult[0]?.count ?? 0);
 
-    return {
-      members,
-      total,
-    };
-  },
-
-  async getByWorkspaceIdAndRole(
-    workspaceId: string,
-    role: "owner" | "admin" | "manager" | "member",
-    page: number,
-    limit: number,
-  ) {
-    const offset = (page - 1) * limit;
-
-    const members = await db
-      .select({
-        id: organizationMembers.id,
-        userId: organizationMembers.userId,
-        name: users.name,
-        email: users.email,
-        role: organizationMembers.role,
-        createdAt: organizationMembers.createdAt,
-      })
-      .from(organizationMembers)
-      .innerJoin(
-        users,
-        eq(organizationMembers.userId, users.id),
-      )
-      .where(
-        and(
-          eq(
-            organizationMembers.organizationId,
-            workspaceId,
-          ),
-          eq(organizationMembers.role, role),
-        ),
-      )
-      .limit(limit)
-      .offset(offset);
-
-    const totalResult = await db
-      .select({
-        count: count(),
-      })
-      .from(organizationMembers)
-      .where(
-        and(
-          eq(
-            organizationMembers.organizationId,
-            workspaceId,
-          ),
-          eq(organizationMembers.role, role),
-        ),
-      );
-
-    const total = Number(totalResult[0]?.count ?? 0);
-
-    return {
-      members,
-      total,
-    };
-  },
+  return {
+    members,
+    total,
+  };
+}
 };

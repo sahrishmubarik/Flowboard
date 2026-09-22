@@ -13,13 +13,24 @@ export async function GET(
     const { workspaceId } = await params;
 
     const { searchParams } = new URL(request.url);
-    const role = searchParams.get("role");
+    const page = Number(
+  searchParams.get("page") ?? "1",
+);
+
+const limit = Number(
+  searchParams.get("limit") ?? "5",
+);
+
+const role = searchParams.get("role");
+   
 
     if (role) {
-      return await getWorkspaceMembersByRole(workspaceId, role);
+      return await getWorkspaceMembersByRole(workspaceId, role, page ,limit);
     }
-
-    return await getWorkspaceMembers(workspaceId);
+  return await getWorkspaceMembers(workspaceId,
+        page,
+        limit,
+    );
   } catch (error) {
     console.error("GET_WORKSPACE_MEMBERS_ERROR:", error);
 

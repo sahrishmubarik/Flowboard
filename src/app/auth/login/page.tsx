@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-
+import { Suspense } from 'react';
 import {
   loginSchema,
   LoginInput,
@@ -95,6 +95,7 @@ onError: (error) => {
     mutation.mutate(data);
   };
     return(
+      <Suspense fallback={<div>Loading form...</div>}>
          <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-md">
 
@@ -221,5 +222,6 @@ onError: (error) => {
                 </form>
                   </div>
                     </div>
+                    </Suspense>
     )
 }

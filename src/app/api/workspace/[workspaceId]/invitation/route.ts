@@ -97,7 +97,7 @@ export async function GET(
        const { searchParams } = new URL(request.url);
 
     const page = Number(searchParams.get("page")) || 1;
-    const limit = Number(searchParams.get("limit")) || 10;
+    const limit = Number(searchParams.get("limit")) || 5;
 
     return await getInvitationStatus(
       workspaceId,

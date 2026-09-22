@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useParams } from "next/navigation";
@@ -28,7 +29,7 @@ type InvitationResponse = {
   };
 };
 
-export default function InvitationCard() {
+export default function InvitationStatusCard() {
   const params = useParams();
 
   const workspaceId = params.workspaceId as string;
@@ -38,8 +39,12 @@ export default function InvitationCard() {
   );
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+
+  // User can change this from dropdown
+  const [limit, setLimit] = useState(5);
+
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -61,8 +66,9 @@ export default function InvitationCard() {
         },
       );
 
-      const data: InvitationResponse =
-        await response.json();
+      const data: InvitationResponse = await response.json();
+
+      console.log("INVITATION API RESPONSE:", data);
 
       if (!response.ok) {
         throw new Error(
@@ -72,6 +78,7 @@ export default function InvitationCard() {
 
       setInvitations(data.invitations);
       setTotalPages(data.pagination.totalPages);
+      setTotal(data.pagination.total);
     } catch (error) {
       console.error(
         "FETCH_INVITATIONS_ERROR:",
@@ -92,7 +99,30 @@ export default function InvitationCard() {
     if (!workspaceId) return;
 
     fetchInvitations();
-  }, [workspaceId, page]);
+  }, [workspaceId, page, limit]);
+
+  const handleLimitChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const newLimit = Number(event.target.value);
+
+    setLimit(newLimit);
+
+    // Jab limit change ho to first page par wapis
+    setPage(1);
+  };
+
+  const handlePrevious = () => {
+    setPage((currentPage) =>
+      Math.max(currentPage - 1, 1),
+    );
+  };
+
+  const handleNext = () => {
+    setPage((currentPage) =>
+      Math.min(currentPage + 1, totalPages),
+    );
+  };
 
   const handleRevoke = async (
     email: string,
@@ -158,122 +188,142 @@ export default function InvitationCard() {
   }
 
   return (
-    <div>
-      {/* Invitation Card */}
-      <div className="rounded-lg border p-6">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold">
-            Invitations
-          </h2>
+  <div className="rounded-lg border p-6">
+    {/* Header */}
+    <div className="mb-6 flex items-start justify-between">
+      <div>
+        <h2 className="text-xl font-semibold">
+          Invitations
+        </h2>
 
-          <p className="mt-1 text-sm text-gray-500">
-            View workspace invitations and their current status.
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-md border border-red-200 p-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {invitations.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No invitations found.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {invitations.map((invitation) => (
-              <div
-                key={invitation.id}
-                className="flex items-center justify-between rounded-lg border p-4"
-              >
-                <div>
-                  <p className="font-medium">
-                    {invitation.email}
-                  </p>
-
-                  <p className="text-sm text-gray-500">
-                    Role: {invitation.role}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      invitation.status === "PENDING"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : invitation.status === "ACCEPTED"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {invitation.status}
-                  </span>
-
-                  {invitation.status === "PENDING" && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleRevoke(
-                          invitation.email,
-                          invitation.id,
-                        )
-                      }
-                      disabled={
-                        revokingId === invitation.id
-                      }
-                      className="rounded-md border border-red-500 px-3 py-1.5 text-sm text-red-600 disabled:opacity-50"
-                    >
-                      {revokingId === invitation.id
-                        ? "Revoking..."
-                        : "Revoke"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="mt-1 text-sm text-gray-500">
+          View workspace invitations and their current status.
+        </p>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              setPage((currentPage) =>
-                Math.max(currentPage - 1, 1),
-              )
-            }
-            disabled={page === 1}
-            className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-          >
-            Previous
-          </button>
+      {/* Records dropdown - TOP RIGHT */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-500">
+          Show
+        </span>
 
-          <span className="text-sm text-gray-500">
-            Page {page} of {totalPages}
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setPage((currentPage) =>
-                Math.min(
-                  currentPage + 1,
-                  totalPages,
-                ),
-              )
-            }
-            disabled={page === totalPages}
-            className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
+        <select
+          value={limit}
+          onChange={(event) => {
+            setLimit(Number(event.target.value));
+            setPage(1);
+          }}
+          className="rounded-md border px-3 py-2 text-sm outline-none"
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+        </select>
+      </div>
     </div>
-  );
+
+    {/* Error */}
+    {error && (
+      <div className="mb-4 rounded-md border border-red-200 p-3 text-sm text-red-600">
+        {error}
+      </div>
+    )}
+
+    {/* Invitations */}
+    {invitations.length === 0 ? (
+      <p className="text-sm text-gray-500">
+        No invitations found.
+      </p>
+    ) : (
+      <div className="space-y-3">
+        {invitations.map((invitation) => (
+          <div
+            key={invitation.id}
+            className="flex items-center justify-between rounded-lg border p-4"
+          >
+            <div>
+              <p className="font-medium">
+                {invitation.email}
+              </p>
+
+              <p className="text-sm text-gray-500">
+                Role: {invitation.role}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  invitation.status === "PENDING"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : invitation.status === "ACCEPTED"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {invitation.status}
+              </span>
+
+              {invitation.status === "PENDING" && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleRevoke(
+                      invitation.email,
+                      invitation.id,
+                    )
+                  }
+                  disabled={revokingId === invitation.id}
+                  className="rounded-md border border-red-500 px-3 py-1.5 text-sm text-red-600 disabled:opacity-50"
+                >
+                  {revokingId === invitation.id
+                    ? "Revoking..."
+                    : "REVOKED"}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Pagination - BOTTOM OF CARD */}
+    {totalPages > 1 && (
+      <div className="mt-6 flex items-center justify-between border-t pt-4">
+        <button
+          type="button"
+          onClick={() =>
+            setPage((currentPage) =>
+              Math.max(currentPage - 1, 1),
+            )
+          }
+          disabled={page === 1}
+          className="rounded-md border px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <span className="text-sm text-gray-500">
+          Page {page} of {totalPages}
+        </span>
+
+        <button
+          type="button"
+          onClick={() =>
+            setPage((currentPage) =>
+              Math.min(
+                currentPage + 1,
+                totalPages,
+              ),
+            )
+          }
+          disabled={page === totalPages}
+          className="rounded-md border px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    )}
+  </div>
+);
 }

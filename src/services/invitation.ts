@@ -244,9 +244,11 @@ export async function revokeInvitation(
       workspaceId,
       email,
     );
- if (!cancelInvitation) {
+
+  if (!cancelInvitation) {
     throw new AppError("Invitation not found.", 404);
   }
+
   return Response.json(
     {
       message: "Invitation revoked successfully",
@@ -257,12 +259,11 @@ export async function revokeInvitation(
     },
   );
 }
-\
 
 export async function getInvitationStatus(
   workspaceId: string,
   page: number,
- limit: number,
+  limit: number,
 ) {
   const user = await getCurrentUser();
 
@@ -285,25 +286,20 @@ export async function getInvitationStatus(
     ["owner", "admin"],
   );
 
-
   const result =
-    await invitationRepo.getInvitationByWorkspaceId(
-      workspaceId,
-      page,
-      limit,
-    );
-
-
+    await invitationRepo.getInvitationByWorkspaceId(workspaceId, page , limit);
+console.log("INVITATION RESULT:", result);
   return Response.json(
     {
       message: "Invitation status fetched successfully",
-         invitations: result.invitations,
+       invitations: result.invitations,
+
       pagination: {
         page,
         limit,
         total: result.total,
         totalPages: Math.ceil(result.total / limit),
-      }
+      },
     },
     {
       status: 200,
