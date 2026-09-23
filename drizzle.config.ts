@@ -12,9 +12,13 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL!, 
   },
+  // migrations: {
+  //   prefix: "timestamp",
+  // },
   migrations: {
-    prefix: "timestamp",
-  },
+  prefix: "timestamp",
+  schema: "drizzle",
+},
   verbose: true,
   strict: true,
 });
