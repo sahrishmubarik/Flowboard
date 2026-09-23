@@ -72,7 +72,7 @@ export default function DashboardOrganizations() {
 
         <Link
           href="/dashboard/workspace/create-workspace"
-          className="rounded-[7px] bg-[var(--ink)] px-4 py-2 text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90"
+          className="rounded-[7px] bg-[var(--board-line)] px-4 py-2 text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90"
         >
           New organization
         </Link>
@@ -82,12 +82,12 @@ export default function DashboardOrganizations() {
             <Link
               key={organization.workspaceId}
               href={`/dashboard/workspace/${organization.workspaceId}`}
-              className="group overflow-hidden rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] transition-shadow hover:shadow-lg"
+              className="group overflow-hidden rounded-xl border border-[var(--mist)] bg-white transition-shadow hover:shadow-lg"
             >
               <div
                 className="h-20 w-full transition-transform duration-300 group-hover:scale-[1.03]"
                 style={{
-                  backgroundColor: "var(--indigo)",
+                  backgroundColor: "var(--board-line)",
                 }}
               />
 
@@ -114,7 +114,7 @@ export default function DashboardOrganizations() {
           {/* Create organization */}
           <Link
             href="/dashboard/workspace/create-workspace"
-            className="flex min-h-[128px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--mist)] text-[var(--ink-soft)] transition-colors hover:border-[var(--indigo)] hover:text-[var(--indigo)]"
+            className="flex min-h-[128px] flex-col items-center justify-center gap-2 rounded-xl bg-white border border-dashed border-[var(--mist)] text-[var(--ink-soft)] transition-colors hover:border-[var(--board-panel)] hover:text-[var(--board-panel)]"
           >
             <span className="text-2xl leading-none">+</span>
 

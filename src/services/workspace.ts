@@ -78,7 +78,7 @@ export async function getWorkspace() {
   return Response.json(
     {
       message: "Fetched workspaces successfully",
-      workspace: workspaceData,
+     ...workspaceData,
     },
 
     {
