@@ -41,7 +41,7 @@ try {
     );
   }
 
-  router.push("/dashboard/workspace");
+  router.push("/dashboard");
 } catch (error) {
   console.error(
     "DELETE_WORKSPACE_ERROR:",
