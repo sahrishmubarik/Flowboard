@@ -5,7 +5,8 @@ type WorkspaceAction =
   | "invite"
   | "update-name"
   | "invitation-status"
-  | "delete";
+  | "delete"
+  | "create-board";
 
 type WorkspaceActionCardProps = {
   onSelect: (action: WorkspaceAction) => void;
@@ -59,6 +60,21 @@ export default function WorkspaceActionCard({
 
           <p className="mt-1 text-xs text-[var(--ink-soft)]">
             Invite someone to this workspace.
+          </p>
+        </button>
+       {/* create new board button */}
+        {/* Invite */}
+        <button
+          type="button"
+          onClick={() => onSelect("create-board")}
+          className="rounded-xl border border-[var(--mist)] p-4 text-left transition hover:border-[var(--indigo)] hover:shadow-sm"
+        >
+          <p className="text-sm font-semibold text-[var(--ink)]">
+           Create Board
+          </p>
+
+          <p className="mt-1 text-xs text-[var(--ink-soft)]">
+           Create a board and manage your tasks.
           </p>
         </button>
 
