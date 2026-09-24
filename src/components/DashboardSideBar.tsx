@@ -1,5 +1,6 @@
 "use client";
-
+import CreateBoard from "@/components/CreateBoardCard";
+import WorkspaceModal from "@/components/WorkspaceModal";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -26,10 +27,22 @@ type CurrentUserResponse = {
   user: CurrentUser;
 };
 
+type Board={
+  id:string;
+  boardName:string;
+  organizationId:string;
+  createdBy:string;
+  createdAt:string;
+  role:"admin"| "owner" |"member" | "manager";
+};
+type BoardResponse = {
+  message: string;
+  boards: Board[];
+};
 export default function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-
+const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuery<WorkspaceResponse>({
@@ -77,7 +90,26 @@ export default function DashboardSidebar() {
     (workspace) => workspace.workspaceId === currentWorkspaceId
   );
 
-
+  const {
+    data:boardData,
+    isLoading:isBoardsLoading,
+    isError:isBoardsError,
+  }=useQuery<BoardResponse>({
+    queryKey:["boards", currentWorkspaceId],
+    enabled:!!currentWorkspaceId,
+    queryFn:async()=>{
+      const response=await fetch(`/api/workspace/${currentWorkspaceId}/board`);
+      const data=await response.json();
+      if(!response.ok){
+        throw new Error(
+          data.message || "Failed to fetch your boards!"
+        )
+      }
+      console.log("Boards get get get frontend response: ", data);
+      return data;
+    },
+  });
+const boards = boardData?.boards ?? [];
   const handleWorkspaceChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -112,6 +144,7 @@ export default function DashboardSidebar() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+    
   };
 
   return (
@@ -284,33 +317,83 @@ export default function DashboardSidebar() {
               </p>
 
               {selectedWorkspace && (
-                <button
-                  type="button"
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
-                  title="Create board"
-                >
-                  +
-                </button>
+                // <button
+                //   type="button"
+                //   className="flex h-6 w-6 items-center justify-center rounded-md text-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
+                //   title="Create board"
+                // >
+                //   +
+                // </button>
+                  <button
+    type="button"
+    onClick={() => setShowCreateBoard(true)}
+    className="flex h-6 w-6 items-center justify-center rounded-md text-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
+    title="Create board"
+  >
+    +
+  </button>
               )}
             </div>
+          {selectedWorkspace ? (
+  isBoardsLoading ? (
+    <div className="space-y-2">
+      <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
+      <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
+    </div>
+  ) : isBoardsError ? (
+    <div className="rounded-lg border border-[var(--coral)]/30 bg-[var(--coral)]/5 px-3 py-2">
+      <p className="text-xs text-[var(--coral)]">
+        Failed to load boards.
+      </p>
+    </div>
+  ) : boards.length === 0 ? (
+    <div className="rounded-lg border border-dashed border-[var(--mist)] px-3 py-4 text-center">
+      <p className="text-xs text-[var(--ink-soft)]">
+        No boards yet
+      </p>
 
-            {selectedWorkspace ? (
-              <div className="rounded-lg border border-dashed border-[var(--mist)] px-3 py-4 text-center">
-                <p className="text-xs text-[var(--ink-soft)]">
-                  No boards yet
-                </p>
+      <p className="mt-1 text-[11px] text-[var(--ink-soft)]/70">
+        Create a board to get started.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-1">
+      {boards.map((board) => (
+        <button
+          key={board.id}
+          type="button"
+          onClick={() =>
+            router.push(
+              `/dashboard/workspace/${selectedWorkspace.workspaceId}/board/${board.id}`
+            )
+          }
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[var(--ink)] transition-colors hover:bg-[var(--mist)]"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--board-panel)] text-xs font-semibold text-white">
+            {board.boardName.charAt(0).toUpperCase()}
+          </span>
 
-                <p className="mt-1 text-[11px] text-[var(--ink-soft)]/70">
-                  Boards will appear here.
-                </p>
-              </div>
-            ) : (
-              <p className="px-2 text-xs text-[var(--ink-soft)]">
-                Select an organization to view its boards.
-              </p>
-            )}
+          <span className="truncate">
+            {board.boardName}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+) : (
+  <p className="px-2 text-xs text-[var(--ink-soft)]">
+    Select an organization to view its boards.
+  </p>
+)}  
+
+  
           </div>
         </div>
+        
+
+
+
+
 
         {/* Bottom user section */}
         <div className="border-t border-[var(--mist)] p-4">
@@ -368,6 +451,18 @@ export default function DashboardSidebar() {
           </button>
         </div>
       </aside>
+
+      {showCreateBoard && selectedWorkspace && (
+  <WorkspaceModal
+    isOpen={showCreateBoard}
+    onClose={() => setShowCreateBoard(false)}
+    title="Create Board"
+  >
+    <CreateBoard
+      onClose={() => setShowCreateBoard(false)}
+    />
+  </WorkspaceModal>
+)}
     </>
   );
 }
