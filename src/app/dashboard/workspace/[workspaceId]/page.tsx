@@ -12,6 +12,7 @@ import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
 import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
 import InvitationCard from "@/components/invitationStatusCard";
 import WorkspaceMemberCard from "@/components/workspaceMemberCard";
+import CreateBoard from "@/components/CreateBoardCard";
 // export default function WorkspacePage() {
 //   const { workspaceId } = useParams<{ workspaceId: string }>();
 
@@ -87,6 +88,14 @@ export default function WorkspacePage() {
         >
           <InviteMemberCard />
         </WorkspaceModal>
+            {/* Create board*/}
+        <WorkspaceModal
+          isOpen={activeAction === "create-board"}
+          onClose={() => setActiveAction(null)}
+          title="Create Board"
+        >
+          <CreateBoard/>
+        </WorkspaceModal>
         {/* Members */}
         <WorkspaceModal
           isOpen={activeAction === "members"}
@@ -124,6 +133,8 @@ export default function WorkspacePage() {
         >
           <DeleteWorkspaceCard />
         </WorkspaceModal>
+  
+
 
       </div>
     </div>
