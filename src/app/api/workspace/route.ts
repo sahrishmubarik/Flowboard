@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors/AppError";
-import { createWorkspace, getWorkspace} from "@/services/workspace";
+import { createWorkspace, getWorkspace } from "@/services/workspace";
 
 export async function POST(request: Request) {
   try {
@@ -11,9 +11,8 @@ export async function POST(request: Request) {
     switch (action) {
       case "create-workspace":
         return await createWorkspace(body);
-  
 
-    default:
+      default:
         return NextResponse.json(
           {
             message: "Page not found",
