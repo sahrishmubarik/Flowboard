@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { getWorkspaceById, updateWorkspaceName, deleteWorkspace } from "@/services/workspace";
+import {
+  getWorkspaceById,
+  updateWorkspaceName,
+  deleteWorkspace,
+} from "@/services/workspace";
 import { AppError } from "@/lib/errors/AppError";
-
 
 export async function GET(
   request: Request,
@@ -49,8 +52,6 @@ export async function DELETE(
 ) {
   try {
     const { workspaceId } = await params;
-
-   
 
     return await deleteWorkspace(workspaceId);
   } catch (error) {
