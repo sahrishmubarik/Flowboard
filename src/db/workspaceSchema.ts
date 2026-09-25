@@ -29,6 +29,10 @@ export const organizationRoleEnum = pgEnum("organization_role", [
   "manager",
   "member",
 ]);
+export const organizationStatusEnum = pgEnum("organization_Repo", [
+  "ACTIVE",
+  "DEACTIVATED",
+]);
 export const organizationMembers = pgTable("organization_members", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -40,9 +44,7 @@ export const organizationMembers = pgTable("organization_members", {
 
   userId: uuid("user_id")
     .notNull()
-    .references(() => users.id, {
-      onDelete: "cascade",
-    }),
+    .references(() => users.id),
   assignedBy: uuid("assigned_by")
     .notNull()
     .references(() => users.id, {
@@ -50,7 +52,7 @@ export const organizationMembers = pgTable("organization_members", {
     }),
 
   role: organizationRoleEnum("role").notNull().default("member"),
-
+  status: organizationStatusEnum("status").notNull().default("ACTIVE"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
