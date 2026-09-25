@@ -6,8 +6,16 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 
-export default function UpdateWorkspaceCard() {
-const [workspaceName, setWorkspaceName] = useState("");
+
+type CreateBoardCardProps = {
+  onClose: () => void;
+};
+
+export default function CreateBoard({
+  onClose,
+}: CreateBoardCardProps)
+{
+const [boardName, setBoardName] = useState("");
 const [isLoading, setIsLoading] = useState(false);
 const [message, setMessage] = useState("");
 const [error, setError] = useState("");
@@ -15,26 +23,26 @@ const [error, setError] = useState("");
 const params = useParams();
 const workspaceId = params.workspaceId as string;
 
-const handleUpdate = async () => {
+const handleCreate = async () => {
 setMessage("");
 setError("");
 
 
-if (!workspaceName.trim()) {
-  setError("Please enter a workspace name.");
+if (!boardName.trim()) {
+  setError("Please enter board name.");
   return;
 }
 
 try {
   setIsLoading(true);
 
-  const response = await fetch(`/api/workspace/${workspaceId}`, {
-    method: "PATCH",
+  const response = await fetch(`/api/workspace/${workspaceId}/board`, {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      workspaceName: workspaceName.trim(),
+      boardName: boardName.trim(),
     }),
   });
 
@@ -42,12 +50,12 @@ try {
 
   if (!response.ok) {
     throw new Error(
-      data.message || "Failed to update workspace.",
+      data.message || "Failed to create board.",
     );
   }
 
-  setMessage("Workspace name updated successfully.");
-  setWorkspaceName("");
+  setMessage("Created board successfully.");
+  setBoardName("");
 } catch (error) {
   setError(
     error instanceof Error
@@ -78,13 +86,15 @@ return ( <section className="w-full max-w-2xl overflow-hidden rounded-2xl border
           className="text-xl font-medium tracking-tight text-[var(--ink)]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Update workspace
+         Create New Board
         </h2>
 
-        <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-          Change the name of your workspace to keep your organization
-          information up to date.
+        
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">
+          Create your board, then start capturing ideas and tracking
+          tasks.
         </p>
+        
       </div>
     </div>
   </div>
@@ -94,18 +104,18 @@ return ( <section className="w-full max-w-2xl overflow-hidden rounded-2xl border
     {/* Workspace Name */}
     <div>
       <label
-        htmlFor="workspaceName"
+        htmlFor="CreateBoard"
         className="mb-2 block text-sm font-medium text-[var(--ink)]"
       >
-        Workspace name
+    Board name
       </label>
 
       <input
-        id="workspaceName"
+        id="boardName"
         type="text"
-        value={workspaceName}
+        value={boardName}
         onChange={(event) => {
-          setWorkspaceName(event.target.value);
+          setBoardName(event.target.value);
           setError("");
           setMessage("");
         }}
@@ -114,7 +124,7 @@ return ( <section className="w-full max-w-2xl overflow-hidden rounded-2xl border
       />
 
       <p className="mt-2 text-xs leading-5 text-[var(--ink-soft)]">
-        Choose a clear name that your workspace members will recognize.
+        Choose a clear name that your board members will recognize.
       </p>
     </div>
 
@@ -141,23 +151,21 @@ return ( <section className="w-full max-w-2xl overflow-hidden rounded-2xl border
 
     {/* Action */}
     <div className="flex items-center justify-between gap-4 border-t border-[var(--mist)] pt-5">
-      <p className="hidden text-xs text-[var(--ink-soft)] sm:block">
-        This will update the name for all workspace members.
-      </p>
 
       <button
         type="button"
-        onClick={handleUpdate}
+        onClick={handleCreate}
         disabled={isLoading}
+    
         className="ml-auto inline-flex min-w-[150px] items-center justify-center rounded-xl bg-[var(--board-panel)] px-5 py-3 text-sm font-medium text-white transition-all hover:bg-[var(--board-ink)] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isLoading ? (
           <>
             <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Updating...
+            Creating...
           </>
         ) : (
-          "Update workspace"
+          "Create Board"
         )}
       </button>
     </div>

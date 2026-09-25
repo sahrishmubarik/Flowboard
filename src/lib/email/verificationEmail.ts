@@ -94,3 +94,34 @@ return sendEmail({
   });
 
 }
+
+export async function sendBoardInvitationEmail ({
+    email,
+    organizationName,
+    boardName,
+    role,
+    boardInviteUrl,
+}: VerificationEmailOptions)
+{
+return sendEmail({
+    to: email,
+    subject: `Flowboard invite from ${organizationName}`,
+    html: `
+      <h1>${organizationName} invitation</h1>
+      <p>
+        Join the ${boardName}   organization  as a ${role}:
+      </p>
+
+   
+
+      <p>
+        Click the  below link  and join the ${boardName} of that ${organizationName} organization :
+      </p>
+
+      <a href="${boardInviteUrl}">
+      accept invite
+      </a>
+    `,
+  });
+
+}

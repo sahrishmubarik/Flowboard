@@ -2,18 +2,19 @@
 
 import { AppError } from "@/lib/errors/AppError";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
-import type { OrganizationRole } from "@/db/workspaceSchema";
+import type { organizationRoleEnum } from "@/db/workspaceSchema";
 
 export async function requireWorkspaceRole(
   userId: string,
   workspaceId: string,
-  allowedRoles: OrganizationRole[],
+  allowedRoles: (typeof organizationRoleEnum.enumValues)[number][],
 ) {
+ 
   const membership = await organizationMemberRepo.findByUserAndWorkspace(
     userId,
     workspaceId,
   );
-
+ 
   if (!membership) {
     throw new AppError("You are not a member of this workspace.", 403);
   }
