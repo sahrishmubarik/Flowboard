@@ -1,10 +1,11 @@
 "use client";
 import CreateBoard from "@/components/CreateBoardCard";
 import WorkspaceModal from "@/components/WorkspaceModal";
+import ChangePasswordCard from "@/components/ChangePassword";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-
+import UserProfileCard from "@/components/UserProfileCard";
 type Workspace = {
   workspaceId: string;
   workspaceName: string;
@@ -27,13 +28,13 @@ type CurrentUserResponse = {
   user: CurrentUser;
 };
 
-type Board={
-  id:string;
-  boardName:string;
-  organizationId:string;
-  createdBy:string;
-  createdAt:string;
-  role:"admin"| "owner" |"member" | "manager";
+type Board = {
+  id: string;
+  boardName: string;
+  organizationId: string;
+  createdBy: string;
+  createdAt: string;
+  role: "admin" | "owner" | "member" | "manager";
 };
 type BoardResponse = {
   message: string;
@@ -42,9 +43,11 @@ type BoardResponse = {
 export default function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-const [showCreateBoard, setShowCreateBoard] = useState(false);
+  const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const { data, isLoading, isError } = useQuery<WorkspaceResponse>({
     queryKey: ["workspaces"],
     queryFn: async () => {
@@ -61,57 +64,55 @@ const [showCreateBoard, setShowCreateBoard] = useState(false);
   });
 
   const {
-  data: userData,
-  isLoading: isUserLoading,
-  isError: isUserError,
-} = useQuery<CurrentUserResponse>({
-  queryKey: ["current-user"],
-  queryFn: async () => {
-    const response = await fetch("/api/auth");
+    data: userData,
+    isLoading: isUserLoading,
+    isError: isUserError,
+  } = useQuery<CurrentUserResponse>({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth");
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Failed to fetch current user",
-      );
-    }
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch current user");
+      }
 
-    return data;
-  },
-});
+      return data;
+    },
+  });
   const workspaces = data?.workspace ?? [];
 
   const currentWorkspaceId = pathname.match(
-    /\/dashboard\/workspace\/([^/]+)/
+    /\/dashboard\/workspace\/([^/]+)/,
   )?.[1];
 
   const selectedWorkspace = workspaces.find(
-    (workspace) => workspace.workspaceId === currentWorkspaceId
+    (workspace) => workspace.workspaceId === currentWorkspaceId,
   );
 
   const {
-    data:boardData,
-    isLoading:isBoardsLoading,
-    isError:isBoardsError,
-  }=useQuery<BoardResponse>({
-    queryKey:["boards", currentWorkspaceId],
-    enabled:!!currentWorkspaceId,
-    queryFn:async()=>{
-      const response=await fetch(`/api/workspace/${currentWorkspaceId}/board`);
-      const data=await response.json();
-      if(!response.ok){
-        throw new Error(
-          data.message || "Failed to fetch your boards!"
-        )
+    data: boardData,
+    isLoading: isBoardsLoading,
+    isError: isBoardsError,
+  } = useQuery<BoardResponse>({
+    queryKey: ["boards", currentWorkspaceId],
+    enabled: !!currentWorkspaceId,
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${currentWorkspaceId}/board`,
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch your boards!");
       }
       console.log("Boards get get get frontend response: ", data);
       return data;
     },
   });
-const boards = boardData?.boards ?? [];
+  const boards = boardData?.boards ?? [];
   const handleWorkspaceChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
+    event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const workspaceId = event.target.value;
 
@@ -144,7 +145,6 @@ const boards = boardData?.boards ?? [];
     } catch (error) {
       console.error("Logout failed:", error);
     }
-    
   };
 
   return (
@@ -218,9 +218,6 @@ const boards = boardData?.boards ?? [];
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {/* Organization */}
           <div>
-           
-    
-          
             <div className="mb-2 flex items-center justify-between px-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
                 Organization
@@ -290,9 +287,7 @@ const boards = boardData?.boards ?? [];
               <div className="rounded-xl border border-[var(--mist)] bg-[var(--paper)] p-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--board-line)] text-sm font-semibold text-white">
-                    {selectedWorkspace.workspaceName
-                      .charAt(0)
-                      .toUpperCase()}
+                    {selectedWorkspace.workspaceName.charAt(0).toUpperCase()}
                   </div>
 
                   <div className="min-w-0">
@@ -324,113 +319,113 @@ const boards = boardData?.boards ?? [];
                 // >
                 //   +
                 // </button>
-                  <button
-    type="button"
-    onClick={() => setShowCreateBoard(true)}
-    className="flex h-6 w-6 items-center justify-center rounded-md text-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
-    title="Create board"
-  >
-    +
-  </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateBoard(true)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
+                  title="Create board"
+                >
+                  +
+                </button>
               )}
             </div>
-          {selectedWorkspace ? (
-  isBoardsLoading ? (
-    <div className="space-y-2">
-      <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
-      <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
-    </div>
-  ) : isBoardsError ? (
-    <div className="rounded-lg border border-[var(--coral)]/30 bg-[var(--coral)]/5 px-3 py-2">
-      <p className="text-xs text-[var(--coral)]">
-        Failed to load boards.
-      </p>
-    </div>
-  ) : boards.length === 0 ? (
-    <div className="rounded-lg border border-dashed border-[var(--mist)] px-3 py-4 text-center">
-      <p className="text-xs text-[var(--ink-soft)]">
-        No boards yet
-      </p>
+            {selectedWorkspace ? (
+              isBoardsLoading ? (
+                <div className="space-y-2">
+                  <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
+                  <div className="h-9 animate-pulse rounded-lg bg-[var(--mist)]" />
+                </div>
+              ) : isBoardsError ? (
+                <div className="rounded-lg border border-[var(--coral)]/30 bg-[var(--coral)]/5 px-3 py-2">
+                  <p className="text-xs text-[var(--coral)]">
+                    Failed to load boards.
+                  </p>
+                </div>
+              ) : boards.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-[var(--mist)] px-3 py-4 text-center">
+                  <p className="text-xs text-[var(--ink-soft)]">
+                    No boards yet
+                  </p>
 
-      <p className="mt-1 text-[11px] text-[var(--ink-soft)]/70">
-        Create a board to get started.
-      </p>
-    </div>
-  ) : (
-    <div className="space-y-1">
-      {boards.map((board) => (
-        <button
-          key={board.id}
-          type="button"
-          onClick={() =>
-            router.push(
-              `/dashboard/workspace/${selectedWorkspace.workspaceId}/board/${board.id}`
-            )
-          }
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[var(--ink)] transition-colors hover:bg-[var(--mist)]"
-        >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--board-panel)] text-xs font-semibold text-white">
-            {board.boardName.charAt(0).toUpperCase()}
-          </span>
+                  <p className="mt-1 text-[11px] text-[var(--ink-soft)]/70">
+                    Create a board to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {boards.map((board) => (
+                    <button
+                      key={board.id}
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/workspace/${selectedWorkspace.workspaceId}/board/${board.id}`,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[var(--ink)] transition-colors hover:bg-[var(--mist)]"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--board-panel)] text-xs font-semibold text-white">
+                        {board.boardName.charAt(0).toUpperCase()}
+                      </span>
 
-          <span className="truncate">
-            {board.boardName}
-          </span>
-        </button>
-      ))}
-    </div>
-  )
-) : (
-  <p className="px-2 text-xs text-[var(--ink-soft)]">
-    Select an organization to view its boards.
-  </p>
-)}  
-
-  
+                      <span className="truncate">{board.boardName}</span>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : (
+              <p className="px-2 text-xs text-[var(--ink-soft)]">
+                Select an organization to view its boards.
+              </p>
+            )}
           </div>
         </div>
-        
-
-
-
-
 
         {/* Bottom user section */}
-        <div className="border-t border-[var(--mist)] p-4">
-          <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--board-panel)] text-sm font-semibold text-[var(--paper)]">
-    {isUserLoading
-      ? "..."
-      : userData?.user?.name?.charAt(0).toUpperCase() || "U"}
-  </div>
+        <div className="relative border-t border-[var(--mist)] p-4">
+          {/* Bottom user section */}
+          <div className="border-t border-[var(--mist)] p-4">
+            <button
+              type="button"
+              onClick={() => setShowUserProfile(true)}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--mist)]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--board-panel)] text-sm font-semibold text-[var(--paper)]">
+                {isUserLoading
+                  ? "..."
+                  : userData?.user?.name?.charAt(0).toUpperCase() || "U"}
+              </div>
 
-  <div className="min-w-0 flex-1">
-    {isUserLoading ? (
-      <>
-        <div className="h-4 w-24 animate-pulse rounded bg-[var(--mist)]" />
-        <div className="mt-1 h-3 w-32 animate-pulse rounded bg-[var(--mist)]" />
-      </>
-    ) : isUserError ? (
-      <p className="text-xs text-[var(--coral)]">
-        Failed to load user
-      </p>
-    ) : (
-      <>
-        <p className="truncate text-sm font-medium text-[var(--ink)]">
-          {userData?.user?.name}
-        </p>
+              <div className="min-w-0 flex-1">
+                {isUserLoading ? (
+                  <>
+                    <div className="h-4 w-24 animate-pulse rounded bg-[var(--mist)]" />
+                    <div className="mt-1 h-3 w-32 animate-pulse rounded bg-[var(--mist)]" />
+                  </>
+                ) : isUserError ? (
+                  <p className="text-xs text-[var(--coral)]">
+                    Failed to load user
+                  </p>
+                ) : (
+                  <>
+                    <p className="truncate text-sm font-medium text-[var(--ink)]">
+                      {userData?.user?.name}
+                    </p>
 
-        <p className="truncate text-xs text-[var(--ink-soft)]">
-          {userData?.user?.email}
-        </p>
-      </>
-    )}
-  </div>
-</div>
+                    <p className="truncate text-xs text-[var(--ink-soft)]">
+                      {userData?.user?.email}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <span className="text-xs text-[var(--ink-soft)]">→</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-2 flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-red transition-colors hover:bg-[var(--mist)] hover:text-[red]"
+            className="mt-2 flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-[var(--coral)] transition-colors hover:bg-[var(--mist)]"
           >
             <svg
               width="17"
@@ -446,23 +441,36 @@ const boards = boardData?.boards ?? [];
               <path d="M15 12H3" />
               <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
             </svg>
-
             Sign out
           </button>
         </div>
       </aside>
 
       {showCreateBoard && selectedWorkspace && (
-  <WorkspaceModal
-    isOpen={showCreateBoard}
-    onClose={() => setShowCreateBoard(false)}
-    title="Create Board"
-  >
-    <CreateBoard
-      onClose={() => setShowCreateBoard(false)}
-    />
-  </WorkspaceModal>
-)}
+        <WorkspaceModal
+          isOpen={showCreateBoard}
+          onClose={() => setShowCreateBoard(false)}
+          title="Create Board"
+        >
+          <CreateBoard onClose={() => setShowCreateBoard(false)} />
+        </WorkspaceModal>
+      )}
+      {/* {showChangePassword && (
+        <WorkspaceModal
+          isOpen={showChangePassword}
+          onClose={() => setShowChangePassword(false)}
+          title="Change Password"
+        >
+          <ChangePasswordCard onClose={() => setShowChangePassword(false)} />
+        </WorkspaceModal> */}
+      {/* )} */}
+
+      <UserProfileCard
+        isOpen={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+        user={userData?.user ?? null}
+        onLogout={handleLogout}
+      />
     </>
   );
 }
