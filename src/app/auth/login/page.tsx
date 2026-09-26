@@ -1,15 +1,17 @@
-// app/auth/verify-email/page.tsx
-import { Suspense } from 'react';
+import { Suspense } from "react";
 
-import LoginCard from '@/components/loginCard';
-export default function login() {
+import LoginCard from "@/components/loginCard";
+
+export default function LoginPage() {
   return (
-    <main >
-      {/* The Suspense boundary fixes the Next.js build error */}
-      <Suspense fallback={<div>Loading login card...</div>}>
-        <LoginCard/>
-      </Suspense>
-    </main>
+    <Suspense
+      fallback={
+        <main className="auth-page flex min-h-screen items-center justify-center">
+          <p className="text-sm text-[var(--ink-soft)]">Loading...</p>
+        </main>
+      }
+    >
+      <LoginCard />
+    </Suspense>
   );
 }
-

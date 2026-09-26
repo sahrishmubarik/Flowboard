@@ -61,7 +61,16 @@ export const resetPasswordSchema = z
     message: "Passwords do not match",
     path: ["confirmPassword"], // Error exactly confirmPassword input point par allocate hoga
   });
-
+export const changePasswordSchema = z
+  .object({
+    password: passwordRule,
+    confirmPassword: z.string().min(1, "confirm password is required"),
+  }) // Password Match Verification Constraint
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"], // Error exactly confirmPassword input point par allocate hoga
+  });
+export type changePasswordInput = z.infer<typeof changePasswordSchema>;
 // Infer TypeScript structural types
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type RegisterRequestInput = z.infer<typeof registerRequestSchema>;

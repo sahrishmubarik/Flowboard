@@ -8,7 +8,8 @@ import {
   forgotPassword,
   resetPassword,
   logoutSession,
-   getCurrentUserDetails
+  getCurrentUserDetails,
+  changePassword,
 } from "@/services/auth";
 
 export async function POST(request: Request) {
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
 
       case "reset-password":
         return await resetPassword(body);
+      case "change-password":
+        return await changePassword(body);
       case "logout":
         return await logoutSession();
 
@@ -63,7 +66,6 @@ export async function POST(request: Request) {
     );
   }
 }
-
 
 export async function GET(request: Request) {
   try {

@@ -26,6 +26,7 @@ import {
   loginSchema,
   resetPasswordSchema,
   forgotPasswordSchema,
+  changePasswordSchema,
 } from "@/lib/validations/auth";
 import jwt from "jsonwebtoken";
 
@@ -36,6 +37,7 @@ import {
   LoginBody,
   ForgotPasswordBody,
   ResetPasswordBody,
+  changePasswordBody,
 } from "@/types/auth";
 import dotenv from "dotenv";
 
@@ -97,7 +99,7 @@ export async function registerUser(body: RegisterBody) {
     email: newUser.email,
     verificationUrl,
   });
-console.log("Verification email send in your gmail.", verificationUrl);
+  console.log("Verification email send in your gmail.", verificationUrl);
   // 11. Return result
   return Response.json(
     {
@@ -352,6 +354,39 @@ export async function resetPassword(body: ResetPasswordBody) {
   return NextResponse.json(
     {
       message: "Password reset successfully. You can now login.",
+    },
+    { status: 200 },
+  );
+}
+
+export async function changePassword(body: changePasswordBody) {
+  const user = getCurrentUser();
+  if (!user) {
+    throw new AppError("User not found ", 403);
+  }
+  // 1. Validate request body
+
+  const validation = validateData(changePasswordSchema, body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error, 400);
+  }
+
+  const { password } = validation.data;
+  const hashedPassword = await passwordHashed(password);
+  const user_id = user.userId;
+
+  await db
+    .update(users)
+    .set({
+      password: hashedPassword,
+    })
+    .where(eq(users.id, user_id));
+
+  // 9. Success
+  return NextResponse.json(
+    {
+      message: "Password change successfully. You can now login.",
     },
     { status: 200 },
   );

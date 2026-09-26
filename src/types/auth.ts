@@ -3,7 +3,7 @@ export type RegisterBody = {
   name: string;
   email: string;
   password: string;
-  redirect:string | null;
+  redirect: string | null;
 };
 
 export type LoginBody = {
@@ -25,5 +25,9 @@ export type ForgotPasswordBody = {
 export type ResetPasswordBody = {
   action: "reset-password";
   token: string;
+  password: string;
+};
+export type changePasswordBody = {
+  action: "change-password";
   password: string;
 };
