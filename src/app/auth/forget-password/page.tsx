@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--board-ink)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-panel)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--indigo-deep)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-ink)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {mutation.isPending ? (
               <>
@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
             Remember your password?{" "}
             <a
               href="/auth/login"
-              className="font-semibold text-[var(--board-ink)]"
+              className="font-semibold text-[var(--indigo-deep)]"
             >
               Login
             </a>
