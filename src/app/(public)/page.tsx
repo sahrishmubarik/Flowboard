@@ -1,362 +1,462 @@
 "use client";
+
 import Link from "next/link";
+
+const inboxItems = [
+  {
+    label: "Design",
+    labelClass: "text-[var(--sky)] bg-[var(--sky)]/[0.12]",
+    title: "Redesign the mobile navigation",
+    description: "Make the board easier to use on smaller screens.",
+  },
+  {
+    label: "Bug",
+    labelClass: "text-[var(--coral)] bg-[var(--coral)]/[0.12]",
+    title: "Fix drag interaction on mobile",
+    description: "Cards occasionally jump when moving between lists.",
+  },
+  {
+    label: "Feature",
+    labelClass: "text-[var(--sage)] bg-[var(--sage)]/[0.12]",
+    title: "Add board member invites",
+    description: "Allow workspace owners to invite people to a board.",
+  },
+];
+
+const workflow = [
+  {
+    number: "01",
+    title: "Capture",
+    description:
+      "Save an idea, task, bug, or reminder the moment it crosses your mind.",
+    accent: "var(--amber)",
+  },
+  {
+    number: "02",
+    title: "Organize",
+    description:
+      "Move the right work from your inbox onto the board when it is ready.",
+    accent: "var(--indigo)",
+  },
+  {
+    number: "03",
+    title: "Ship",
+    description: "Track work through your lists until the card reaches done.",
+    accent: "var(--sage)",
+  },
+];
+
 const features = [
   {
-    title: "Personal inbox",
-    desc: "Jot down a task the second it crosses your mind — no board required yet.",
+    title: "Capture without context",
+    description:
+      "Not every thought needs a board immediately. Keep it in your inbox until you're ready.",
     accent: "border-l-[var(--amber)]",
   },
   {
-    title: "Boards that move",
-    desc: "Drag cards across lists as work progresses, from idea to done.",
+    title: "Turn ideas into work",
+    description:
+      "When a thought becomes actionable, move it onto the right board and list.",
     accent: "border-l-[var(--indigo)]",
   },
   {
-    title: "Attach the details",
-    desc: "Drop files and screenshots straight onto a card, right where the work happens.",
+    title: "Keep everything together",
+    description:
+      "Tasks, bugs, ideas and small reminders stay in one simple place.",
     accent: "border-l-[var(--coral)]",
   },
   {
-    title: "Yours, end to end",
-    desc: "One board, one inbox, no one else to coordinate with — just you and the work.",
+    title: "Built around your workflow",
+    description:
+      "Flowboard gives you a simple path from first thought to finished work.",
     accent: "border-l-[var(--sage)]",
   },
 ];
 
-const steps = [
-  {
-    num: "1",
-    title: "Capture",
-    desc: "Add it to your inbox in seconds, from your desktop or your phone.",
-  },
-  {
-    num: "2",
-    title: "Place it",
-    desc: "When you're ready, drag it onto the right board and list.",
-  },
-  {
-    num: "3",
-    title: "Track it",
-    desc: "Watch it move from to do to done, with the whole team along.",
-  },
-];
-
-const plans = [
-  {
-    plan: "Free",
-    price: "$0",
-    period: "/ forever",
-    desc: "Everything you need to run one board well.",
-    items: [
-      "1 board, unlimited cards",
-      "Personal inbox",
-      "Basic labels and due dates",
-      "50MB file storage",
-    ],
-    cta: "Start free",
-    featured: false,
-  },
-  {
-    plan: "Pro",
-    price: "$6",
-    period: "/ month",
-    desc: "For when one board turns into a handful.",
-    items: [
-      "Unlimited boards",
-      "Personal inbox with quick-add shortcuts",
-      "File attachments up to 25MB each",
-      "5GB file storage",
-      "Priority support",
-    ],
-    cta: "Start free trial",
-    featured: true,
-  },
-  {
-    plan: "Lifetime",
-    price: "$99",
-    period: "/ once",
-    desc: "Pay once, keep every Pro feature for good.",
-    items: [
-      "Everything in Pro",
-      "All future updates included",
-      "No recurring billing, ever",
-      "Supports an independent builder",
-    ],
-    cta: "Buy lifetime access",
-    featured: false,
-  },
-];
-
-export default function FlowboardLanding() {
+export default function InboxPage() {
   return (
-    <div className="bg-[var(--paper)] text-[var(--ink)]">
-      <div className="mx-auto max-w-[1160px] px-6 md:px-10">
-        {/* Hero */}
-        <section className="flex flex-col items-center pb-10 pt-16 text-center">
-          <h1
-            className="max-w-[650px] text-[38px] font-bold leading-[1.08] tracking-tight md:text-[54px]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Where ideas turn into shipped work
-          </h1>
-          <p className="mt-[22px] max-w-[580px] text-lg text-[var(--ink-soft)]">
-            Capture a thought the moment it hits, then drag it onto a board when
-            it&apos;s ready to move.
-          </p>
-          <div className="mt-[34px] flex items-center gap-[22px]">
-            <Link href="/signup" className="btn-primary">
-              Start free
-            </Link>
-            <a href="#board" className="btn-text bg-white">
-              See a board in action
-            </a>
-          </div>
-        </section>
-        {/* Board mockup */}
-        <div
-          id="board"
-          className="mt-14 rounded-2xl bg-[var(--board-ink)] px-6 pb-[52px] pt-11 md:px-11"
-        >
-          <div className="mb-7 flex items-center justify-between">
-            <div className="text-sm font-medium text-[#EDEEF5]">
-              Product launch
-            </div>
-            <div className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[var(--board-line)]" />
-              <span className="h-2 w-2 rounded-full bg-[var(--board-line)]" />
-              <span className="h-2 w-2 rounded-full bg-[var(--board-line)]" />
-            </div>
-          </div>
+    <main className="overflow-hidden bg-[var(--pap)] text-[var(--ink)]">
+      {/* =========================================================
+          HERO
+      ========================================================== */}
+      <section className="fb-container flex flex-col items-center pb-20 pt-20 text-center md:pb-24 md:pt-28">
+        <div className="fb-eyebrow">Personal inbox</div>
 
-          <div className="grid grid-cols-2 gap-[18px] md:grid-cols-4">
-            {/* Inbox column */}
-            <div className="rounded-xl border border-dashed border-[var(--amber)] bg-[var(--amber)]/[0.06] p-3.5">
-              <div className="flex items-center justify-between px-1 pb-3">
-                <span className="text-[13px] font-medium text-[var(--amber)]">
-                  Inbox
-                </span>
-                <span className="text-xs text-[#6B7093]">3</span>
-              </div>
-              {[
-                "Ask design for a new empty state",
-                "Look into export-to-CSV",
-                "Dark mode for the board view",
-              ].map((text) => (
-                <div
-                  key={text}
-                  className="mb-2.5 rounded-[9px] border border-dashed border-[var(--amber)]/35 bg-[var(--amber)]/10 px-[13px] py-3 text-[13px] text-[#F0D8B0]"
-                >
-                  {text}
-                </div>
-              ))}
-            </div>
+        <h1 className="fb-heading mt-3 max-w-[760px] text-[42px] leading-[1.05] md:text-[64px]">
+          Capture it now.
+          <br />
+          Organize it when ready.
+        </h1>
 
-            {/* To do column */}
-            <div className="rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-3.5 boardCard">
-              <div className="flex items-center justify-between px-1 pb-3">
-                <span className="text-[13px] font-medium text-[#C7CAE0] board-col-label">
-                  To do
-                </span>
-                <span className="text-xs text-[#6B7093]">2</span>
-              </div>
-              <div className="mb-2.5 rounded-[9px] border border-[var(--board-line)] bg-[#262A44] px-[13px] py-3 text-[13px] text-[#EDEEF5] board-card-inner">
-                <span
-                  className="mb-2 inline-block rounded px-2 py-0.5 text-[11px] font-medium text-[var(--sky)]"
-                  style={{ backgroundColor: "rgba(95,168,211,0.18)" }}
-                >
-                  Design
-                </span>
-                <br />
-                Redesign card modal
-              </div>
-              <div className="mb-2.5 rounded-[9px] border border-[var(--board-line)] bg-[#262A44] px-[13px] py-3 text-[13px] text-[#EDEEF5] board-card-inner">
-                <span
-                  className="mb-2 inline-block rounded px-2 py-0.5 text-[11px] font-medium text-[var(--coral)]"
-                  style={{ backgroundColor: "rgba(226,114,91,0.18)" }}
-                >
-                  Bug
-                </span>
-                <br />
-                Fix drag lag on mobile
-              </div>
-            </div>
-            {/* In progress column */}
-            <div className="rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-3.5 boardCard">
-              <div className="flex items-center justify-between px-1 pb-3 ">
-                <span className="text-[13px] font-medium text-[#C7CAE0] board-col-label">
-                  In progress
-                </span>
-                <span className="text-xs text-[#6B7093]">2</span>
-              </div>
-              <div className="mb-2.5 rounded-[9px] border border-[var(--board-line)] bg-[#262A44] px-[13px] py-3 text-[13px] text-[#EDEEF5] board-card-inner">
-                <span
-                  className="mb-2 inline-block rounded px-2 py-0.5 text-[11px] font-medium text-[var(--sage)]"
-                  style={{ backgroundColor: "rgba(127,183,126,0.18)" }}
-                >
-                  Feature
-                </span>
-                <br />
-                Personal inbox view
-              </div>
-              <div className="mb-2.5 rounded-[9px] border border-[var(--board-line)] bg-[#262A44] px-[13px] py-3 text-[13px] text-[#EDEEF5] board-card-inner">
-                Attach files to a card
-              </div>
-            </div>
+        <p className="fb-body mt-6 max-w-[610px] text-base leading-7 md:text-lg">
+          Keep ideas, tasks and quick thoughts in one place before they become
+          part of a board. Flowboard gives every piece of work a place to start.
+        </p>
 
-            {/* Done column */}
-            <div className="rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-3.5 boardCard">
-              <div className="flex items-center justify-between px-1 pb-3">
-                <span className="text-[13px] font-medium text-[#C7CAE0] board-col-label">
-                  Done
-                </span>
-                <span className="text-xs text-[#6B7093]">1</span>
-              </div>
-              <div className="mb-2.5 rounded-[9px] border border-[var(--board-line)] bg-[#262A44] px-[13px] py-3 text-[13px] text-[#EDEEF5] board-card-inner">
-                <span
-                  className="mb-2 inline-block rounded px-2 py-0.5 text-[11px] font-medium text-[var(--sage)]"
-                  style={{ backgroundColor: "rgba(127,183,126,0.18)" }}
-                >
-                  Feature
-                </span>
-                <br />
-                Board member invites
-              </div>
-            </div>
-          </div>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+          <Link href="/auth/register" className="fb-btn-primary">
+            Start free
+          </Link>
+
+          <Link href="/auth/login" className="fb-btn-secondary">
+            Log in
+          </Link>
         </div>
+      </section>
 
-        {/* Features */}
-        <section id="docs" className="py-[100px] flex flex-col items-center pb-10 pt-16 text-center">
-          <div className="text-[15px] font-medium text-[var(--indigo)]">
-            What you get
-          </div>
-          <h2
-            className="mt-2.5 max-w-[520px] text-[28px] font-semibold tracking-tight md:text-[34px]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            A place to catch ideas before they need a home
-          </h2>
-
-          <div className="mt-[52px] grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--mist)] bg-white md:grid-cols-2">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className={`border-l-[3px] bg-[var(--paper-raised)] p-[34px] ${f.accent}`}
-              >
-                <h3 className="text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2.5 max-w-[360px] text-[15px] text-[var(--ink-soft)]">
-                  {f.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section className="pb-[100px]  flex flex-col items-center pb-10 pt-16 text-center">
-          <div className="text-[15px] font-medium text-[var(--indigo)]">
-            How it works
-          </div>
-          <h2
-            className="mt-2.5 max-w-[520px] text-[28px] font-semibold tracking-tight md:text-[34px]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            From a passing thought to a finished card
-          </h2>
-
-          <div className="mt-[52px] grid grid-cols-1 gap-8 md:grid-cols-3">
-            {steps.map((s) => (
-              <div
-                key={s.num}
-                className="rounded-2xl bg-white border-[2px] border-gray-200 px-5 py-6 transition-all duration-300  hover:shadow-xl"
-              >
-                <div
-                  className="text-[15px] font-semibold text-[var(--amber-deep)]"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {s.num}
+      {/* =========================================================
+          INBOX PRODUCT PREVIEW
+      ========================================================== */}
+      <section className="fb-container pb-24">
+        <div className="mx-auto max-w-[980px]">
+          {/* Dark product window */}
+          <div className="overflow-hidden rounded-[22px] border border-[var(--board-line)] bg-[var(--board-ink)] shadow-[0_25px_70px_rgba(37,52,63,0.18)]">
+            {/* Window header */}
+            <div className="flex items-center justify-between border-b border-[var(--board-line)] px-5 py-4 md:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
                 </div>
-                <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 text-[15px] text-[var(--ink-soft)]">
-                  {s.desc}
-                </p>
+
+                <span className="hidden text-xs text-[#8d95a9] sm:block">
+                  flowboard / inbox
+                </span>
               </div>
-            ))}
-          </div>
-        </section>
-      </div>
 
-      {/* Pricing */}
-      <section
-        id="pricing"
-        className="border-y border-[var(--mist)] bg-[var(--paper)] py-[100px]"
-      >
-        <div className="mx-auto max-w-[1160px] px-6 md:px-10 flex flex-col items-center pb-10  text-center">
-          <div className="text-[15px] font-medium text-[var(--indigo)]">
-            Pricing
-          </div>
-          <h2
-            className="mt-2.5 max-w-[520px] text-[28px] font-semibold tracking-tight md:text-[34px]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Simple pricing, no seats to count
-          </h2>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-[#b9bfce]">
+                Personal workspace
+              </span>
+            </div>
 
-          <div className="mt-[52px] grid max-w-[1080px] grid-cols-1 gap-6 md:grid-cols-3">
-            {plans.map((p) => (
-              <div
-                key={p.plan}
-                className={`rounded-2xl p-8 px-[30px] ${
-                  p.featured
-                    ? "border-2 border-[var(--board-line)] bg-white"
-                    : "border border-gray-300 bg-white"
-                }`}
-              >
-                <div
-                  className={`text-[15px] font-medium ${
-                    p.featured
-                      ? "text-[var(--board-panel)]"
-                      : "text-[var(--board-ink)]"
-                  }`}
-                >
-                  {p.plan}
-                </div>
-                <div
-                  className="mt-2.5 text-[40px] font-medium tracking-tight"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {p.price}
-                  <span
-                    className="ml-1 text-[15px] font-normal text-[var(--ink-soft)]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    {p.period}
+            {/* Product body */}
+            <div className="grid md:grid-cols-[210px_1fr]">
+              {/* Mini sidebar */}
+              <aside className="hidden border-r border-[var(--board-line)] p-5 md:block">
+                <div className="mb-7 flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--indigo)] text-xs font-bold text-white">
+                    F
+                  </span>
+
+                  <span className="text-sm font-semibold text-white">
+                    Flowboard
                   </span>
                 </div>
-                <div className="mt-2 text-sm text-[var(--ink-soft)]">
-                  {p.desc}
+
+                <div className="space-y-1">
+                  <div className="rounded-lg bg-white/[0.07] px-3 py-2.5 text-xs font-medium text-white">
+                    Inbox
+                  </div>
+
+                  <div className="px-3 py-2.5 text-xs text-[#7f879b]">
+                    Boards
+                  </div>
+
+                  <div className="px-3 py-2.5 text-xs text-[#7f879b]">
+                    Members
+                  </div>
                 </div>
 
-                <ul className="mt-6 flex flex-col gap-3">
-                  {p.items.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm">
-                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--sage)]" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-10">
+                  <p className="px-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[#626b81]">
+                    Workspace
+                  </p>
 
-                <a
-                  href="#"
-                  className="price-btn mt-7 block rounded-lg border border-[var(--mist)] py-[11px] text-center text-sm font-medium text-[var(--ink)]"
-                >
-                  {p.cta}
-                </a>
+                  <div className="mt-3 flex items-center gap-2 px-3">
+                    <span className="h-2 w-2 rounded-full bg-[var(--sage)]" />
+
+                    <span className="text-xs text-[#9299aa]">Personal</span>
+                  </div>
+                </div>
+              </aside>
+
+              {/* Inbox */}
+              <div className="min-w-0 p-5 md:p-8">
+                {/* Inbox heading */}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--amber)]">
+                      Quick capture
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">
+                      Inbox
+                    </h2>
+
+                    <p className="mt-1 text-sm text-[#8f97aa]">
+                      Things waiting for a place on your board.
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs text-[#9ba2b3]">
+                    3 items
+                  </div>
+                </div>
+
+                {/* Add item */}
+                <div className="mt-7 rounded-xl border border-dashed border-[var(--amber)]/50 bg-[var(--amber)]/[0.055] p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--amber)]/30 text-sm text-[var(--amber)]">
+                      +
+                    </span>
+
+                    <span className="text-sm text-[#c5c9d5]">
+                      Add something you don't want to forget...
+                    </span>
+                  </div>
+                </div>
+
+                {/* Inbox items */}
+                <div className="mt-4 space-y-3">
+                  {inboxItems.map((item) => (
+                    <div
+                      key={item.title}
+                      className="group rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#46506e]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <span
+                            className={`inline-flex rounded-md px-2 py-1 text-[10px] font-medium ${item.labelClass}`}
+                          >
+                            {item.label}
+                          </span>
+
+                          <h3 className="mt-2 text-sm font-medium text-[#f0f1f5]">
+                            {item.title}
+                          </h3>
+
+                          <p className="mt-1 text-xs leading-5 text-[#858da1]">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        <span className="mt-1 shrink-0 text-[#5e677d] transition-colors group-hover:text-[var(--amber)]">
+                          →
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom hint */}
+                <div className="mt-6 flex items-center justify-between border-t border-[var(--board-line)] pt-5">
+                  <span className="text-xs text-[#697287]">
+                    Move an item to a board when you're ready.
+                  </span>
+
+                  <span className="hidden text-xs text-[#697287] sm:block">
+                    Inbox
+                  </span>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Caption */}
+          <p className="mt-5 text-center text-xs text-[var(--ink-muted)]">
+            A simple place to catch work before it needs a board.
+          </p>
+        </div>
+      </section>
+
+      {/* =========================================================
+          INTRO
+      ========================================================== */}
+      <section className="border-y border-[var(--mist)] bg-[var(--paper-raised)]">
+        <div className="fb-container py-20 md:py-24">
+          <div className="mx-auto max-w-[700px] text-center">
+            <div className="fb-eyebrow">Why an inbox?</div>
+
+            <h2 className="fb-heading mt-3 text-[32px] leading-tight md:text-[44px]">
+              Not every idea needs a board.
+            </h2>
+
+            <p className="fb-body mt-5 text-base leading-7">
+              Sometimes you just need somewhere to put something before you
+              decide what it means. Your Flowboard inbox gives those thoughts a
+              temporary home without forcing you to organize them too early.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FEATURES
+      ========================================================== */}
+      <section className="fb-container fb-section">
+        <div className="text-center">
+          <div className="fb-eyebrow">Keep work moving</div>
+
+          <h2 className="fb-heading mx-auto mt-3 max-w-[600px] text-[32px] leading-tight md:text-[40px]">
+            A small inbox with a big purpose
+          </h2>
+        </div>
+
+        <div className="mx-auto mt-12 grid max-w-[980px] grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--mist)] md:grid-cols-2">
+          {features.map((feature) => (
+            <article
+              key={feature.title}
+              className={`border-l-[3px] bg-white p-7 md:p-8 ${feature.accent} transition-colors duration-200 hover:bg-[var(--paper-raised)]`}
+            >
+              <h3 className="text-lg font-semibold">{feature.title}</h3>
+
+              <p className="fb-body mt-2.5 max-w-[390px] text-sm leading-6">
+                {feature.description}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================
+          WORKFLOW
+      ========================================================== */}
+      <section className="border-y border-[var(--mist)] bg-[var(--paper-raised)]">
+        <div className="fb-container fb-section">
+          <div className="text-center">
+            <div className="fb-eyebrow">Simple workflow</div>
+
+            <h2 className="fb-heading mt-3 text-[32px] leading-tight md:text-[40px]">
+              From thought to finished work
+            </h2>
+          </div>
+
+          <div className="mx-auto mt-12 grid max-w-[1000px] grid-cols-1 gap-5 md:grid-cols-3">
+            {workflow.map((item) => (
+              <article
+                key={item.number}
+                className="fb-card fb-card-hover relative overflow-hidden p-7"
+              >
+                <span
+                  className="absolute left-0 top-0 h-full w-1"
+                  style={{ backgroundColor: item.accent }}
+                />
+
+                <div className="text-sm font-semibold text-[var(--ink-muted)]">
+                  {item.number}
+                </div>
+
+                <h3 className="fb-heading mt-4 text-[25px]">{item.title}</h3>
+
+                <p className="fb-body mt-3 text-sm leading-6">
+                  {item.description}
+                </p>
+              </article>
             ))}
           </div>
         </div>
       </section>
-    </div>
+
+      {/* =========================================================
+          BOARD TRANSITION
+      ========================================================== */}
+      <section className="fb-container fb-section">
+        <div className="mx-auto grid max-w-[1000px] items-center gap-12 md:grid-cols-[0.9fr_1.1fr]">
+          {/* Text */}
+          <div>
+            <div className="fb-eyebrow">When you're ready</div>
+
+            <h2 className="fb-heading mt-3 text-[32px] leading-tight md:text-[42px]">
+              Your inbox is the starting point.
+            </h2>
+
+            <p className="fb-body mt-5 text-base leading-7">
+              Once an item becomes real work, move it onto a board. From there,
+              lists and cards help you track its progress all the way to done.
+            </p>
+
+            <Link href="/auth/register" className="fb-btn-primary mt-7">
+              Create your Flowboard
+            </Link>
+          </div>
+
+          {/* Mini board */}
+          <div className="rounded-2xl bg-[var(--board-ink)] p-5 shadow-lg md:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <span className="text-sm font-medium text-[#e5e7ed]">
+                Product launch
+              </span>
+
+              <span className="text-xs text-[#687187]">4 cards</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* To do */}
+              <div className="rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#c6cad8]">
+                    To do
+                  </span>
+
+                  <span className="text-[10px] text-[#687187]">2</span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="rounded-lg border border-[var(--board-line)] bg-[#24304f] p-3 text-xs text-[#e8eaf0]">
+                    Redesign card modal
+                  </div>
+
+                  <div className="rounded-lg border border-[var(--board-line)] bg-[#24304f] p-3 text-xs text-[#e8eaf0]">
+                    Export board data
+                  </div>
+                </div>
+              </div>
+
+              {/* Done */}
+              <div className="rounded-xl border border-[var(--board-line)] bg-[var(--board-panel)] p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#c6cad8]">
+                    Done
+                  </span>
+
+                  <span className="text-[10px] text-[#687187]">2</span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="rounded-lg border border-[var(--board-line)] bg-[#24304f] p-3 text-xs text-[#e8eaf0]">
+                    Member invites
+                  </div>
+
+                  <div className="rounded-lg border border-[var(--board-line)] bg-[#24304f] p-3 text-xs text-[#e8eaf0]">
+                    Empty state
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FINAL CTA
+      ========================================================== */}
+      <section className="border-t border-[var(--mist)] bg-[var(--board-ink)]">
+        <div className="fb-container flex flex-col items-center py-20 text-center md:py-24">
+          <div className="text-sm font-medium text-[var(--amber)]">
+            Start with one thought
+          </div>
+
+          <h2
+            className="mt-3 max-w-[650px] text-[34px] font-semibold leading-tight tracking-tight text-white md:text-[48px]"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Give your next idea somewhere to land.
+          </h2>
+
+          <p className="mt-5 max-w-[520px] text-sm leading-6 text-[#9ba2b3] md:text-base">
+            Start free with Flowboard and turn quick thoughts into organized,
+            finished work.
+          </p>
+
+          <Link
+            href="/auth/register"
+            className="mt-8 inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-[var(--board-ink)] transition-all duration-200 hover:bg-[var(--paper)]"
+          >
+            Start free
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
