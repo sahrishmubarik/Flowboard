@@ -3,38 +3,38 @@
 :root {
   /* Base surfaces */
   --paper: #eff3f7;
-  /* --paper-raised: #fefdfd; */
-  
-  --paper-raised: #EAEFEF;
+  --paper-raised: #eaeff0;
+
   /* Text */
   --ink: #1b1e2a;
   --ink-soft: #6e727e;
 
-  /* Brand colors */
+  /* Brand */
   --indigo: #3542cc;
   --indigo-deep: #262fa0;
+
+  /* Dark product surfaces */
+  --board-ink: #25343f;
+  --board-panel: #1a3263;
+  --board-line: #30364f;
+
+  /* Accent */
   --amber: #e8a33d;
   --amber-deep: #b87a1f;
 
-  /* Borders / dividers */
-  --mist: #e8eaf0;
-
-  /* Board mockup (dark panel) */
-  /* --board-ink: #14172a;
-  --board-panel: #1e2238;
-  --board-line: #30354f; */
- --board-ink: #25343F;
-  --board-panel: #1A3263;
-  --board-line: #30364F;
-  /* Card label / tag colors */
+  /* Supporting colors */
   --sage: #7fb77e;
   --coral: #e2725b;
   --sky: #5fa8d3;
 
-  /* Fonts */
+  /* Borders */
+  --mist: #e8eaf0;
+
+  /* Typography */
   --font-display: "Fraunces", serif;
   --font-body: "Inter", -apple-system, sans-serif;
 }
+
 body {
   background: var(--paper);
   color: var(--foreground);
@@ -103,4 +103,1351 @@ body {
   background: var(--board-panel);
   border-color: var(--board-line);
   color: #ffffff;
+}
+
+@import "tailwindcss";
+
+:root {
+  /* =========================================================
+     FLOWBOARD DESIGN TOKENS
+     ========================================================= */
+
+  /* Surfaces */
+  --paper: #eff3f7;
+  --paper-raised: #ffffff;
+  --surface-soft: #f7f8fa;
+
+  /* Text */
+  --ink: #1b1e2a;
+  --ink-soft: #6e727e;
+  --ink-muted: #8b909b;
+  --ink-on-dark: #f8fafc;
+  --ink-on-dark-soft: #a7adba;
+
+  /* Brand */
+  --indigo: #3542cc;
+  --indigo-deep: #262fa0;
+  --indigo-light: #eef2ff;
+
+  /* Accent */
+  --amber: #e8a33d;
+  --amber-deep: #b87a1f;
+
+  /* Dark UI */
+  --board-ink: #141820;
+  --board-panel: #1a3263;
+  --board-line: #30364f;
+
+  /* Borders */
+  --mist: #e8eaf0;
+  --border: #d9dde5;
+  --border-strong: #c9ced8;
+
+  /* Status */
+  --success: #39a96b;
+  --danger: #ef4444;
+  --warning: #e8a33d;
+
+  /* Cards */
+  --sage: #7fb77e;
+  --coral: #e2725b;
+  --sky: #5fa8d3;
+
+  /* Typography */
+  --font-display: "Fraunces", serif;
+  --font-body:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.05);
+  --shadow-md: 0 8px 24px rgb(16 24 40 / 0.08);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+}
+
+/* =========================================================
+   BASE
+   ========================================================= */
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+/* =========================================================
+   AUTH BRAND PANEL
+   ========================================================= */
+
+.auth-brand-panel {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+
+  background: var(--board-ink);
+  color: var(--ink-on-dark);
+}
+
+/* =========================================================
+   BRAND HEADER
+   ========================================================= */
+
+.auth-brand-header {
+  padding: 12px 74px;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo-mark {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 6px;
+
+  background: #356be8;
+  color: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.brand-logo-name {
+  color: #ffffff;
+
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* =========================================================
+   BRAND CONTENT
+   ========================================================= */
+
+.auth-brand-content {
+  display: flex;
+  flex: 1;
+  align-items: center;
+
+  padding: 40px 74px 90px;
+}
+
+.auth-brand-copy {
+  width: 100%;
+  max-width: 610px;
+}
+
+/* =========================================================
+   EYEBROW
+   ========================================================= */
+
+.auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 12px;
+
+  border-radius: 999px;
+
+  background: rgba(53, 107, 232, 0.18);
+
+  color: #9dbbff;
+
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.auth-brand-title {
+  margin-top: 26px;
+
+  color: #f8fafc;
+
+  font-family: var(--font-body);
+  font-size: clamp(38px, 3.2vw, 48px);
+  font-weight: 650;
+
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+/* =========================================================
+   DESCRIPTION
+   ========================================================= */
+
+.auth-brand-description {
+  max-width: 590px;
+
+  margin-top: 22px;
+
+  color: #a7adba;
+
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 400;
+
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* =========================================================
+   AUTH BOARD PREVIEW
+   ========================================================= */
+
+.auth-board {
+  width: 100%;
+
+  margin-top: 30px;
+  padding: 16px;
+
+  border: 1px solid var(--board-line);
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.035);
+
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+/* =========================================================
+   BOARD GRID
+   ========================================================= */
+
+.auth-board-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+/* =========================================================
+   COLUMN
+   ========================================================= */
+
+.auth-board-column {
+  min-width: 0;
+}
+
+.auth-board-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+  padding: 0 2px;
+
+  color: #a7adba;
+
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   TASK LIST
+   ========================================================= */
+
+.auth-board-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* =========================================================
+   TASK CARD
+   ========================================================= */
+
+.auth-task {
+  position: relative;
+
+  min-height: 54px;
+
+  padding: 10px 11px;
+
+  overflow: hidden;
+
+  border-radius: 6px;
+
+  background: #f8f9fb;
+
+  color: var(--ink);
+
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.auth-task:hover {
+  transform: translateY(-1px);
+
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* =========================================================
+   TASK COLOR STRIP
+   ========================================================= */
+
+.auth-task::before {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 3px;
+
+  content: "";
+}
+
+.auth-task-task::before {
+  background: var(--indigo);
+}
+
+.auth-task-bug::before {
+  background: var(--coral);
+}
+
+/* =========================================================
+   TASK TOP
+   ========================================================= */
+
+.auth-task-top {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+}
+
+/* =========================================================
+   TASK ICON
+   ========================================================= */
+
+.auth-task-icon {
+  display: inline-flex;
+
+  width: 12px;
+  height: 12px;
+
+  align-items: center;
+  justify-content: center;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: var(--indigo);
+}
+
+.auth-task-bug .auth-task-icon {
+  color: var(--coral);
+}
+
+/* =========================================================
+   TASK ID
+   ========================================================= */
+
+.auth-task-id {
+  color: var(--indigo);
+
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   TASK TITLE
+   ========================================================= */
+
+.auth-task-title {
+  margin-top: 5px;
+
+  color: #252936;
+
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 450;
+
+  line-height: 1.25;
+}
+@media (max-width: 1100px) {
+  .auth-brand-header {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  .auth-brand-content {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  .auth-brand-title {
+    font-size: 40px;
+  }
+
+  .auth-brand-description {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-brand-panel {
+    display: none;
+  }
+}
+/* =========================================
+           RESET PASSWORD PAGE
+        ========================================= */
+
+.reset-page {
+  min-height: calc(100vh - 65px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 48px 20px;
+
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* =========================================
+           CARD
+        ========================================= */
+
+.reset-card {
+  width: 100%;
+  max-width: 440px;
+
+  padding: 36px;
+
+  border: 1px solid var(--mist);
+  border-radius: 16px;
+
+  background: var(--paper-raised);
+
+  box-shadow: 0 8px 30px rgba(37, 52, 63, 0.06);
+}
+
+/* =========================================
+           HEADING
+        ========================================= */
+
+.reset-heading {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.reset-heading h1 {
+  margin: 0;
+
+  color: var(--ink);
+
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.reset-heading p {
+  max-width: 340px;
+
+  margin: 9px auto 0;
+
+  color: var(--ink-soft);
+
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================================
+           INVALID TOKEN
+        ========================================= */
+
+.reset-alert {
+  margin-bottom: 20px;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(226, 114, 91, 0.3);
+
+  border-radius: 8px;
+
+  background: rgba(226, 114, 91, 0.06);
+
+  color: var(--coral);
+
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reset-alert p {
+  margin: 0;
+}
+
+/* =========================================
+           FORM
+        ========================================= */
+
+.reset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.form-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--ink);
+
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* =========================================
+           PASSWORD INPUT
+        ========================================= */
+
+.password-wrapper {
+  position: relative;
+}
+
+.form-input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 12px 44px 12px 15px;
+
+  border: 1px solid var(--mist);
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: var(--ink);
+
+  font-family: var(--font-body);
+  font-size: 14px;
+
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.form-input::placeholder {
+  color: #9a9da6;
+}
+
+.form-input:hover {
+  border-color: #d2d5dc;
+}
+
+.form-input:focus {
+  border-color: var(--indigo);
+
+  box-shadow: 0 0 0 3px rgba(53, 66, 204, 0.09);
+}
+
+.form-input.input-error {
+  border-color: var(--coral);
+}
+
+.form-input.input-error:focus {
+  border-color: var(--coral);
+
+  box-shadow: 0 0 0 3px rgba(226, 114, 91, 0.1);
+}
+
+/* =========================================
+           PASSWORD EYE
+        ========================================= */
+
+.password-toggle {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: 44px;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  color: var(--ink-soft);
+
+  transition: color 150ms ease;
+}
+
+.password-toggle:hover {
+  color: var(--ink);
+}
+
+/* =========================================
+           ERROR
+        ========================================= */
+
+.form-error {
+  margin: 6px 0 0;
+
+  color: var(--coral);
+
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* =========================================
+           SUBMIT
+        ========================================= */
+
+.reset-submit {
+  width: 100%;
+
+  min-height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  margin-top: 2px;
+
+  padding: 11px 18px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: var(--board-panel);
+  color: #ffffff;
+
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease,
+    opacity 150ms ease;
+}
+
+.reset-submit:hover:not(:disabled) {
+  background: var(--board-ink);
+}
+
+.reset-submit:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.reset-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================================
+           FOOTER
+        ========================================= */
+
+.reset-footer {
+  margin: 0;
+
+  text-align: center;
+
+  color: var(--ink-soft);
+
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.reset-footer a {
+  color: var(--board-panel);
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition: color 150ms ease;
+}
+
+.reset-footer a:hover {
+  color: var(--indigo);
+}
+
+/* =========================================
+           RESPONSIVE
+        ========================================= */
+
+@media (max-width: 640px) {
+  .reset-page {
+    min-height: calc(100vh - 60px);
+    padding: 32px 16px;
+  }
+
+  .reset-card {
+    padding: 28px 22px;
+    border-radius: 14px;
+  }
+
+  .reset-heading h1 {
+    font-size: 27px;
+  }
+
+  .reset-heading {
+    margin-bottom: 26px;
+  }
+}
+
+@layer components {
+  /* --------------------------------
+     Site Header
+  -------------------------------- */
+
+  .site-header {
+    @apply border-b bg-[var(--paper)];
+    border-color: var(--mist);
+  }
+
+  .site-header-inner {
+    @apply mx-auto flex max-w-[1160px] items-center justify-between px-6 py-4 md:px-10;
+  }
+
+  @layer components {
+    /* =========================================================
+     FLOWBOARD FOOTER
+  ========================================================== */
+
+    .site-footer {
+      border-top: 1px solid var(--mist);
+      background: var(--paper-raised);
+    }
+
+    .site-footer-inner {
+      @apply mx-auto flex max-w-[1160px] flex-col justify-between gap-10 px-6 py-14 md:flex-row md:px-10 md:py-16;
+    }
+
+    /* Brand */
+
+    .footer-brand {
+      @apply max-w-[310px];
+    }
+
+    .footer-description {
+      @apply mt-4 text-sm leading-6;
+      color: var(--ink-soft);
+      font-family: var(--font-body);
+    }
+
+    /* Navigation */
+
+    .footer-nav {
+      @apply flex flex-wrap items-start gap-x-7 gap-y-3 md:items-center;
+    }
+
+    .footer-link {
+      @apply text-sm transition-colors duration-150;
+      color: var(--ink-soft);
+    }
+
+    .footer-link:hover {
+      color: var(--ink);
+    }
+
+    /* Bottom */
+
+    .site-footer-bottom {
+      @apply mx-auto flex max-w-[1160px] flex-col gap-3 border-t px-6 py-5 text-xs md:flex-row md:items-center md:justify-between md:px-10;
+      border-color: var(--mist);
+      color: var(--ink-soft);
+      font-family: var(--font-body);
+    }
+
+    .footer-meta {
+      @apply flex items-center gap-5;
+    }
+
+    .footer-meta a {
+      @apply transition-colors duration-150;
+    }
+
+    .footer-meta a:hover {
+      color: var(--ink);
+    }
+  }
+  /* --------------------------------
+     Brand
+  -------------------------------- */
+
+  .brand {
+    @apply flex items-center gap-2.5;
+  }
+
+  .brand-mark {
+    @apply flex h-8 w-8 items-center justify-center rounded-[7px] text-sm font-semibold text-white;
+    background: var(--indigo);
+    font-family: var(--font-body);
+  }
+
+  .brand-name {
+    @apply text-[21px] font-semibold tracking-tight;
+    color: var(--ink);
+    font-family: var(--font-display);
+  }
+
+  /* --------------------------------
+     Header Navigation
+  -------------------------------- */
+
+  .header-link {
+    @apply text-[15px] transition-colors duration-150;
+    color: var(--ink-soft);
+  }
+
+  .header-link:hover {
+    color: var(--ink);
+  }
+
+  .header-cta {
+    @apply rounded-[8px] px-[18px] py-[9px] text-sm font-medium text-white transition-all duration-150;
+    background: var(--board-panel);
+  }
+
+  .header-cta:hover {
+    background: var(--board-ink);
+  }
+
+  .header-cta:active {
+    transform: scale(0.98);
+  }
+
+  /* --------------------------------
+     Mobile Navigation
+  -------------------------------- */
+
+  .mobile-header-link {
+    @apply rounded-lg px-3 py-2.5 text-[15px] transition-colors duration-150;
+    color: var(--ink-soft);
+  }
+
+  .mobile-header-link:hover {
+    background: var(--paper-raised);
+    color: var(--ink);
+  }
+}
+
+@layer components {
+  /* =========================================================
+     FLOWBOARD LAYOUT
+  ========================================================== */
+
+  .fb-container {
+    @apply mx-auto w-full max-w-[1160px] px-6 md:px-10;
+  }
+
+  .fb-section {
+    @apply py-20 md:py-24;
+  }
+
+  /* =========================================================
+     TYPOGRAPHY
+  ========================================================== */
+
+  .fb-eyebrow {
+    @apply text-[14px] font-medium;
+    color: var(--indigo);
+  }
+
+  .fb-heading {
+    font-family: var(--font-display);
+    @apply font-semibold tracking-tight;
+  }
+
+  .fb-body {
+    font-family: var(--font-body);
+    color: var(--ink-soft);
+  }
+
+  /* =========================================================
+     CARDS
+  ========================================================== */
+
+  .fb-card {
+    @apply rounded-2xl border bg-white;
+    border-color: var(--mist);
+  }
+
+  .fb-card-hover {
+    @apply transition-all duration-300;
+  }
+
+  .fb-card-hover:hover {
+    @apply -translate-y-0.5 shadow-lg;
+    border-color: var(--board-line);
+  }
+
+  /* =========================================================
+     BUTTONS
+  ========================================================== */
+
+  .fb-btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200;
+    background: var(--board-panel);
+    color: white;
+  }
+
+  .fb-btn-primary:hover {
+    background: var(--board-ink);
+    transform: translateY(-1px);
+  }
+
+  .fb-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border  px-5 py-2.5 text-sm font-medium transition-all duration-200;
+    border-color: var(--mist);
+    background: var(--board-panel);
+    color: white;
+  }
+
+  .fb-btn-secondary:hover {
+    background: var(--board-ink);
+    border-color: var(--board-ink);
+  }
+
+  /* =========================================================
+     INPUTS
+  ========================================================== */
+
+  .fb-input {
+    @apply w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition-all duration-200;
+    border-color: var(--mist);
+    color: var(--ink);
+  }
+
+  .fb-input::placeholder {
+    color: var(--ink-muted);
+  }
+
+  .fb-input:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 2px rgba(53, 66, 204, 0.1);
+  }
+
+  /* =========================================================
+     PRODUCT SURFACES
+  ========================================================== */
+
+  .fb-dark-panel {
+    background: var(--board-ink);
+    border-color: var(--board-line);
+  }
+
+  .fb-board-panel {
+    background: var(--board-panel);
+    border-color: var(--board-line);
+  }
+}
+
+/* =========================================================
+   REUSABLE FLOWBOARD COMPONENT CLASSES
+   ========================================================= */
+
+@layer components {
+  /* ---------- Navigation ---------- */
+
+  .nav-link {
+    @apply text-[15px] transition-colors;
+    color: var(--ink-soft);
+  }
+
+  .nav-link:hover {
+    color: var(--ink);
+  }
+
+  /* ---------- Buttons ---------- */
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+      rounded-[var(--radius-md)]
+      px-[18px] py-[10px]
+      text-sm font-medium
+      transition-all duration-200;
+
+    background: var(--board-panel);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: var(--board-ink);
+  }
+
+  .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .btn-brand {
+    @apply inline-flex w-full items-center justify-center
+      rounded-[var(--radius-md)]
+      py-3
+      text-sm font-semibold
+      transition-all duration-200;
+
+    background: var(--indigo);
+    color: #ffffff;
+  }
+
+  .btn-brand:hover {
+    background: #2f3bc0;
+  }
+
+  .btn-brand:active {
+    transform: scale(0.99);
+  }
+
+  .btn-text {
+    @apply inline-flex items-center justify-center
+      rounded-[var(--radius-md)]
+      px-[18px] py-[10px]
+      text-sm font-medium
+      transition-all duration-200;
+
+    background: #ffffff;
+    color: var(--ink);
+    border: 1px solid var(--mist);
+  }
+
+  .btn-text:hover {
+    background: var(--surface-soft);
+    border-color: var(--border-strong);
+  }
+
+  /* ---------- Cards ---------- */
+
+  .fb-card {
+    @apply rounded-[var(--radius-lg)] border bg-white;
+
+    border-color: var(--mist);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ---------- Inputs ---------- */
+
+  .fb-input {
+    @apply w-full rounded-[var(--radius-md)]
+      border bg-white
+      px-4 py-2.5
+      text-sm outline-none
+      transition-all duration-150;
+
+    border-color: var(--border);
+    color: var(--ink);
+  }
+
+  .fb-input::placeholder {
+    color: var(--ink-muted);
+  }
+
+  .fb-input:hover {
+    border-color: var(--border-strong);
+  }
+
+  .fb-input:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 2px rgb(53 66 204 / 0.08);
+  }
+
+  .fb-input-error {
+    border-color: var(--danger);
+  }
+
+  .fb-input-error:focus {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 2px rgb(239 68 68 / 0.08);
+  }
+
+  /* ---------- Labels ---------- */
+
+  .fb-label {
+    @apply mb-1.5 block text-sm font-medium;
+    color: var(--ink);
+  }
+
+  /* ---------- Error ---------- */
+
+  .fb-error {
+    @apply mt-1.5 text-xs font-medium;
+    color: var(--danger);
+  }
+
+  /* ---------- Auth ---------- */
+
+  .auth-page {
+    @apply min-h-screen w-full;
+    background: var(--paper-raised);
+  }
+
+  .auth-layout {
+    @apply grid min-h-screen;
+    grid-template-columns: 42% 58%;
+  }
+
+  .auth-brand-panel {
+    @apply relative flex min-h-screen flex-col;
+    background: var(--board-ink);
+    color: var(--ink-on-dark);
+  }
+
+  .auth-form-panel {
+    @apply flex min-h-screen items-center justify-center;
+    background: var(--paper-raised);
+  }
+
+  .auth-form-container {
+    @apply w-full;
+    max-width: 450px;
+  }
+
+  /* ---------- Brand ---------- */
+
+  .brand-logo {
+    @apply flex items-center gap-2;
+  }
+
+  .brand-logo-mark {
+    @apply flex h-7 w-7 items-center justify-center rounded-[6px]
+      text-sm font-bold text-white;
+    background: #356be8;
+  }
+
+  .brand-logo-name {
+    @apply text-[19px] font-semibold tracking-[-0.02em];
+    color: var(--ink-on-dark);
+  }
+
+  /* ---------- Auth Typography ---------- */
+
+  .auth-eyebrow {
+    @apply inline-flex items-center rounded-full
+      px-3 py-1
+      text-xs font-medium;
+    background: rgb(53 107 232 / 0.18);
+    color: #9dbbff;
+  }
+
+  .auth-brand-title {
+    @apply mt-6 text-4xl font-semibold leading-[1.08] tracking-[-0.035em];
+    color: var(--ink-on-dark);
+  }
+
+  .auth-brand-description {
+    @apply mt-5 max-w-[600px] text-[17px] leading-6;
+    color: var(--ink-on-dark-soft);
+  }
+
+  .auth-title {
+    @apply text-[30px] font-semibold leading-tight tracking-[-0.025em];
+    color: var(--ink);
+  }
+
+  .auth-subtitle {
+    @apply mt-2 text-[16px] leading-6;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Social Login ---------- */
+
+  .auth-social-grid {
+    @apply mt-5 grid grid-cols-2 gap-3;
+  }
+
+  .auth-social-button {
+    @apply flex h-11 items-center justify-center gap-2
+      rounded-[var(--radius-md)]
+      border bg-white
+      text-sm font-medium
+      transition-all duration-150;
+
+    border-color: var(--border);
+    color: var(--ink);
+  }
+
+  .auth-social-button:hover {
+    background: var(--surface-soft);
+    border-color: var(--border-strong);
+  }
+
+  /* ---------- Divider ---------- */
+
+  .auth-divider {
+    @apply my-6 flex items-center gap-3 text-xs;
+    color: var(--ink-muted);
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: var(--mist);
+  }
+
+  /* ---------- Board Card Mockup ---------- */
+
+  .auth-board {
+    @apply mt-6 rounded-[14px] border p-4;
+    border-color: var(--board-line);
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  .auth-board-grid {
+    @apply grid grid-cols-3 gap-3;
+  }
+
+  .auth-board-column-title {
+    @apply mb-2 text-xs font-medium;
+    color: #a7adba;
+  }
+
+  .auth-task {
+    @apply rounded-md bg-white p-3 text-xs;
+    color: var(--ink);
+  }
+
+  .auth-task + .auth-task {
+    @apply mt-2;
+  }
+
+  .auth-task-id {
+    @apply text-[11px] font-medium;
+    color: var(--indigo);
+  }
+
+  .auth-task-title {
+    @apply mt-1 leading-4;
+  }
+
+  /* ---------- Checkbox ---------- */
+
+  .fb-checkbox {
+    @apply h-4 w-4 cursor-pointer rounded;
+    accent-color: var(--indigo);
+  }
+
+  /* ---------- Forgot password ---------- */
+
+  .auth-forgot {
+    @apply text-sm font-medium transition-colors;
+    color: var(--indigo);
+  }
+
+  .auth-forgot:hover {
+    color: var(--indigo-deep);
+  }
+}
+
+/* =========================================================
+   EXISTING BOARD CARD
+   ========================================================= */
+
+.boardCard {
+  transition: border-color 0.2s ease;
+}
+
+.boardCard:hover {
+  @apply border-dashed;
+  border-color: var(--amber);
+  background: rgb(232 163 61 / 0.06);
+}
+
+.boardCard:hover .board-col-label {
+  color: var(--amber-deep);
+}
+
+.boardCard:hover .board-card-inner {
+  @apply border-dashed;
+  border-color: var(--amber);
+  background: rgb(232 163 61 / 0.06);
+}
+
+/* =========================================================
+   PRICE BUTTON
+   ========================================================= */
+
+.price-btn {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.price-btn:hover {
+  background: var(--board-panel);
+  border-color: var(--board-line);
+  color: #ffffff;
+}
+
+/* =========================================================
+   RESPONSIVE AUTH
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand-panel {
+    display: none;
+  }
+
+  .auth-form-panel {
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+
+  .auth-form-container {
+    max-width: 450px;
+  }
 }
