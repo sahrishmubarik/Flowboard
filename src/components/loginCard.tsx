@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +10,13 @@ import { useToast } from "@/components/ui/ToastProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faEye,
+  faEyeSlash,
+  faEnvelope,
+  faLock,
+  faArrowRight,
+} from "@fortawesome/free-solid-svg-icons";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -31,9 +36,7 @@ export default function LoginCard() {
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-
     mode: "onBlur",
-
     defaultValues: {
       email: "",
       password: "",
@@ -65,8 +68,6 @@ export default function LoginCard() {
     onSuccess: (data) => {
       showToast(data.message || "Login successful.", "success");
 
-      // Return to invitation page if login
-      // started from an invitation.
       if (redirect) {
         router.replace(redirect);
       } else {
@@ -88,117 +89,236 @@ export default function LoginCard() {
     : "/auth/register";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-md">
-        <div className="mb-8 text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
-            Get started with Flowboard
-          </h2>
-        </div>
+    <main className="auth-page">
+      <div className="auth-layout">
+        <section className="auth-brand-panel">
+          {/* Logo */}
+          <div className="px-8 py-3">
+            <a href="/" className="brand-logo">
+              <span className="brand-logo-mark">F</span>
 
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          {/* Email */}
-          <div>
-            <label className="mb-1 block text-xs font-medium tracking-wider text-zinc-600">
-              Email Address
-            </label>
-
-            <input
-              type="email"
-              {...register("email")}
-              className={`w-full rounded-lg border px-4 py-2.5 text-sm text-zinc-900 outline-none transition ${
-                errors.email
-                  ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  : "border-zinc-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-              }`}
-              placeholder="alex@example.com"
-            />
-
-            {errors.email && (
-              <p className="mt-1 text-xs font-medium text-red-500">
-                {errors.email.message}
-              </p>
-            )}
+              <span className="brand-logo-name">Flowboard</span>
+            </a>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="mb-1 block text-xs font-medium tracking-wider text-zinc-600">
-              Password
-            </label>
+          {/* Brand Content */}
 
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                className={`w-full rounded-lg border py-2.5 pl-4 pr-10 text-sm text-zinc-900 outline-none transition ${
-                  errors.password
-                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                    : "border-zinc-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                }`}
-                placeholder="••••••••"
-              />
+          <div className="flex flex-1 items-center px-8 pb-12">
+            <div className="w-full max-w-[610px]">
+              <span className="auth-eyebrow">Welcome back</span>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-zinc-400 hover:text-zinc-600"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                <FontAwesomeIcon
-                  icon={showPassword ? faEyeSlash : faEye}
-                  className="h-4 w-4"
-                />
-              </button>
+              <h1 className="auth-brand-title">Your sprint is waiting.</h1>
+
+              <p className="auth-brand-description">
+                Pick up exactly where you left off — every issue, comment and
+                task stays organized in one place.
+              </p>
+
+              {/* Board preview */}
+
+              <div className="auth-board">
+                <div className="auth-board-grid">
+                  {/* Open */}
+
+                  <div>
+                    <p className="auth-board-column-title">Open&nbsp; 6</p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-151</p>
+
+                      <p className="auth-task-title">Breadcrumb navigation</p>
+                    </div>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-155</p>
+
+                      <p className="auth-task-title">
+                        Footer misaligned on Safari
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* In progress */}
+
+                  <div>
+                    <p className="auth-board-column-title">
+                      In Progress&nbsp; 5
+                    </p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-142</p>
+
+                      <p className="auth-task-title">Responsive navbar</p>
+                    </div>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-147</p>
+
+                      <p className="auth-task-title">SVG icon sprite</p>
+                    </div>
+                  </div>
+
+                  {/* Testing */}
+
+                  <div>
+                    <p className="auth-board-column-title">Testing&nbsp; 2</p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-133</p>
+
+                      <p className="auth-task-title">
+                        Checkout fails on empty coupon
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            RIGHT LOGIN PANEL
+        ====================================================== */}
+
+        <section className="auth-form-panel">
+          <div className="auth-form-container">
+            {/* Heading */}
+
+            <div>
+              <h2 className="auth-title">Log in to Flowboard</h2>
+
+              <p className="auth-subtitle">
+                Use your work email or single sign-on.
+              </p>
             </div>
 
-            {errors.password && (
-              <p className="mt-1 text-xs font-medium text-red-500">
-                {errors.password.message}
+            {/* Form */}
+
+            <form className="mt-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+              {/* Email */}
+
+              <div>
+                <label className="fb-label">Work email</label>
+
+                <div className="relative">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="email"
+                    {...register("email")}
+                    placeholder="you@company.com"
+                    className={`fb-input pl-11 ${
+                      errors.email ? "fb-input-error" : ""
+                    }`}
+                  />
+                </div>
+
+                {errors.email && (
+                  <p className="fb-error">{errors.email.message}</p>
+                )}
+              </div>
+
+              {/* Password */}
+
+              <div className="mt-6">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="mb-0 fb-label">Password</label>
+
+                  <a href="/auth/forget-password" className="auth-forgot">
+                    Forgot password?
+                  </a>
+                </div>
+
+                <div className="relative">
+                  <FontAwesomeIcon
+                    icon={faLock}
+                    className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    placeholder="••••••••"
+                    className={`fb-input pl-11 pr-11 ${
+                      errors.password ? "fb-input-error" : ""
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-slate-400 transition-colors hover:text-slate-600"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    <FontAwesomeIcon
+                      icon={showPassword ? faEyeSlash : faEye}
+                      className="h-4 w-4"
+                    />
+                  </button>
+                </div>
+
+                {errors.password && (
+                  <p className="fb-error">{errors.password.message}</p>
+                )}
+              </div>
+
+              {/* Keep signed in */}
+
+              <label className="mt-5 flex cursor-pointer items-center gap-2 text-sm text-slate-500">
+                <input type="checkbox" className="fb-checkbox" />
+
+                <span>Keep me signed in</span>
+              </label>
+
+              {/* Submit */}
+
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="btn-brand mt-6"
+              >
+                {mutation.isPending ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Logging in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Log in</span>
+
+                    <FontAwesomeIcon
+                      icon={faArrowRight}
+                      className="h-3.5 w-3.5"
+                    />
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+
+              <div className="auth-divider">or</div>
+
+              {/* Signup */}
+
+              <p className="mt-6 text-center text-sm text-slate-500">
+                Don't have an account?{" "}
+                <a
+                  href={registerUrl}
+                  className="font-semibold text-[var(--indigo)] hover:text-[var(--indigo-deep)]"
+                >
+                  Sign up
+                </a>
               </p>
-            )}
+            </form>
           </div>
-
-          {/* Forgot password */}
-          <a
-            href="/auth/forget-password"
-            className="flex justify-end font-semibold text-[var(--board-ink)]"
-          >
-            Forget?
-          </a>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--board-ink)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-panel)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {mutation.isPending ? (
-              <>
-                <LoadingSpinner size="sm" />
-                <span>Login account...</span>
-              </>
-            ) : (
-              "Login"
-            )}
-          </button>
-
-          {/* Register */}
-          <p className="text-center text-zinc-500">
-            Do not have an account?{" "}
-            <a
-              href={registerUrl}
-              className="font-semibold text-[var(--board-ink)]"
-            >
-              Signup
-            </a>
-          </p>
-        </form>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
