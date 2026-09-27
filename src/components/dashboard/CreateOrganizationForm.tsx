@@ -58,14 +58,11 @@ export default function CreateWorkspaceForm({
       return data;
     },
 
-   onSuccess: (data) => {
-  showToast(
-    data.message || "Workspace created successfully!",
-    "success",
-  );
-
-  router.push("/dashboard");
-},
+    onSuccess: (data) => {
+      showToast(data.message || "Workspace created successfully!", "success");
+      const workspaceId = data.workspace.id;
+      router.replace(`/dashboard/workspace/${workspaceId}`);
+    },
 
     onError: (error) => {
       showToast(error.message || "Failed to create workspace.", "error");
@@ -93,16 +90,11 @@ export default function CreateWorkspaceForm({
         </h2>
 
         <p className="mt-2 text-sm text-[var(--ink-soft)]">
-          Create your workspace, then start capturing ideas and tracking
-          tasks.
+          Create your workspace, then start capturing ideas and tracking tasks.
         </p>
       </div>
 
-      <form
-        className="space-y-5"
-        onSubmit={handleSubmit(onSubmit)}
-        noValidate
-      >
+      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
           <label className="mb-1 block text-xs font-medium tracking-wide text-[var(--ink-soft)]">
             Workspace name
@@ -126,8 +118,7 @@ export default function CreateWorkspaceForm({
           )}
 
           <p className="mt-1.5 text-xs text-[var(--ink-soft)]">
-            This is usually your team or project name. You can change it
-            later.
+            This is usually your team or project name. You can change it later.
           </p>
         </div>
 
