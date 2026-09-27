@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-
+import { Suspense } from "react";
 import {
   forgotPasswordSchema,
   ForgotPasswordInput,
@@ -86,62 +86,64 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          {/* Email */}
-          <div>
-            <label className="mb-1 block text-xs font-medium tracking-wider text-zinc-600">
-              Email Address
-            </label>
-
-            <input
-              type="email"
-              {...register("email")}
-              className={`w-full rounded-lg border px-4 py-2.5 text-sm text-zinc-900 outline-none transition ${
-                errors.email
-                  ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  : "border-zinc-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-              }`}
-              placeholder="alex@example.com"
-            />
-
-            {errors.email && (
-              <p className="mt-1 text-xs font-medium text-red-500">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--indigo-deep)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-ink)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        <Suspense>
+          <form
+            className="space-y-5"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
           >
-            {mutation.isPending ? (
-              <>
-                <LoadingSpinner size="sm" />
-                <span>Sending reset link...</span>
-              </>
-            ) : (
-              "Reset Password"
-            )}
-          </button>
+            {/* Email */}
+            <div>
+              <label className="mb-1 block text-xs font-medium tracking-wider text-zinc-600">
+                Email Address
+              </label>
 
-          {/* Back to Login */}
-          <p className="text-center text-sm text-zinc-500">
-            Remember your password?{" "}
-            <a
-              href="/auth/login"
-              className="font-semibold text-[var(--indigo-deep)]"
+              <input
+                type="email"
+                {...register("email")}
+                className={`w-full rounded-lg border px-4 py-2.5 text-sm text-zinc-900 outline-none transition ${
+                  errors.email
+                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-zinc-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                }`}
+                placeholder="alex@example.com"
+              />
+
+              {errors.email && (
+                <p className="mt-1 text-xs font-medium text-red-500">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--indigo-deep)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-ink)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Login
-            </a>
-          </p>
-        </form>
+              {mutation.isPending ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  <span>Sending reset link...</span>
+                </>
+              ) : (
+                "Reset Password"
+              )}
+            </button>
+
+            {/* Back to Login */}
+            <p className="text-center text-sm text-zinc-500">
+              Remember your password?{" "}
+              <a
+                href="/auth/login"
+                className="font-semibold text-[var(--indigo-deep)]"
+              >
+                Login
+              </a>
+            </p>
+          </form>
+        </Suspense>
       </div>
     </div>
   );
