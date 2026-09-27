@@ -1,72 +1,50 @@
-const activities = [
-  {
-    id: 1,
-    title: "Created a new board",
-    description: "Product Launch",
-    time: "2 hours ago",
-  },
-  {
-    id: 2,
-    title: "Ali joined your organization",
-    description: "Teach Flow",
-    time: "Today",
-  },
-  {
-    id: 3,
-    title: "Invited Ahmed",
-    description: "Teach Flow",
-    time: "Yesterday",
-  },
-  {
-    id: 4,
-    title: "Created a new organization",
-    description: "Marketing",
-    time: "2 days ago",
-  },
-];
+"use client";
 
-export default function DashboardRecentActivity() {
+import { Activity, ArrowRight, Clock3 } from "lucide-react";
+
+export default function RecentActivityCard() {
   return (
-    <section className="mt-10">
-      <div className="mb-4">
-        <h2 className="text-lg font-medium text-[var(--ink)]">
-          Recent Activity
-        </h2>
+    <section className="rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Activity size={18} className="text-[var(--indigo)]" />
 
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          Recent changes across your organization spaces.
-        </p>
+            <h3
+              className="text-lg font-semibold text-[var(--ink)]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Recent activity
+            </h3>
+          </div>
+
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">
+            Workspace activity will appear here.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="text-[var(--ink-soft)] transition hover:text-[var(--indigo)]"
+          aria-label="View activity"
+        >
+          <ArrowRight size={17} />
+        </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[var(--mist)] bg-white">
-        {activities.map((activity, index) => (
-          <div
-            key={activity.id}
-            className={`flex items-center gap-4 px-5 py-4 ${
-              index !== activities.length - 1
-                ? "border-b border-[var(--mist)]"
-                : ""
-            }`}
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--mist)] text-sm text-[var(--ink-soft)]">
-              ✓
-            </div>
+      <div className="mt-6 rounded-xl border border-dashed border-[var(--mist)] bg-[var(--paper)] px-5 py-7 text-center">
+        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--paper-raised)] text-[var(--ink-soft)]">
+          <Clock3 size={18} />
+        </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[var(--ink)]">
-                {activity.title}
-              </p>
+        <p className="mt-3 text-sm font-medium text-[var(--ink)]">
+          No recent activity yet
+        </p>
 
-              <p className="mt-0.5 text-xs text-[var(--ink-soft)]">
-                {activity.description}
-              </p>
-            </div>
-
-            <span className="shrink-0 text-xs text-[var(--ink-soft)]">
-              {activity.time}
-            </span>
-          </div>
-        ))}
+        <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[var(--ink-soft)]">
+          Board activity, member changes, and workspace events will appear here
+          as your team starts working.
+        </p>
       </div>
     </section>
   );

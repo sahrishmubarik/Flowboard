@@ -135,3 +135,4 @@ export async function deleteBoard(boardId: string) {
     },
   );
 }
+export async function inviteMemberInBoard(body: unknown) {}
