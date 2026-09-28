@@ -1,56 +1,174 @@
 @import "tailwindcss";
 
+/* =========================================================
+   FLOWBOARD COLOR SYSTEM
+   ========================================================= */
+
 :root {
-  /* Base surfaces */
-  --paper: #eff3f7;
-  --paper-raised: #eaeff0;
+  /* =======================================================
+     LIGHT THEME
+     ======================================================= */
+
+  /* Surfaces */
+  --color-app-bg: #f7f8f9;
+  --color-board-bg: #f4f5f7;
+  --color-column-bg: #f1f2f4;
+  --color-card-bg: #ffffff;
+  --color-card-hover: #fafbfc;
+  --color-border: #dfe1e6;
 
   /* Text */
-  --ink: #1b1e2a;
-  --ink-soft: #6e727e;
+  --color-text-primary: #172b4d;
+  --color-text-secondary: #44546f;
+  --color-text-muted: #626f86;
 
-  /* Brand */
-  --indigo: #3542cc;
-  --indigo-deep: #262fa0;
+  /* Primary */
+  --color-primary: #0c66e4;
+  --color-primary-hover: #0055cc;
+  --color-primary-active-bg: #e9f2ff;
 
-  /* Dark product surfaces */
-  --board-ink: #25343f;
-  --board-panel: #1a3263;
-  --board-line: #30364f;
+  /* Status */
+  --color-status-todo: #6b778c;
+  --color-status-progress: #0c66e4;
+  --color-status-review: #7f5af0;
+  --color-status-done: #22a06b;
 
-  /* Accent */
-  --amber: #e8a33d;
-  --amber-deep: #b87a1f;
+  /* Priority */
+  --color-priority-high: #e34935;
+  --color-priority-medium: #e2b203;
+  --color-priority-low: #22a06b;
 
-  /* Supporting colors */
-  --sage: #7fb77e;
-  --coral: #e2725b;
-  --sky: #5fa8d3;
+  /* Tags */
+  --color-tag-blue-bg: #e9f2ff;
+  --color-tag-blue-text: #0055cc;
 
-  /* Borders */
-  --mist: #e8eaf0;
+  --color-tag-purple-bg: #f3f0ff;
+  --color-tag-purple-text: #5e4db2;
 
-  /* Typography */
+  --color-tag-green-bg: #dcfff1;
+  --color-tag-green-text: #216e4e;
+
+  --color-tag-red-bg: #ffeceb;
+  --color-tag-red-text: #ae2a19;
+
+  --color-tag-neutral-bg: #f1f2f4;
+  --color-tag-neutral-text: #44546f;
+
+  /* =======================================================
+     PRODUCT PREVIEW
+     
+     Light theme intentionally keeps the original
+     Flowboard dark product-preview appearance.
+     ======================================================= */
+
+  --color-product-window: #25343f;
+  --color-product-window-text: #ffffff;
+  --color-product-window-muted: #a7adba;
+  --color-product-window-line: #30364f;
+  --color-product-window-panel: #1a3263;
+  --color-product-window-soft: rgba(255, 255, 255, 0.07);
+
+  /* =======================================================
+     NON-COLOR DESIGN TOKENS
+     ======================================================= */
+
   --font-display: "Fraunces", serif;
-  --font-body: "Inter", -apple-system, sans-serif;
+
+  --font-body:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 2px rgb(9 30 66 / 0.08);
+  --shadow-md: 0 8px 24px rgb(9 30 66 / 0.12);
+
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+}
+
+/* =========================================================
+   DARK THEME
+   ========================================================= */
+
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-app-bg: #0f1115;
+  --color-board-bg: #161a1d;
+  --color-column-bg: #1d2125;
+  --color-card-bg: #22272b;
+  --color-card-hover: #282e33;
+  --color-border: #3b444c;
+
+  /* Text */
+  --color-text-primary: #dee4ea;
+  --color-text-secondary: #b6c2cf;
+  --color-text-muted: #8c9bab;
+
+  /* Primary */
+  --color-primary: #579dff;
+  --color-primary-hover: #85b8ff;
+  --color-primary-active-bg: #1c2b41;
+
+  /* Status */
+  --color-status-todo: #8c9bab;
+  --color-status-progress: #579dff;
+  --color-status-review: #9f8fef;
+  --color-status-done: #4bce97;
+
+  /* Priority */
+  --color-priority-high: #f87168;
+  --color-priority-medium: #f5cd47;
+  --color-priority-low: #4bce97;
+
+  /* Tags */
+  --color-tag-blue-bg: #1c2b41;
+  --color-tag-blue-text: #85b8ff;
+
+  --color-tag-purple-bg: #2b2450;
+  --color-tag-purple-text: #b8acf6;
+
+  --color-tag-green-bg: #173b2d;
+  --color-tag-green-text: #7ee2b8;
+
+  --color-tag-red-bg: #4a1d1f;
+  --color-tag-red-text: #fd9891;
+
+  --color-tag-neutral-bg: #2c333a;
+  --color-tag-neutral-text: #b6c2cf;
+
+  /* =======================================================
+     PRODUCT PREVIEW
+     
+     Dark theme uses the new dark semantic surfaces.
+     ======================================================= */
+
+  --color-product-window: #161a1d;
+  --color-product-window-text: #dee4ea;
+  --color-product-window-muted: #8c9bab;
+  --color-product-window-line: #3b444c;
+  --color-product-window-panel: #1d2125;
+  --color-product-window-soft: rgba(255, 255, 255, 0.06);
 }
 
 body {
-  background: var(--paper);
+  background: var(--color-app-bg);
   color: var(--foreground);
   font-family: "Fraunces", sans-serif;
 }
 @layer components {
   .nav-link {
-    @apply text-[15px] text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)];
+    @apply text-[15px] text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)];
   }
 }
 .btn-primary {
-  @apply rounded-[7px] bg-[var(--board-panel)] px-[18px] py-[9px] text-sm font-medium text-[var(--paper)] transition-opacity hover:opacity-90;
+  @apply rounded-[7px] bg-[var(--color-primary)] px-[18px] py-[9px] text-sm font-medium text-[var(--color-app-bg)] transition-opacity hover:opacity-90;
 }
 
 .btn-primary {
-  background: var(--board-panel);
+  background: var(--color-primary);
   color: #fff !important;
   padding: 10px 18px;
   border-radius: 8px;
@@ -60,7 +178,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: var(--board-ink);
+  background: var(--color-primary-hover);
 }
 
 .btn-text {
@@ -70,26 +188,26 @@ body {
   font-size: 15px;
   font-weight: 500;
   display: inline-block;
-  color: var(--ink);
-  border: 1px solid var(--mist);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
 }
 .boardCard:hover {
   @apply border-dashed
-    border-[var(--amber)]
-    bg-[var(--amber)]/[0.06];
+    border-[var(--color-priority-medium)]
+    bg-[var(--color-priority-medium)]/[0.06];
 }
 .boardCard {
   transition: border-color 0.2s ease;
 }
 
 .boardCard:hover .board-col-label {
-  color: var(--amber-deep);
+  color: var(--color-text-primary);
 }
 
 .boardCard:hover .board-card-inner {
   @apply border-dashed
-  border-[var(--amber)]
-    bg-[var(--amber)]/[0.06];
+  border-[var(--color-priority-medium)]
+    bg-[var(--color-priority-medium)]/[0.06];
 }
 
 .price-btn {
@@ -100,77 +218,9 @@ body {
 }
 
 .price-btn:hover {
-  background: var(--board-panel);
-  border-color: var(--board-line);
+  background: var(--color-column-bg);
+  border-color: var(--color-border);
   color: #ffffff;
-}
-
-@import "tailwindcss";
-
-:root {
-  /* =========================================================
-     FLOWBOARD DESIGN TOKENS
-     ========================================================= */
-
-  /* Surfaces */
-  --paper: #eff3f7;
-  --paper-raised: #ffffff;
-  --surface-soft: #f7f8fa;
-
-  /* Text */
-  --ink: #1b1e2a;
-  --ink-soft: #6e727e;
-  --ink-muted: #8b909b;
-  --ink-on-dark: #f8fafc;
-  --ink-on-dark-soft: #a7adba;
-
-  /* Brand */
-  --indigo: #3542cc;
-  --indigo-deep: #262fa0;
-  --indigo-light: #eef2ff;
-
-  /* Accent */
-  --amber: #e8a33d;
-  --amber-deep: #b87a1f;
-
-  /* Dark UI */
-  --board-ink: #141820;
-  --board-panel: #1a3263;
-  --board-line: #30364f;
-
-  /* Borders */
-  --mist: #e8eaf0;
-  --border: #d9dde5;
-  --border-strong: #c9ced8;
-
-  /* Status */
-  --success: #39a96b;
-  --danger: #ef4444;
-  --warning: #e8a33d;
-
-  /* Cards */
-  --sage: #7fb77e;
-  --coral: #e2725b;
-  --sky: #5fa8d3;
-
-  /* Typography */
-  --font-display: "Fraunces", serif;
-  --font-body:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.05);
-  --shadow-md: 0 8px 24px rgb(16 24 40 / 0.08);
-
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 200ms ease;
 }
 
 /* =========================================================
@@ -179,8 +229,8 @@ body {
 
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
   font-family: var(--font-body);
 }
 
@@ -195,8 +245,12 @@ body {
   flex-direction: column;
   overflow: hidden;
 
-  background: var(--board-ink);
-  color: var(--ink-on-dark);
+  background: color-mix(
+    in srgb,
+    var(--color-text-primary) 92%,
+    var(--color-app-bg)
+  );
+  color: var(--color-card-bg);
 }
 
 /* =========================================================
@@ -222,7 +276,7 @@ body {
 
   border-radius: 6px;
 
-  background: #356be8;
+  background: var(--color-primary);
   color: #ffffff;
 
   font-size: 16px;
@@ -302,7 +356,7 @@ body {
 
   margin-top: 22px;
 
-  color: #a7adba;
+  color: var(--color-text-muted);
 
   font-family: var(--font-body);
   font-size: 17px;
@@ -322,7 +376,7 @@ body {
   margin-top: 30px;
   padding: 16px;
 
-  border: 1px solid var(--board-line);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
 
   background: rgba(255, 255, 255, 0.035);
@@ -360,7 +414,7 @@ body {
   margin-bottom: 10px;
   padding: 0 2px;
 
-  color: #a7adba;
+  color: var(--color-text-muted);
 
   font-family: var(--font-body);
   font-size: 12px;
@@ -392,9 +446,9 @@ body {
 
   border-radius: 6px;
 
-  background: #f8f9fb;
+  background: var(--color-card-bg);
 
-  color: var(--ink);
+  color: var(--color-text-primary);
 
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 
@@ -426,11 +480,11 @@ body {
 }
 
 .auth-task-task::before {
-  background: var(--indigo);
+  background: var(--color-primary);
 }
 
 .auth-task-bug::before {
-  background: var(--coral);
+  background: var(--color-priority-high);
 }
 
 /* =========================================================
@@ -460,11 +514,11 @@ body {
   font-size: 8px;
   font-weight: 700;
 
-  color: var(--indigo);
+  color: var(--color-primary);
 }
 
 .auth-task-bug .auth-task-icon {
-  color: var(--coral);
+  color: var(--color-priority-high);
 }
 
 /* =========================================================
@@ -472,7 +526,7 @@ body {
    ========================================================= */
 
 .auth-task-id {
-  color: var(--indigo);
+  color: var(--color-primary);
 
   font-family: var(--font-body);
   font-size: 11px;
@@ -486,7 +540,7 @@ body {
 .auth-task-title {
   margin-top: 5px;
 
-  color: #252936;
+  color: var(--color-text-primary);
 
   font-family: var(--font-body);
   font-size: 13px;
@@ -531,8 +585,8 @@ body {
 
   padding: 48px 20px;
 
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
 }
 
 /* =========================================
@@ -545,10 +599,10 @@ body {
 
   padding: 36px;
 
-  border: 1px solid var(--mist);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
 
-  background: var(--paper-raised);
+  background: var(--color-card-bg);
 
   box-shadow: 0 8px 30px rgba(37, 52, 63, 0.06);
 }
@@ -565,7 +619,7 @@ body {
 .reset-heading h1 {
   margin: 0;
 
-  color: var(--ink);
+  color: var(--color-text-primary);
 
   font-family: var(--font-display);
   font-size: 30px;
@@ -579,7 +633,7 @@ body {
 
   margin: 9px auto 0;
 
-  color: var(--ink-soft);
+  color: var(--color-text-secondary);
 
   font-family: var(--font-body);
   font-size: 14px;
@@ -601,7 +655,7 @@ body {
 
   background: rgba(226, 114, 91, 0.06);
 
-  color: var(--coral);
+  color: var(--color-priority-high);
 
   font-family: var(--font-body);
   font-size: 13px;
@@ -631,7 +685,7 @@ body {
 
   margin-bottom: 7px;
 
-  color: var(--ink);
+  color: var(--color-text-primary);
 
   font-family: var(--font-body);
   font-size: 13px;
@@ -653,13 +707,13 @@ body {
 
   padding: 12px 44px 12px 15px;
 
-  border: 1px solid var(--mist);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 
   outline: none;
 
-  background: #ffffff;
-  color: var(--ink);
+  background: var(--color-card-bg);
+  color: var(--color-text-primary);
 
   font-family: var(--font-body);
   font-size: 14px;
@@ -670,25 +724,25 @@ body {
 }
 
 .form-input::placeholder {
-  color: #9a9da6;
+  color: var(--color-text-muted);
 }
 
 .form-input:hover {
-  border-color: #d2d5dc;
+  border-color: var(--color-border);
 }
 
 .form-input:focus {
-  border-color: var(--indigo);
+  border-color: var(--color-primary);
 
   box-shadow: 0 0 0 3px rgba(53, 66, 204, 0.09);
 }
 
 .form-input.input-error {
-  border-color: var(--coral);
+  border-color: var(--color-priority-high);
 }
 
 .form-input.input-error:focus {
-  border-color: var(--coral);
+  border-color: var(--color-priority-high);
 
   box-shadow: 0 0 0 3px rgba(226, 114, 91, 0.1);
 }
@@ -716,13 +770,13 @@ body {
 
   cursor: pointer;
 
-  color: var(--ink-soft);
+  color: var(--color-text-secondary);
 
   transition: color 150ms ease;
 }
 
 .password-toggle:hover {
-  color: var(--ink);
+  color: var(--color-text-primary);
 }
 
 /* =========================================
@@ -732,7 +786,7 @@ body {
 .form-error {
   margin: 6px 0 0;
 
-  color: var(--coral);
+  color: var(--color-priority-high);
 
   font-family: var(--font-body);
   font-size: 12px;
@@ -761,7 +815,7 @@ body {
   border: 0;
   border-radius: 8px;
 
-  background: var(--board-panel);
+  background: var(--color-column-bg);
   color: #ffffff;
 
   font-family: var(--font-body);
@@ -777,7 +831,7 @@ body {
 }
 
 .reset-submit:hover:not(:disabled) {
-  background: var(--board-ink);
+  background: var(--color-primary-hover);
 }
 
 .reset-submit:active:not(:disabled) {
@@ -798,14 +852,14 @@ body {
 
   text-align: center;
 
-  color: var(--ink-soft);
+  color: var(--color-text-secondary);
 
   font-family: var(--font-body);
   font-size: 13px;
 }
 
 .reset-footer a {
-  color: var(--board-panel);
+  color: var(--color-column-bg);
 
   font-weight: 600;
 
@@ -815,7 +869,7 @@ body {
 }
 
 .reset-footer a:hover {
-  color: var(--indigo);
+  color: var(--color-primary);
 }
 
 /* =========================================
@@ -848,8 +902,8 @@ body {
   -------------------------------- */
 
   .site-header {
-    @apply border-b bg-[var(--paper)];
-    border-color: var(--mist);
+    @apply border-b bg-[var(--color-app-bg)];
+    border-color: var(--color-border);
   }
 
   .site-header-inner {
@@ -862,8 +916,8 @@ body {
   ========================================================== */
 
     .site-footer {
-      border-top: 1px solid var(--mist);
-      background: var(--paper-raised);
+      border-top: 1px solid var(--color-border);
+      background: var(--color-card-bg);
     }
 
     .site-footer-inner {
@@ -878,7 +932,7 @@ body {
 
     .footer-description {
       @apply mt-4 text-sm leading-6;
-      color: var(--ink-soft);
+      color: var(--color-text-secondary);
       font-family: var(--font-body);
     }
 
@@ -890,19 +944,19 @@ body {
 
     .footer-link {
       @apply text-sm transition-colors duration-150;
-      color: var(--ink-soft);
+      color: var(--color-text-secondary);
     }
 
     .footer-link:hover {
-      color: var(--ink);
+      color: var(--color-text-primary);
     }
 
     /* Bottom */
 
     .site-footer-bottom {
       @apply mx-auto flex max-w-[1160px] flex-col gap-3 border-t px-6 py-5 text-xs md:flex-row md:items-center md:justify-between md:px-10;
-      border-color: var(--mist);
-      color: var(--ink-soft);
+      border-color: var(--color-border);
+      color: var(--color-text-secondary);
       font-family: var(--font-body);
     }
 
@@ -915,7 +969,7 @@ body {
     }
 
     .footer-meta a:hover {
-      color: var(--ink);
+      color: var(--color-text-primary);
     }
   }
   /* --------------------------------
@@ -928,13 +982,13 @@ body {
 
   .brand-mark {
     @apply flex h-8 w-8 items-center justify-center rounded-[7px] text-sm font-semibold text-white;
-    background: var(--indigo);
+    background: var(--color-primary);
     font-family: var(--font-body);
   }
 
   .brand-name {
     @apply text-[21px] font-semibold tracking-tight;
-    color: var(--ink);
+    color: var(--color-text-primary);
     font-family: var(--font-display);
   }
 
@@ -944,20 +998,20 @@ body {
 
   .header-link {
     @apply text-[15px] transition-colors duration-150;
-    color: var(--ink-soft);
+    color: var(--color-text-secondary);
   }
 
   .header-link:hover {
-    color: var(--ink);
+    color: var(--color-text-primary);
   }
 
   .header-cta {
     @apply rounded-[8px] px-[18px] py-[9px] text-sm font-medium text-white transition-all duration-150;
-    background: var(--board-panel);
+    background: var(--color-primary);
   }
 
   .header-cta:hover {
-    background: var(--board-ink);
+    background: var(--color-primary-hover);
   }
 
   .header-cta:active {
@@ -970,12 +1024,12 @@ body {
 
   .mobile-header-link {
     @apply rounded-lg px-3 py-2.5 text-[15px] transition-colors duration-150;
-    color: var(--ink-soft);
+    color: var(--color-text-secondary);
   }
 
   .mobile-header-link:hover {
-    background: var(--paper-raised);
-    color: var(--ink);
+    background: var(--color-card-bg);
+    color: var(--color-text-primary);
   }
 }
 
@@ -998,7 +1052,7 @@ body {
 
   .fb-eyebrow {
     @apply text-[14px] font-medium;
-    color: var(--indigo);
+    color: var(--color-primary);
   }
 
   .fb-heading {
@@ -1008,7 +1062,7 @@ body {
 
   .fb-body {
     font-family: var(--font-body);
-    color: var(--ink-soft);
+    color: var(--color-text-secondary);
   }
 
   /* =========================================================
@@ -1016,8 +1070,8 @@ body {
   ========================================================== */
 
   .fb-card {
-    @apply rounded-2xl border bg-white;
-    border-color: var(--mist);
+    @apply rounded-2xl border bg-[var(--color-card-bg)];
+    border-color: var(--color-border);
   }
 
   .fb-card-hover {
@@ -1026,7 +1080,7 @@ body {
 
   .fb-card-hover:hover {
     @apply -translate-y-0.5 shadow-lg;
-    border-color: var(--board-line);
+    border-color: var(--color-border);
   }
 
   /* =========================================================
@@ -1035,25 +1089,25 @@ body {
 
   .fb-btn-primary {
     @apply inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200;
-    background: var(--board-panel);
-    color: white;
+    background: var(--color-primary);
+    color: #ffffff;
   }
 
   .fb-btn-primary:hover {
-    background: var(--board-ink);
+    background: var(--color-primary);
     transform: translateY(-1px);
   }
 
   .fb-btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border  px-5 py-2.5 text-sm font-medium transition-all duration-200;
-    border-color: var(--mist);
-    background: var(--board-panel);
-    color: white;
+    @apply inline-flex items-center justify-center rounded-lg border px-5 py-2.5 text-sm font-medium transition-all duration-200;
+    border-color: var(--color-border);
+    background: var(--color-card-bg);
+    color: var(--color-text-primary);
   }
 
   .fb-btn-secondary:hover {
-    background: var(--board-ink);
-    border-color: var(--board-ink);
+    background: var(--color-primary);
+    border-color: var(--color-text-primary);
   }
 
   /* =========================================================
@@ -1061,17 +1115,17 @@ body {
   ========================================================== */
 
   .fb-input {
-    @apply w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition-all duration-200;
-    border-color: var(--mist);
-    color: var(--ink);
+    @apply w-full rounded-lg border bg-[var(--color-card-bg)] px-4 py-3 text-sm outline-none transition-all duration-200;
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
   }
 
   .fb-input::placeholder {
-    color: var(--ink-muted);
+    color: var(--color-text-muted);
   }
 
   .fb-input:focus {
-    border-color: var(--indigo);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(53, 66, 204, 0.1);
   }
 
@@ -1080,13 +1134,13 @@ body {
   ========================================================== */
 
   .fb-dark-panel {
-    background: var(--board-ink);
-    border-color: var(--board-line);
+    background: var(--color-primary);
+    border-color: var(--color-border);
   }
 
   .fb-board-panel {
-    background: var(--board-panel);
-    border-color: var(--board-line);
+    background: var(--color-card-bg);
+    border-color: var(--color-border);
   }
 }
 
@@ -1099,11 +1153,11 @@ body {
 
   .nav-link {
     @apply text-[15px] transition-colors;
-    color: var(--ink-soft);
+    color: var(--color-text-secondary);
   }
 
   .nav-link:hover {
-    color: var(--ink);
+    color: var(--color-text-primary);
   }
 
   /* ---------- Buttons ---------- */
@@ -1115,12 +1169,12 @@ body {
       text-sm font-medium
       transition-all duration-200;
 
-    background: var(--board-panel);
+    background: var(--color-primary);
     color: #ffffff;
   }
 
   .btn-primary:hover {
-    background: var(--board-ink);
+    background: var(--color-text-primary);
   }
 
   .btn-primary:disabled {
@@ -1135,12 +1189,12 @@ body {
       text-sm font-semibold
       transition-all duration-200;
 
-    background: var(--indigo);
+    background: var(--color-primary);
     color: #ffffff;
   }
 
   .btn-brand:hover {
-    background: #2f3bc0;
+    background: var(--color-primary-hover);
   }
 
   .btn-brand:active {
@@ -1154,22 +1208,22 @@ body {
       text-sm font-medium
       transition-all duration-200;
 
-    background: #ffffff;
-    color: var(--ink);
-    border: 1px solid var(--mist);
+    background: var(--color-card-bg);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
   }
 
   .btn-text:hover {
-    background: var(--surface-soft);
-    border-color: var(--border-strong);
+    background: var(--color-card-hover);
+    border-color: var(--color-border);
   }
 
   /* ---------- Cards ---------- */
 
   .fb-card {
-    @apply rounded-[var(--radius-lg)] border bg-white;
+    @apply rounded-[var(--radius-lg)] border bg-[var(--color-card-bg)];
 
-    border-color: var(--mist);
+    border-color: var(--color-border);
     box-shadow: var(--shadow-sm);
   }
 
@@ -1177,56 +1231,58 @@ body {
 
   .fb-input {
     @apply w-full rounded-[var(--radius-md)]
-      border bg-white
+      border bg-[var(--color-card-bg)]
       px-4 py-2.5
       text-sm outline-none
       transition-all duration-150;
 
-    border-color: var(--border);
-    color: var(--ink);
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
   }
 
   .fb-input::placeholder {
-    color: var(--ink-muted);
+    color: var(--color-text-muted);
   }
 
   .fb-input:hover {
-    border-color: var(--border-strong);
+    border-color: var(--color-border);
   }
 
   .fb-input:focus {
-    border-color: var(--indigo);
-    box-shadow: 0 0 0 2px rgb(53 66 204 / 0.08);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   .fb-input-error {
-    border-color: var(--danger);
+    border-color: var(--color-priority-high);
   }
 
   .fb-input-error:focus {
-    border-color: var(--danger);
-    box-shadow: 0 0 0 2px rgb(239 68 68 / 0.08);
+    border-color: var(--color-priority-high);
+    box-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--color-priority-high) 10%, transparent);
   }
 
   /* ---------- Labels ---------- */
 
   .fb-label {
     @apply mb-1.5 block text-sm font-medium;
-    color: var(--ink);
+    color: var(--color-text-primary);
   }
 
   /* ---------- Error ---------- */
 
   .fb-error {
     @apply mt-1.5 text-xs font-medium;
-    color: var(--danger);
+    color: var(--color-priority-high);
   }
 
   /* ---------- Auth ---------- */
 
   .auth-page {
     @apply min-h-screen w-full;
-    background: var(--paper-raised);
+    background: var(--color-card-bg);
   }
 
   .auth-layout {
@@ -1236,13 +1292,17 @@ body {
 
   .auth-brand-panel {
     @apply relative flex min-h-screen flex-col;
-    background: var(--board-ink);
-    color: var(--ink-on-dark);
+    background: color-mix(
+      in srgb,
+      var(--color-text-primary) 92%,
+      var(--color-app-bg)
+    );
+    color: #ffffff;
   }
 
   .auth-form-panel {
     @apply flex min-h-screen items-center justify-center;
-    background: var(--paper-raised);
+    background: var(--color-card-bg);
   }
 
   .auth-form-container {
@@ -1259,12 +1319,12 @@ body {
   .brand-logo-mark {
     @apply flex h-7 w-7 items-center justify-center rounded-[6px]
       text-sm font-bold text-white;
-    background: #356be8;
+    background: var(--color-primary);
   }
 
   .brand-logo-name {
     @apply text-[19px] font-semibold tracking-[-0.02em];
-    color: var(--ink-on-dark);
+    color: var(--color-card-bg);
   }
 
   /* ---------- Auth Typography ---------- */
@@ -1279,22 +1339,22 @@ body {
 
   .auth-brand-title {
     @apply mt-6 text-4xl font-semibold leading-[1.08] tracking-[-0.035em];
-    color: var(--ink-on-dark);
+    color: var(--color-card-bg);
   }
 
   .auth-brand-description {
     @apply mt-5 max-w-[600px] text-[17px] leading-6;
-    color: var(--ink-on-dark-soft);
+    color: var(--color-text-muted);
   }
 
   .auth-title {
     @apply text-[30px] font-semibold leading-tight tracking-[-0.025em];
-    color: var(--ink);
+    color: var(--color-text-primary);
   }
 
   .auth-subtitle {
     @apply mt-2 text-[16px] leading-6;
-    color: var(--ink-soft);
+    color: var(--color-text-secondary);
   }
 
   /* ---------- Social Login ---------- */
@@ -1306,24 +1366,24 @@ body {
   .auth-social-button {
     @apply flex h-11 items-center justify-center gap-2
       rounded-[var(--radius-md)]
-      border bg-white
+      border bg-[var(--color-card-bg)]
       text-sm font-medium
       transition-all duration-150;
 
-    border-color: var(--border);
-    color: var(--ink);
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
   }
 
   .auth-social-button:hover {
-    background: var(--surface-soft);
-    border-color: var(--border-strong);
+    background: var(--color-card-hover);
+    border-color: var(--color-border);
   }
 
   /* ---------- Divider ---------- */
 
   .auth-divider {
     @apply my-6 flex items-center gap-3 text-xs;
-    color: var(--ink-muted);
+    color: var(--color-text-muted);
   }
 
   .auth-divider::before,
@@ -1331,15 +1391,15 @@ body {
     content: "";
     height: 1px;
     flex: 1;
-    background: var(--mist);
+    background: var(--color-border);
   }
 
   /* ---------- Board Card Mockup ---------- */
 
   .auth-board {
     @apply mt-6 rounded-[14px] border p-4;
-    border-color: var(--board-line);
-    background: rgb(255 255 255 / 0.04);
+    border-color: var(--color-border);
+    background: color-mix(in srgb, var(--color-card-bg) 8%, transparent);
   }
 
   .auth-board-grid {
@@ -1348,12 +1408,12 @@ body {
 
   .auth-board-column-title {
     @apply mb-2 text-xs font-medium;
-    color: #a7adba;
+    color: var(--color-text-muted);
   }
 
   .auth-task {
-    @apply rounded-md bg-white p-3 text-xs;
-    color: var(--ink);
+    @apply rounded-md bg-[var(--color-card-bg)] p-3 text-xs;
+    color: var(--color-text-primary);
   }
 
   .auth-task + .auth-task {
@@ -1362,7 +1422,7 @@ body {
 
   .auth-task-id {
     @apply text-[11px] font-medium;
-    color: var(--indigo);
+    color: var(--color-primary);
   }
 
   .auth-task-title {
@@ -1373,18 +1433,18 @@ body {
 
   .fb-checkbox {
     @apply h-4 w-4 cursor-pointer rounded;
-    accent-color: var(--indigo);
+    accent-color: var(--color-primary);
   }
 
   /* ---------- Forgot password ---------- */
 
   .auth-forgot {
     @apply text-sm font-medium transition-colors;
-    color: var(--indigo);
+    color: var(--color-primary);
   }
 
   .auth-forgot:hover {
-    color: var(--indigo-deep);
+    color: var(--color-primary-hover);
   }
 }
 
@@ -1398,17 +1458,17 @@ body {
 
 .boardCard:hover {
   @apply border-dashed;
-  border-color: var(--amber);
+  border-color: var(--color-priority-medium);
   background: rgb(232 163 61 / 0.06);
 }
 
 .boardCard:hover .board-col-label {
-  color: var(--amber-deep);
+  color: var(--color-text-primary);
 }
 
 .boardCard:hover .board-card-inner {
   @apply border-dashed;
-  border-color: var(--amber);
+  border-color: var(--color-priority-medium);
   background: rgb(232 163 61 / 0.06);
 }
 
@@ -1424,8 +1484,8 @@ body {
 }
 
 .price-btn:hover {
-  background: var(--board-panel);
-  border-color: var(--board-line);
+  background: var(--color-column-bg);
+  border-color: var(--color-border);
   color: #ffffff;
 }
 
@@ -1450,4 +1510,43 @@ body {
   .auth-form-container {
     max-width: 450px;
   }
+}
+
+/* =========================================================
+   THEME TOGGLE
+   ========================================================= */
+.theme-toggle {
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors duration-150;
+  border-color: var(--color-border);
+  background: var(--color-card-bg);
+  color: var(--color-text-secondary);
+}
+
+.theme-toggle:hover {
+  background: var(--color-card-hover);
+  color: var(--color-text-primary);
+}
+
+html {
+  background: var(--color-app-bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.site-header,
+.site-footer,
+.fb-card,
+.fb-input {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
 }
