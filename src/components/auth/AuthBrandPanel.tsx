@@ -14,17 +14,14 @@ export default function AuthBrandPanel({
   return (
     <section className="auth-brand-panel">
       {/* Logo */}
-
-      <div className="auth-brand-header">
+      <div className="auth-brand-header ml-[-460px]">
         <a href="/" className="brand-logo">
           <span className="brand-logo-mark">F</span>
-
           <span className="brand-logo-name">Flowboard</span>
         </a>
       </div>
 
       {/* Content */}
-
       <div className="auth-brand-content">
         <div className="auth-brand-copy">
           <span className="auth-eyebrow">{eyebrow}</span>
