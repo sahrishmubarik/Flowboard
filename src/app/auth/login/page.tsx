@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import LoginCard from "@/components/loginCard";
+import LoginCard from "@/components/auth/loginCard";
 
 export default function LoginPage() {
   return (

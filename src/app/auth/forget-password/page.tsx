@@ -72,79 +72,174 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-md">
-        {/* Heading */}
-        <div className="mb-8 text-center">
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
-            Forgot Password?
-          </h2>
+    <main className="auth-page">
+      <div className="auth-layout ">
+        <section className="auth-brand-panel flex justify-center items-center">
+          {/* Logo */}
+          <div className="px-8 py-3 ml-[-460px]">
+            <a href="/" className="brand-logo ">
+              <span className="brand-logo-mark">F</span>
 
-          <p className="mt-2 text-sm text-zinc-500">
-            Enter your email address and we&apos;ll send you a link to reset
-            your password.
-          </p>
-        </div>
+              <span className="brand-logo-name">Flowboard</span>
+            </a>
+          </div>
 
-        <Suspense>
-          <form
-            className="space-y-5"
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-          >
-            {/* Email */}
-            <div>
-              <label className="mb-1 block text-xs font-medium tracking-wider text-zinc-600">
-                Email Address
-              </label>
+          {/* Brand Content */}
 
-              <input
-                type="email"
-                {...register("email")}
-                className={`w-full rounded-lg border px-4 py-2.5 text-sm text-zinc-900 outline-none transition ${
-                  errors.email
-                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                    : "border-zinc-300 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                }`}
-                placeholder="alex@example.com"
-              />
+          <div className="flex flex-1 items-center px-8 pb-12">
+            <div className="w-full max-w-[610px]">
+              <span className="auth-eyebrow">Welcome back</span>
 
-              {errors.email && (
-                <p className="mt-1 text-xs font-medium text-red-500">
-                  {errors.email.message}
-                </p>
-              )}
+              <h1 className="auth-brand-title">Your sprint is waiting.</h1>
+
+              <p className="auth-brand-description">
+                Pick up exactly where you left off — every issue, comment and
+                task stays organized in one place.
+              </p>
+
+              {/* Board preview */}
+
+              <div className="auth-board">
+                <div className="auth-board-grid">
+                  {/* Open */}
+
+                  <div>
+                    <p className="auth-board-column-title">Open&nbsp; 6</p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-151</p>
+
+                      <p className="auth-task-title">Breadcrumb navigation</p>
+                    </div>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-155</p>
+
+                      <p className="auth-task-title">
+                        Footer misaligned on Safari
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* In progress */}
+
+                  <div>
+                    <p className="auth-board-column-title">
+                      In Progress&nbsp; 5
+                    </p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-142</p>
+
+                      <p className="auth-task-title">Responsive navbar</p>
+                    </div>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-147</p>
+
+                      <p className="auth-task-title">SVG icon sprite</p>
+                    </div>
+                  </div>
+
+                  {/* Testing */}
+
+                  <div>
+                    <p className="auth-board-column-title">Testing&nbsp; 2</p>
+
+                    <div className="auth-task">
+                      <p className="auth-task-id">WEB-133</p>
+
+                      <p className="auth-task-title">
+                        Checkout fails on empty coupon
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            RIGHT LOGIN PANEL
+        ====================================================== */}
+
+        <section className="auth-form-panel">
+          <div className="auth-form-container">
+            {/* Heading */}
+            {/* Heading */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] mb-5">
+                Forgot Password?
+              </h2>
+
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                Enter your email address and we&apos;ll send you a link to reset
+                your password.
+              </p>
             </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--indigo-deep)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--board-ink)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {mutation.isPending ? (
-                <>
-                  <LoadingSpinner size="sm" />
-                  <span>Sending reset link...</span>
-                </>
-              ) : (
-                "Reset Password"
-              )}
-            </button>
-
-            {/* Back to Login */}
-            <p className="text-center text-sm text-zinc-500">
-              Remember your password?{" "}
-              <a
-                href="/auth/login"
-                className="font-semibold text-[var(--indigo-deep)]"
+            <Suspense>
+              <form
+                className="space-y-5"
+                onSubmit={handleSubmit(onSubmit)}
+                noValidate
               >
-                Login
-              </a>
-            </p>
-          </form>
-        </Suspense>
+                {/* Email */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium tracking-wider text-[var(--color-text-secondary)]">
+                    Email Address
+                  </label>
+
+                  <input
+                    type="email"
+                    {...register("email")}
+                    className={`w-full rounded-lg border bg-[var(--color-card-bg)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition ${
+                      errors.email
+                        ? "border-[var(--color-priority-high)] focus:border-[var(--color-priority-high)] focus:ring-1 focus:ring-[var(--color-priority-high)]"
+                        : "border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+                    }`}
+                    placeholder="alex@example.com"
+                  />
+
+                  {errors.email && (
+                    <p className="mt-1 text-xs font-medium text-[var(--color-priority-high)]">
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={mutation.isPending}
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--color-primary-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span>Sending reset link...</span>
+                    </>
+                  ) : (
+                    "Reset Password"
+                  )}
+                </button>
+
+                {/* Back to Login */}
+                <p className=" text-sm text-[var(--color-text-secondary)]">
+                  Remember your password?{" "}
+                  <a
+                    href="/auth/login"
+                    className="font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
+                  >
+                    Login
+                  </a>
+                </p>
+              </form>
+            </Suspense>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
