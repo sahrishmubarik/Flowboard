@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 const inboxItems = [
   {
@@ -85,30 +83,35 @@ export default function InboxPage() {
         {/* =========================================================
           HERO
       ========================================================== */}
-        <section className="fb-container flex flex-col items-center pb-20 pt-20 text-center md:pb-24 md:pt-28">
-          <div className="fb-eyebrow">Personal inbox</div>
 
-          <h1 className="fb-heading mt-3 max-w-[760px] text-[42px] leading-[1.05] md:text-[64px]">
+        <section className="fb-container flex flex-col items-center pb-20 pt-20 text-center md:pb-24 md:pt-28">
+          <div className="fb-eyebrow">A place to catch ideas</div>
+
+          <h1 className="fb-heading mt-3 max-w-[820px] text-[42px] leading-[1.05] md:text-[64px]">
             Capture it now.
             <br />
-            Organize it when ready.
+            Turn it into work when ready.
           </h1>
 
-          <p className="fb-body mt-6 max-w-[610px] text-base leading-7 md:text-lg">
-            Keep ideas, tasks and quick thoughts in one place before they become
-            part of a board. Flowboard gives every piece of work a place to
-            start.
+          <p className="fb-body mt-6 max-w-[680px] text-base leading-6 md:text-lg">
+            Great work often starts as a quick thought. Capture ideas, tasks,
+            reminders, and bugs in your personal Inbox, then move them into the
+            right workspace and board when they are ready for action.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
             <Link href="/auth/register" className="fb-btn-primary">
-              Start free
+              Start capturing
             </Link>
 
-            <Link href="/auth/login" className="fb-btn-secondary">
-              Log in
+            <Link href="#board" className="fb-btn-secondary">
+              See how it works
             </Link>
           </div>
+
+          <p className="mt-4 text-xs text-[var(--color-text-muted)]">
+            Start with an idea. Add structure when you need it.
+          </p>
         </section>
 
         {/* =========================================================
@@ -272,7 +275,7 @@ export default function InboxPage() {
         {/* =========================================================
           INTRO
       ========================================================== */}
-        <section className="border-y border-[var(--color-border)] bg-[var(--color-card-bg)]">
+        <section className=" bg-[var(--color-card-bg)]">
           <div className="fb-container py-20 md:py-24">
             <div className="mx-auto max-w-[700px] text-center">
               <div className="fb-eyebrow">Why an inbox?</div>
@@ -293,7 +296,7 @@ export default function InboxPage() {
         {/* =========================================================
           FEATURES
       ========================================================== */}
-        <section className="fb-container fb-section">
+        <section className="fb-container fb-section ">
           <div className="text-center">
             <div className="fb-eyebrow">Keep work moving</div>
 
@@ -302,11 +305,12 @@ export default function InboxPage() {
             </h2>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-[980px] grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-2">
+          {/* <div className="mx-auto mt-12 grid max-w-[980px] grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-2">*/}
+          <div className="mx-auto mt-12 grid max-w-[980px] grid-cols-1 gap-8 md:grid-cols-2">
             {features.map((feature) => (
               <article
                 key={feature.title}
-                className={`border-l-[3px] bg-[var(--color-card-bg)] p-7 md:p-8 ${feature.accent} transition-colors duration-200 hover:bg-[var(--color-card-bg)]`}
+                className={`rounded-2xl border border-[var(--color-border)] border-l-[4px] bg-[var(--color-card-bg)] p-7 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:p-8 ${feature.accent} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(15,23,42,0.10)]`}
               >
                 <h3 className="text-lg font-semibold">{feature.title}</h3>
 
@@ -321,7 +325,7 @@ export default function InboxPage() {
         {/* =========================================================
           WORKFLOW
       ========================================================== */}
-        <section className="border-y border-[var(--color-border)] bg-[var(--color-card-bg)]">
+        <section>
           <div className="fb-container fb-section">
             <div className="text-center">
               <div className="fb-eyebrow">Simple workflow</div>
@@ -384,11 +388,11 @@ export default function InboxPage() {
             {/* Mini board */}
             <div className="rounded-2xl bg-[color-mix(in_srgb,var(--color-text-primary)_92%,var(--color-app-bg))] p-5 shadow-lg md:p-6">
               <div className="mb-5 flex items-center justify-between">
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                <span className="text-sm font-medium text-[var(--color-border)]">
                   Product launch
                 </span>
 
-                <span className="text-xs text-[var(--color-text-muted)]">
+                <span className="text-xs text-[var(--color-border)]">
                   4 cards
                 </span>
               </div>
@@ -447,10 +451,7 @@ export default function InboxPage() {
         {/* =========================================================
           PRICING
       ========================================================== */}
-        <section
-          id="pricing"
-          className="border-y border-[var(--color-border)] bg-[var(--color-card-bg)]"
-        >
+        <section id="pricing" className="bg-[var(--color-card-bg)]">
           <div className="fb-container fb-section">
             <div className="mx-auto max-w-[700px] text-center">
               <div className="fb-eyebrow">Pricing</div>
@@ -599,7 +600,7 @@ export default function InboxPage() {
               Give your next idea somewhere to land.
             </h2>
 
-            <p className="mt-5 max-w-[520px] text-sm leading-6 text-[var(--color-text-secondary)] md:text-base">
+            <p className="mt-5 max-w-[520px] text-sm leading-6 text-[var(--color-border)] md:text-base">
               Start free with Flowboard and turn quick thoughts into organized,
               finished work.
             </p>

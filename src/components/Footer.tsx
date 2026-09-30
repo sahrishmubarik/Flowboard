@@ -1,121 +1,3 @@
-// "use client"
-// import Link from "next/link";
-// import { usePathname } from "next/navigation";
-// const footerLinks = {
-//   Product: [
-//     { label: "Features", href: "/product" },
-//     { label: "Pricing", href: "/pricing" },
-//     { label: "Changelog", href: "/changelog" },
-//   ],
-//   Resources: [
-//     { label: "Docs", href: "/docs" },
-//     { label: "Support", href: "/support" },
-//   ],
-//   Company: [
-//     { label: "About", href: "/about" },
-//     { label: "Contact", href: "/contact" },
-//   ],
-// };
-
-// export default function Footer() {
-//   const year = new Date().getFullYear();
-//   const pathName = usePathname();
-
-//     const isAuthPage =
-//       pathName === "/register" ||
-//       pathName === "/login" ||
-//       pathName === "/auth/register" ||
-//       pathName === "/auth/login" ||
-//       pathName === "/auth/forget-password" ||
-//       pathName === "/auth/reset-password";
-
-//   return (
-//     <footer className=" bg-[var(--board-panel)] b-0">
-//       <div>
-//         {!isAuthPage &&
-//         (
-//           <div className="mx-auto max-w-[1160px] px-6 py-14 md:px-10">
-
-//           <div className="flex flex-col gap-12 md:flex-row md:justify-between ">
-//           {/* Logo + tagline */}
-//           <div className="max-w-xs">
-//             <Link href="/" className="flex items-center gap-2">
-//               <span className="block h-[9px] w-[9px] -translate-y-[1px] rounded-[2px] bg-[var(--amber)]" />
-//               <span
-//                 className="text-[19px] font-semibold tracking-tight text-white"
-//                 style={{ fontFamily: "var(--font-display)" }}
-//               >
-//                 Flowboard
-//               </span>
-//             </Link>
-//             <p className="mt-3 text-sm text-white">
-//               Capture ideas in your inbox, then drag them onto a board when
-//               they&apos;re ready to move.
-//             </p>
-//           </div>
-
-//           {/* Link columns */}
-//           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-16">
-//             {Object.entries(footerLinks).map(([heading, links]) => (
-//               <div key={heading}>
-//                 <p className="text-[13px] font-medium text-white">
-//                   {heading}
-//                 </p>
-//                 <ul className="mt-3 flex flex-col gap-2.5">
-//                   {links.map((link) => (
-//                     <li key={link.href}>
-//                       <Link
-//                         href={link.href}
-//                         className="text-sm text-white transition-colors hover:text-[var(--paper)]"
-//                       >
-//                         {link.label}
-//                       </Link>
-//                     </li>
-//                   ))}
-//                 </ul>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//         </div>
-//         ) }
-
-//         {/* Bottom bar */}
-
-//      <div
-//   className={`flex gap-6 pt-4 pl-11 pr-11
-//     ${
-//       isAuthPage
-//         ? "flex items-center justify-center  "
-//         : "flex sm:flex-row sm:items-center sm:justify-between gap-12 pb-6  pt-12 pb-12 border-t border-[var(--mist)]"
-//     }
-//   `}
-// >
-//   <p className="text-[13px] text-white">
-//     © {year} Flowboard.
-//   </p>
-
-//   <div className="flex gap-5">
-//     <Link
-//       href="/privacy"
-//       className="text-[13px] text-white transition-colors hover:text-[var(--paper)]"
-//     >
-//       Privacy
-//     </Link>
-
-//     <Link
-//       href="/terms"
-//       className="text-[13px] text-white transition-colors hover:text-[var(--paper)]"
-//     >
-//       Terms
-//     </Link>
-//   </div>
-// </div>
-//       </div>
-//     </footer>
-//   );
-// }
-
 "use client";
 
 import Link from "next/link";
@@ -130,11 +12,9 @@ export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        {/* Brand / description */}
         <div className="footer-brand">
           <Link href="/" className="brand">
             <span className="brand-mark">F</span>
-
             <span className="brand-name">Flowboard</span>
           </Link>
 
@@ -143,7 +23,6 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Navigation */}
         <nav className="footer-nav">
           {footerLinks.map((link) => (
             <Link key={link.href} href={link.href} className="footer-link">
@@ -161,7 +40,6 @@ export default function Footer() {
         </nav>
       </div>
 
-      {/* Bottom */}
       <div className="site-footer-bottom">
         <p>© {new Date().getFullYear()} Flowboard. All rights reserved.</p>
 
