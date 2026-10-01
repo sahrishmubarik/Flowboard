@@ -245,12 +245,8 @@ body {
   flex-direction: column;
   overflow: hidden;
 
-  background: color-mix(
-    in srgb,
-    var(--color-text-primary) 92%,
-    var(--color-app-bg)
-  );
-  color: var(--color-card-bg);
+  background: var(--color-product-window);
+  color: var(--color-product-window-text);
 }
 
 /* =========================================================
@@ -258,12 +254,16 @@ body {
    ========================================================= */
 
 .auth-brand-header {
+  display: flex;
+  justify-content: center;
+
   padding: 12px 74px;
 }
 
 .brand-logo {
   display: inline-flex;
   align-items: center;
+
   gap: 10px;
 }
 
@@ -274,7 +274,7 @@ body {
   align-items: center;
   justify-content: center;
 
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 
   background: var(--color-primary);
   color: #ffffff;
@@ -284,7 +284,7 @@ body {
 }
 
 .brand-logo-name {
-  color: #ffffff;
+  color: var(--color-product-window-text);
 
   font-family: var(--font-body);
   font-size: 19px;
@@ -300,6 +300,7 @@ body {
   display: flex;
   flex: 1;
   align-items: center;
+  justify-content: center;
 
   padding: 40px 74px 90px;
 }
@@ -321,9 +322,8 @@ body {
 
   border-radius: 999px;
 
-  background: rgba(53, 107, 232, 0.18);
-
-  color: #9dbbff;
+  background: var(--color-primary-active-bg);
+  color: var(--color-primary);
 
   font-family: var(--font-body);
   font-size: 13px;
@@ -337,7 +337,7 @@ body {
 .auth-brand-title {
   margin-top: 26px;
 
-  color: #f8fafc;
+  color: var(--color-product-window-text);
 
   font-family: var(--font-body);
   font-size: clamp(38px, 3.2vw, 48px);
@@ -356,7 +356,7 @@ body {
 
   margin-top: 22px;
 
-  color: var(--color-text-muted);
+  color: var(--color-product-window-muted);
 
   font-family: var(--font-body);
   font-size: 17px;
@@ -376,14 +376,12 @@ body {
   margin-top: 30px;
   padding: 16px;
 
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border: 1px solid var(--color-product-window-line);
+  border-radius: var(--radius-xl);
 
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--color-product-window-panel);
 
-  box-shadow:
-    0 20px 45px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  box-shadow: var(--shadow-md);
 }
 
 /* =========================================================
@@ -414,7 +412,7 @@ body {
   margin-bottom: 10px;
   padding: 0 2px;
 
-  color: var(--color-text-muted);
+  color: var(--color-product-window-muted);
 
   font-family: var(--font-body);
   font-size: 12px;
@@ -444,23 +442,26 @@ body {
 
   overflow: hidden;
 
-  border-radius: 6px;
+  border: 1px solid var(--color-product-window-line);
+  border-radius: var(--radius-sm);
 
-  background: var(--color-card-bg);
+  background: var(--color-product-window);
+  color: var(--color-product-window-text);
 
-  color: var(--color-text-primary);
-
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 
   transition:
     transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .auth-task:hover {
   transform: translateY(-1px);
 
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-primary);
+
+  box-shadow: var(--shadow-md);
 }
 
 /* =========================================================
@@ -540,7 +541,7 @@ body {
 .auth-task-title {
   margin-top: 5px;
 
-  color: var(--color-text-primary);
+  color: var(--color-product-window-text);
 
   font-family: var(--font-body);
   font-size: 13px;
@@ -603,7 +604,8 @@ body {
   border-radius: 16px;
 
   background: var(--color-card-bg);
-
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
   box-shadow: 0 8px 30px rgba(37, 52, 63, 0.06);
 }
 
@@ -613,7 +615,6 @@ body {
 
 .reset-heading {
   margin-bottom: 30px;
-  text-align: center;
 }
 
 .reset-heading h1 {
@@ -630,9 +631,7 @@ body {
 
 .reset-heading p {
   max-width: 340px;
-
-  margin: 9px auto 0;
-
+  margin-top: 10px;
   color: var(--color-text-secondary);
 
   font-family: var(--font-body);
@@ -850,8 +849,6 @@ body {
 .reset-footer {
   margin: 0;
 
-  text-align: center;
-
   color: var(--color-text-secondary);
 
   font-family: var(--font-body);
@@ -902,8 +899,9 @@ body {
   -------------------------------- */
 
   .site-header {
-    @apply border-b bg-[var(--color-app-bg)];
+    @apply border-b bg-[var(--color-app-bg)] sticky top-0 z-50;
     border-color: var(--color-border);
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   }
 
   .site-header-inner {
@@ -1287,11 +1285,11 @@ body {
 
   .auth-layout {
     @apply grid min-h-screen;
-    grid-template-columns: 42% 58%;
+    grid-template-columns: 60% 40%;
   }
 
   .auth-brand-panel {
-    @apply relative flex min-h-screen flex-col;
+    @apply relative flex min-h-screen flex-col justify-center;
     background: color-mix(
       in srgb,
       var(--color-text-primary) 92%,
@@ -1307,7 +1305,7 @@ body {
 
   .auth-form-container {
     @apply w-full;
-    max-width: 450px;
+    max-width: 400px;
   }
 
   /* ---------- Brand ---------- */
