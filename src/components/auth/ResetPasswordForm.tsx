@@ -91,19 +91,32 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <main className="reset-page">
-        <section className="reset-card">
+      <main>
+        <section>
           {/* Heading */}
           <div className="reset-heading">
-            <h1>Reset your password</h1>
+            <h1 style={{ color: "var(--color-text-primary)" }}>
+              Reset your password
+            </h1>
 
-            <p>Choose a new password for your Flowboard account.</p>
+            <p className=" text-[var(--color-text-secondary)]">
+              Choose a new password for your Flowboard account.
+            </p>
           </div>
 
           {/* Invalid Token */}
           {!token && (
-            <div className="reset-alert">
-              <p>This password reset link is invalid or has expired.</p>
+            <div
+              className="reset-alert"
+              style={{
+                backgroundColor: "var(--color-tag-red-bg)",
+                borderColor: "var(--color-priority-high)",
+                color: "var(--color-tag-red-text)",
+              }}
+            >
+              <p style={{ color: "var(--color-tag-red-text)" }}>
+                This password reset link is invalid or has expired.
+              </p>
             </div>
           )}
 
@@ -115,7 +128,11 @@ export default function ResetPasswordPage() {
           >
             {/* New Password */}
             <div className="form-field">
-              <label htmlFor="password" className="form-label">
+              <label
+                htmlFor="password"
+                className="form-label"
+                style={{ color: "var(--color-text-primary)" }}
+              >
                 New password
               </label>
 
@@ -129,12 +146,22 @@ export default function ResetPasswordPage() {
                   className={`form-input ${
                     errors.password ? "input-error" : ""
                   }`}
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
+                    color: "var(--color-text-primary)",
+                    borderColor: errors.password
+                      ? "var(--color-priority-high)"
+                      : "var(--color-border)",
+                  }}
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="password-toggle"
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
                   aria-label={
                     showPassword ? "Hide new password" : "Show new password"
                   }
@@ -144,13 +171,22 @@ export default function ResetPasswordPage() {
               </div>
 
               {errors.password && (
-                <p className="form-error">{errors.password.message}</p>
+                <p
+                  className="form-error"
+                  style={{ color: "var(--color-priority-high)" }}
+                >
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
             {/* Confirm Password */}
             <div className="form-field">
-              <label htmlFor="confirmPassword" className="form-label">
+              <label
+                htmlFor="confirmPassword"
+                className="form-label"
+                style={{ color: "var(--color-text-primary)" }}
+              >
                 Confirm password
               </label>
 
@@ -164,12 +200,22 @@ export default function ResetPasswordPage() {
                   className={`form-input ${
                     errors.confirmPassword ? "input-error" : ""
                   }`}
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
+                    color: "var(--color-text-primary)",
+                    borderColor: errors.confirmPassword
+                      ? "var(--color-priority-high)"
+                      : "var(--color-border)",
+                  }}
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((prev) => !prev)}
                   className="password-toggle"
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
                   aria-label={
                     showConfirmPassword
                       ? "Hide confirm password"
@@ -183,7 +229,12 @@ export default function ResetPasswordPage() {
               </div>
 
               {errors.confirmPassword && (
-                <p className="form-error">{errors.confirmPassword.message}</p>
+                <p
+                  className="form-error"
+                  style={{ color: "var(--color-priority-high)" }}
+                >
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
@@ -192,6 +243,10 @@ export default function ResetPasswordPage() {
               type="submit"
               disabled={mutation.isPending || !token}
               className="reset-submit"
+              style={{
+                backgroundColor: "var(--color-primary)",
+                color: "#ffffff",
+              }}
             >
               {mutation.isPending ? (
                 <>
@@ -204,8 +259,19 @@ export default function ResetPasswordPage() {
             </button>
 
             {/* Login */}
-            <p className="reset-footer">
-              Remember your password? <a href="/auth/login">Sign in</a>
+            <p
+              className="reset-footer"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              Remember your password?{" "}
+              <a
+                href="/auth/login"
+                style={{
+                  color: "var(--color-primary)",
+                }}
+              >
+                Sign in
+              </a>
             </p>
           </form>
         </section>
