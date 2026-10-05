@@ -5,8 +5,6 @@ import { RefreshCw, LayoutDashboard } from "lucide-react";
 
 import BoardCard, { type Board } from "./BoardCard";
 
-import CreateBoardCard from "../CreateBoardCard";
-
 type BoardOverviewCardProps = {
   workspaceId: string;
 };
