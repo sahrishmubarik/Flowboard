@@ -336,11 +336,374 @@
 //   );
 // }
 
+// "use client";
+// import { useEffect, useState } from "react";
+// import { useParams } from "next/navigation";
+// type MemberRole = "owner" | "admin" | "manager" | "member";
+// type MemberStatus = "ACTIVE" | "REMOVED";
+// type Member = {
+//   id: string;
+//   userId: string;
+//   name: string;
+//   email: string;
+//   role: MemberRole;
+//   status: MemberStatus;
+//   createdAt: string;
+// };
+// type MembersResponse = {
+//   message: string;
+//   members: Member[];
+//   pagination: {
+//     page: number;
+//     limit: number;
+//     total: number;
+//     totalPages: number;
+//   };
+// };
+// const roles = [
+//   { label: "All Members", value: "" },
+//   { label: "Owner", value: "owner" },
+//   { label: "Admin", value: "admin" },
+//   { label: "Manager", value: "manager" },
+//   { label: "Member", value: "member" },
+// ];
+// export default function WorkspaceMemberCard() {
+//   const params = useParams();
+//   const workspaceId = params.workspaceId as string;
+//   const [members, setMembers] = useState<Member[]>([]);
+//   const [selectedRole, setSelectedRole] = useState("");
+//   const [page, setPage] = useState(1);
+//   const [limit, setLimit] = useState(5);
+//   const [totalPages, setTotalPages] = useState(1);
+//   const [total, setTotal] = useState(0);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState("");
+//   const [deactivatingMemberId, setDeactivatingMemberId] = useState<
+//     string | null
+//   >(null);
+//   const fetchMembers = async () => {
+//     if (!workspaceId) return;
+//     try {
+//       setLoading(true);
+//       setError("");
+//       const searchParams = new URLSearchParams({
+//         page: String(page),
+//         limit: String(limit),
+//       });
+//       if (selectedRole) {
+//         searchParams.set("role", selectedRole);
+//       }
+//       const url = `/api/workspace/${workspaceId}/members?${searchParams.toString()}`;
+//       const response = await fetch(url);
+//       const data: MembersResponse = await response.json();
+//       if (!response.ok) {
+//         throw new Error(data.message || "Failed to fetch members.");
+//       }
+//       setMembers(data.members);
+//       setTotalPages(data.pagination.totalPages);
+//       setTotal(data.pagination.total);
+//     } catch (error) {
+//       console.error("FETCH_MEMBERS_ERROR:", error);
+//       setError(
+//         error instanceof Error ? error.message : "Failed to fetch members.",
+//       );
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//   useEffect(() => {
+//     fetchMembers();
+//   }, [workspaceId, page, limit, selectedRole]);
+//   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+//     setSelectedRole(event.target.value);
+//     setPage(1);
+//   };
+//   const handleLimitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+//     setLimit(Number(event.target.value));
+//     setPage(1);
+//   };
+//   const handlePrevious = () => {
+//     setPage((currentPage) => Math.max(currentPage - 1, 1));
+//   };
+//   const handleNext = () => {
+//     setPage((currentPage) => Math.min(currentPage + 1, totalPages));
+//   };
+//   const handleDeactivateMember = async (userId: string) => {
+//     try {
+//       setDeactivatingMemberId(userId);
+//       setError("");
+//       const response = await fetch(`/api/workspace/${workspaceId}/members`, {
+//         method: "PATCH",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ userId }),
+//       });
+//       const data = await response.json();
+//       if (!response.ok) {
+//         throw new Error(data.message || "Failed to deactivate member.");
+//       }
+//       await fetchMembers();
+//     } catch (error) {
+//       console.error("DEACTIVATE_MEMBER_ERROR:", error);
+//       setError(
+//         error instanceof Error ? error.message : "Failed to deactivate member.",
+//       );
+//     } finally {
+//       setDeactivatingMemberId(null);
+//     }
+//   };
+//   return (
+//     <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
+//       {/* Header */}
+//       <div className="border-b border-[var(--color-border)] px-6 py-5">
+//         <div className="flex items-start gap-4">
+//           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
+//             <svg
+//               width="20"
+//               height="20"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="1.8"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//             >
+//               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+//               <circle cx="9" cy="7" r="4" />
+//               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+//               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+//             </svg>
+//           </div>
+
+//           <div>
+//             <h2
+//               className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
+//               style={{ fontFamily: "var(--font-display)" }}
+//             >
+//               Workspace members
+//             </h2>
+
+//             <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
+//               View workspace members and manage their organization roles.
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Content */}
+//       <div className="space-y-6 p-6">
+//         {/* Filters */}
+//         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+//           {/* Role */}
+//           <div className="flex-1">
+//             <label
+//               htmlFor="member-role"
+//               className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
+//             >
+//               Filter by role
+//             </label>
+
+//             <select
+//               id="member-role"
+//               value={selectedRole}
+//               onChange={handleRoleChange}
+//               className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
+//             >
+//               {roles.map((role) => (
+//                 <option key={role.value} value={role.value}>
+//                   {role.label}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+
+//           {/* Limit */}
+//           <div className="w-full sm:w-32">
+//             <label
+//               htmlFor="member-limit"
+//               className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
+//             >
+//               Per page
+//             </label>
+
+//             <select
+//               id="member-limit"
+//               value={limit}
+//               onChange={handleLimitChange}
+//               className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
+//             >
+//               <option value={5}>5</option>
+//               <option value={10}>10</option>
+//               <option value={20}>20</option>
+//             </select>
+//           </div>
+//         </div>
+
+//         {/* Member Count */}
+//         {!loading && !error && (
+//           <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-3">
+//             <p className="text-xs text-[var(--color-text-muted)]">
+//               Showing{" "}
+//               <span className="font-medium text-[var(--color-text-primary)]">
+//                 {members.length}
+//               </span>{" "}
+//               of{" "}
+//               <span className="font-medium text-[var(--color-text-primary)]">
+//                 {total}
+//               </span>{" "}
+//               member{total === 1 ? "" : "s"}
+//             </p>
+//           </div>
+//         )}
+
+//         {/* Loading */}
+//         {loading && (
+//           <div className="flex items-center justify-center rounded-xl bg-[var(--color-app-bg)] py-10">
+//             <div className="flex items-center gap-3">
+//               <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
+
+//               <p className="text-sm text-[var(--color-text-secondary)]">
+//                 Loading members...
+//               </p>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Error */}
+//         {!loading && error && (
+//           <div className="flex items-start gap-3 rounded-xl border border-[var(--color-tag-red-text)] bg-[var(--color-tag-red-bg)] px-4 py-3">
+//             <span className="mt-0.5 text-[var(--color-priority-high)]">!</span>
+
+//             <p className="text-sm text-[var(--color-text-primary)]">{error}</p>
+//           </div>
+//         )}
+
+//         {/* Empty */}
+//         {!loading && !error && members.length === 0 && (
+//           <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-10 text-center">
+//             <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-tag-neutral-bg)] text-[var(--color-text-muted)]">
+//               <svg
+//                 width="18"
+//                 height="18"
+//                 viewBox="0 0 24 24"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 strokeWidth="1.8"
+//                 strokeLinecap="round"
+//                 strokeLinejoin="round"
+//               >
+//                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+//                 <circle cx="9" cy="7" r="4" />
+//               </svg>
+//             </div>
+
+//             <p className="mt-3 text-sm font-medium text-[var(--color-text-primary)]">
+//               No members found
+//             </p>
+
+//             <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+//               Try changing the role filter.
+//             </p>
+//           </div>
+//         )}
+
+//         {/* Members */}
+//         {!loading && !error && members.length > 0 && (
+//           <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+//             <div className="divide-y divide-[var(--color-border)]">
+//               {members.map((member) => (
+//                 <div
+//                   key={member.id}
+//                   className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-[var(--color-app-bg)]"
+//                 >
+//                   {/* User */}
+//                   <div className="flex min-w-0 items-center gap-3">
+//                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-medium text-[var(--color-primary)]">
+//                       {member.name ? member.name.charAt(0).toUpperCase() : "U"}
+//                     </div>
+
+//                     <div className="min-w-0">
+//                       <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+//                         {member.name}
+//                       </p>
+
+//                       <p className="truncate text-xs text-[var(--color-text-muted)]">
+//                         {member.email}
+//                       </p>
+//                     </div>
+//                   </div>
+
+//                   {/* Role + Action */}
+//                   <div className="flex shrink-0 items-center gap-2">
+//                     <span className="rounded-full bg-[var(--color-tag-neutral-bg)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
+//                       {member.role}
+//                     </span>
+
+//                     {/* Owner cannot be deactivated */}
+//                     {member.role !== "owner" && (
+//                       <button
+//                         type="button"
+//                         onClick={() => handleDeactivateMember(member.userId)}
+//                         disabled={deactivatingMemberId === member.userId}
+//                         className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+//                       >
+//                         {deactivatingMemberId === member.userId
+//                           ? "Deactivating..."
+//                           : "Deactivate"}
+//                       </button>
+//                     )}
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Pagination */}
+//         {!loading && !error && members.length > 0 && totalPages > 1 && (
+//           <div className="flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-5">
+//             <button
+//               type="button"
+//               onClick={handlePrevious}
+//               disabled={page === 1}
+//               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-app-bg)] disabled:cursor-not-allowed disabled:opacity-40"
+//             >
+//               Previous
+//             </button>
+
+//             <div className="text-center">
+//               <p className="text-sm font-medium text-[var(--color-text-primary)]">
+//                 Page {page} of {totalPages}
+//               </p>
+
+//               <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+//                 {total} total member {total === 1 ? "" : "s"}
+//               </p>
+//             </div>
+
+//             <button
+//               type="button"
+//               onClick={handleNext}
+//               disabled={page === totalPages}
+//               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-app-bg)] disabled:cursor-not-allowed disabled:opacity-40"
+//             >
+//               Next
+//             </button>
+//           </div>
+//         )}
+//       </div>
+//     </section>
+//   );
+// }
+
 "use client";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+
 type MemberRole = "owner" | "admin" | "manager" | "member";
+
 type MemberStatus = "ACTIVE" | "REMOVED";
+
 type Member = {
   id: string;
   userId: string;
@@ -350,6 +713,7 @@ type Member = {
   status: MemberStatus;
   createdAt: string;
 };
+
 type MembersResponse = {
   message: string;
   members: Member[];
@@ -360,6 +724,7 @@ type MembersResponse = {
     totalPages: number;
   };
 };
+
 const roles = [
   { label: "All Members", value: "" },
   { label: "Owner", value: "owner" },
@@ -367,83 +732,214 @@ const roles = [
   { label: "Manager", value: "manager" },
   { label: "Member", value: "member" },
 ];
+
 export default function WorkspaceMemberCard() {
   const params = useParams();
+
   const workspaceId = params.workspaceId as string;
+
   const [members, setMembers] = useState<Member[]>([]);
+
   const [selectedRole, setSelectedRole] = useState("");
+
   const [page, setPage] = useState(1);
+
   const [limit, setLimit] = useState(5);
+
   const [totalPages, setTotalPages] = useState(1);
+
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
+
   const [deactivatingMemberId, setDeactivatingMemberId] = useState<
     string | null
   >(null);
-  const fetchMembers = async () => {
-    if (!workspaceId) return;
-    try {
-      setLoading(true);
-      setError("");
-      const searchParams = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (selectedRole) {
-        searchParams.set("role", selectedRole);
-      }
-      const url = `/api/workspace/${workspaceId}/members?${searchParams.toString()}`;
-      const response = await fetch(url);
-      const data: MembersResponse = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch members.");
-      }
-      setMembers(data.members);
-      setTotalPages(data.pagination.totalPages);
-      setTotal(data.pagination.total);
-    } catch (error) {
-      console.error("FETCH_MEMBERS_ERROR:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch members.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+  // =========================================================
+  // FETCH MEMBERS
+  // =========================================================
+
   useEffect(() => {
-    fetchMembers();
+    if (!workspaceId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadMembers() {
+      try {
+        const searchParams = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+
+        if (selectedRole) {
+          searchParams.set("role", selectedRole);
+        }
+
+        const url = `/api/workspace/${workspaceId}/members?${searchParams.toString()}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const data: MembersResponse = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch members.");
+        }
+
+        // Ignore response if component was unmounted
+        // or dependencies changed before request completed.
+        if (cancelled) {
+          return;
+        }
+
+        setMembers(data.members);
+        setTotalPages(data.pagination.totalPages);
+        setTotal(data.pagination.total);
+        setError("");
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("FETCH_MEMBERS_ERROR:", error);
+
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch members.",
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadMembers();
+
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceId, page, limit, selectedRole]);
+
+  // =========================================================
+  // ROLE FILTER
+  // =========================================================
+
   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setLoading(true);
+    setError("");
+
     setSelectedRole(event.target.value);
+
+    // When changing filter, always go back to page 1.
     setPage(1);
   };
+
+  // =========================================================
+  // PAGE LIMIT
+  // =========================================================
+
   const handleLimitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setLoading(true);
+    setError("");
+
     setLimit(Number(event.target.value));
+
+    // Changing page size should start from first page.
     setPage(1);
   };
+
+  // =========================================================
+  // PAGINATION
+  // =========================================================
+
   const handlePrevious = () => {
+    if (page <= 1) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     setPage((currentPage) => Math.max(currentPage - 1, 1));
   };
+
   const handleNext = () => {
+    if (page >= totalPages) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     setPage((currentPage) => Math.min(currentPage + 1, totalPages));
   };
+
+  // =========================================================
+  // DEACTIVATE MEMBER
+  // =========================================================
+
   const handleDeactivateMember = async (userId: string) => {
     try {
       setDeactivatingMemberId(userId);
       setError("");
+
       const response = await fetch(`/api/workspace/${workspaceId}/members`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          userId,
+        }),
       });
+
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.message || "Failed to deactivate member.");
       }
-      await fetchMembers();
+
+      /*
+       * If this is the last member on the current page and
+       * we're not on page 1, move to the previous page.
+       *
+       * Changing page will automatically trigger useEffect
+       * and fetch fresh members.
+       */
+      if (members.length === 1 && page > 1) {
+        setLoading(true);
+        setPage((currentPage) => currentPage - 1);
+
+        return;
+      }
+
+      /*
+       * Otherwise update the UI locally.
+       * This avoids making another API request.
+       */
+      setMembers((currentMembers) =>
+        currentMembers.filter((member) => member.userId !== userId),
+      );
+
+      setTotal((currentTotal) => {
+        const nextTotal = Math.max(currentTotal - 1, 0);
+
+        setTotalPages(Math.max(1, Math.ceil(nextTotal / limit)));
+
+        return nextTotal;
+      });
     } catch (error) {
       console.error("DEACTIVATE_MEMBER_ERROR:", error);
+
       setError(
         error instanceof Error ? error.message : "Failed to deactivate member.",
       );
@@ -451,9 +947,13 @@ export default function WorkspaceMemberCard() {
       setDeactivatingMemberId(null);
     }
   };
+
   return (
     <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
-      {/* Header */}
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
+
       <div className="border-b border-[var(--color-border)] px-6 py-5">
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
@@ -468,8 +968,11 @@ export default function WorkspaceMemberCard() {
               strokeLinejoin="round"
             >
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+
               <circle cx="9" cy="7" r="4" />
+
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </div>
@@ -477,7 +980,9 @@ export default function WorkspaceMemberCard() {
           <div>
             <h2
               className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
+              style={{
+                fontFamily: "var(--font-display)",
+              }}
             >
               Workspace members
             </h2>
@@ -489,11 +994,18 @@ export default function WorkspaceMemberCard() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* =====================================================
+          CONTENT
+      ====================================================== */}
+
       <div className="space-y-6 p-6">
-        {/* Filters */}
+        {/* ===================================================
+            FILTERS
+        ==================================================== */}
+
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          {/* Role */}
+          {/* ROLE FILTER */}
+
           <div className="flex-1">
             <label
               htmlFor="member-role"
@@ -506,7 +1018,8 @@ export default function WorkspaceMemberCard() {
               id="member-role"
               value={selectedRole}
               onChange={handleRoleChange}
-              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
+              disabled={loading}
+              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {roles.map((role) => (
                 <option key={role.value} value={role.value}>
@@ -516,7 +1029,8 @@ export default function WorkspaceMemberCard() {
             </select>
           </div>
 
-          {/* Limit */}
+          {/* PAGE LIMIT */}
+
           <div className="w-full sm:w-32">
             <label
               htmlFor="member-limit"
@@ -529,16 +1043,22 @@ export default function WorkspaceMemberCard() {
               id="member-limit"
               value={limit}
               onChange={handleLimitChange}
-              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
+              disabled={loading}
+              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <option value={5}>5</option>
+
               <option value={10}>10</option>
+
               <option value={20}>20</option>
             </select>
           </div>
         </div>
 
-        {/* Member Count */}
+        {/* ===================================================
+            MEMBER COUNT
+        ==================================================== */}
+
         {!loading && !error && (
           <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-3">
             <p className="text-xs text-[var(--color-text-muted)]">
@@ -555,7 +1075,10 @@ export default function WorkspaceMemberCard() {
           </div>
         )}
 
-        {/* Loading */}
+        {/* ===================================================
+            LOADING
+        ==================================================== */}
+
         {loading && (
           <div className="flex items-center justify-center rounded-xl bg-[var(--color-app-bg)] py-10">
             <div className="flex items-center gap-3">
@@ -568,7 +1091,10 @@ export default function WorkspaceMemberCard() {
           </div>
         )}
 
-        {/* Error */}
+        {/* ===================================================
+            ERROR
+        ==================================================== */}
+
         {!loading && error && (
           <div className="flex items-start gap-3 rounded-xl border border-[var(--color-tag-red-text)] bg-[var(--color-tag-red-bg)] px-4 py-3">
             <span className="mt-0.5 text-[var(--color-priority-high)]">!</span>
@@ -577,7 +1103,10 @@ export default function WorkspaceMemberCard() {
           </div>
         )}
 
-        {/* Empty */}
+        {/* ===================================================
+            EMPTY STATE
+        ==================================================== */}
+
         {!loading && !error && members.length === 0 && (
           <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-10 text-center">
             <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-tag-neutral-bg)] text-[var(--color-text-muted)]">
@@ -592,6 +1121,7 @@ export default function WorkspaceMemberCard() {
                 strokeLinejoin="round"
               >
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+
                 <circle cx="9" cy="7" r="4" />
               </svg>
             </div>
@@ -606,7 +1136,10 @@ export default function WorkspaceMemberCard() {
           </div>
         )}
 
-        {/* Members */}
+        {/* ===================================================
+            MEMBERS
+        ==================================================== */}
+
         {!loading && !error && members.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
             <div className="divide-y divide-[var(--color-border)]">
@@ -615,7 +1148,8 @@ export default function WorkspaceMemberCard() {
                   key={member.id}
                   className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-[var(--color-app-bg)]"
                 >
-                  {/* User */}
+                  {/* USER */}
+
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-medium text-[var(--color-primary)]">
                       {member.name ? member.name.charAt(0).toUpperCase() : "U"}
@@ -632,13 +1166,15 @@ export default function WorkspaceMemberCard() {
                     </div>
                   </div>
 
-                  {/* Role + Action */}
+                  {/* ROLE + ACTION */}
+
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="rounded-full bg-[var(--color-tag-neutral-bg)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
                       {member.role}
                     </span>
 
-                    {/* Owner cannot be deactivated */}
+                    {/* OWNER CANNOT BE DEACTIVATED */}
+
                     {member.role !== "owner" && (
                       <button
                         type="button"
@@ -658,7 +1194,10 @@ export default function WorkspaceMemberCard() {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* ===================================================
+            PAGINATION
+        ==================================================== */}
+
         {!loading && !error && members.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-5">
             <button
@@ -676,7 +1215,8 @@ export default function WorkspaceMemberCard() {
               </p>
 
               <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                {total} total member {total === 1 ? "" : "s"}
+                {total} total member
+                {total === 1 ? "" : "s"}
               </p>
             </div>
 

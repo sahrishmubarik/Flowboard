@@ -268,7 +268,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 
@@ -308,13 +308,11 @@ export default function RegisterCard() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-
     mode: "onBlur",
-
     defaultValues: {
       name: "",
       email: "",
@@ -322,12 +320,15 @@ export default function RegisterCard() {
       confirmPassword: "",
     },
   });
-
   /*
    * Watch password so we can show the
    * password strength UI from the design.
    */
-  const password = watch("password", "");
+  const password = useWatch({
+    control,
+    name: "password",
+    defaultValue: "",
+  });
 
   const passwordStrength = getPasswordStrength(password);
 

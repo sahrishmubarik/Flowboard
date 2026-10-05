@@ -38,7 +38,7 @@ export async function inviteMemberInBoard(
   boardId: string,
   userId: string,
   email: string,
-  role: string,
+  role: "owner" | "admin" | "manager" | "member",
 ) {
   const user = await getCurrentUser();
   if (!user) {

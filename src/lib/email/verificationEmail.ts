@@ -5,6 +5,26 @@ type VerificationEmailOptions = {
   verificationUrl: string;
 };
 
+type ResetPasswordEmailOptions = {
+  email: string;
+  resetPasswordUrl: string;
+};
+
+type InvitationEmailOptions = {
+  email: string;
+  assignRole: string;
+  organizationName: string;
+  invitationUrl: string;
+};
+
+type BoardInvitationEmailOptions = {
+  email: string;
+  organizationName: string;
+  boardName: string;
+  role: string;
+  boardInviteUrl: string;
+};
+
 export async function sendVerificationEmail({
   email,
   verificationUrl,
@@ -37,14 +57,12 @@ export async function sendVerificationEmail({
 export async function resetPasswordEmail({
   email,
   resetPasswordUrl,
-}: VerificationEmailOptions) {
+}: ResetPasswordEmailOptions) {
   return sendEmail({
     to: email,
     subject: "Reset your password email",
     html: `
       <h1>Reset Password</h1>
-
-   
 
       <p>
         Click the button below to reset your password:
@@ -66,7 +84,7 @@ export async function sendInvitationEmail({
   assignRole,
   organizationName,
   invitationUrl,
-}: VerificationEmailOptions) {
+}: InvitationEmailOptions) {
   return sendEmail({
     to: email,
     subject: `Flowboard invite from ${organizationName}`,
@@ -75,8 +93,6 @@ export async function sendInvitationEmail({
       <p>
         Join the ${organizationName} organization  as a ${assignRole}:
       </p>
-
-   
 
       <p>
         Click the  below link  and join the ${organizationName} organization :
@@ -99,7 +115,7 @@ export async function sendBoardInvitationEmail({
   boardName,
   role,
   boardInviteUrl,
-}: VerificationEmailOptions) {
+}: BoardInvitationEmailOptions) {
   return sendEmail({
     to: email,
     subject: `Flowboard invite from ${organizationName}`,
@@ -108,8 +124,6 @@ export async function sendBoardInvitationEmail({
       <p>
         Join the ${boardName}   organization  as a ${role}:
       </p>
-
-   
 
       <p>
         Click the  below link  and join the ${boardName} of that ${organizationName} organization :

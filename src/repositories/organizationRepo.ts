@@ -95,7 +95,11 @@ export const workspaceRepo = {
       .where(eq(workspace.id, workspaceId));
     return workspaceData;
   },
-  async create(transaction: typeof db, { workspaceName, createdBy }) {
+
+  async create(
+    transaction: typeof db,
+    { workspaceName, createdBy }: { workspaceName: string; createdBy: string },
+  ) {
     const [row] = await transaction
       .insert(workspace)
       .values({

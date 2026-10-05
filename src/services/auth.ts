@@ -199,6 +199,10 @@ export async function loginUser(body: LoginBody) {
     throw new AppError("Please verify your email before logging in.", 403);
   }
 
+  if (!user.password) {
+    throw new AppError("Invalid email or password.", 401);
+  }
+
   // 6. Compare password
   const validPassword = await bcrypt.compare(password, user.password);
 
@@ -360,7 +364,7 @@ export async function resetPassword(body: ResetPasswordBody) {
 }
 
 export async function changePassword(body: changePasswordBody) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) {
     throw new AppError("User not found ", 403);
   }

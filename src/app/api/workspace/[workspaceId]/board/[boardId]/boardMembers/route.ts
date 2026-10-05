@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
 ) {
   try {
-    const { workspaceId, boardId } = await params;
+    const { boardId } = await params;
 
     const { searchParams } = new URL(request.url);
 
@@ -39,10 +39,12 @@ export async function GET(
   }
 }
 /* invite member */
+type BoardMemberRole = "owner" | "admin" | "manager" | "member";
+
 type InviteMemberInBoard = {
   userId: string;
   email: string;
-  role: string;
+  role: BoardMemberRole;
 };
 export async function POST(
   request: Request,
@@ -83,7 +85,7 @@ export async function DELETE(
   { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
 ) {
   try {
-    const { workspaceId, boardId } = await params;
+    const { boardId } = await params;
     const body: DeleteMemberBody = await request.json();
     const { userId } = body;
 
