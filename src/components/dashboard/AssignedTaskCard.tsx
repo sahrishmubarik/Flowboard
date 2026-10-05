@@ -31,13 +31,10 @@ type TaskDetails = {
 };
 
 /*
- * Temporary card/task data.
+ * Temporary task data.
  *
- * These are only being used because List/Card CRUD
- * does not exist yet.
- *
- * The board name will NOT be hardcoded.
- * It will come from the real board API.
+ * List/Card CRUD does not exist yet,
+ * so these values are temporarily mocked.
  */
 const mockTaskDetails: TaskDetails[] = [
   {
@@ -91,30 +88,52 @@ const mockTaskDetails: TaskDetails[] = [
   },
 ];
 
+/* =========================================================
+   PRIORITY
+   Uses new global color schema
+   ========================================================= */
+
 const priorityConfig: Record<
   TaskPriority,
   {
     label: string;
     dot: string;
+    text: string;
+    background: string;
   }
 > = {
   critical: {
     label: "Critical",
-    dot: "bg-[var(--coral)]",
+    dot: "bg-[var(--color-priority-high)]",
+    text: "text-[var(--color-priority-high)]",
+    background: "bg-[var(--color-tag-red-bg)]",
   },
+
   high: {
     label: "High",
-    dot: "bg-[var(--amber)]",
+    dot: "bg-[var(--color-priority-high)]",
+    text: "text-[var(--color-priority-high)]",
+    background: "bg-[var(--color-tag-red-bg)]",
   },
+
   medium: {
     label: "Medium",
-    dot: "bg-[var(--indigo)]",
+    dot: "bg-[var(--color-priority-medium)]",
+    text: "text-[var(--color-priority-medium)]",
+    background: "bg-[var(--color-tag-neutral-bg)]",
   },
+
   low: {
     label: "Low",
-    dot: "bg-[var(--sage)]",
+    dot: "bg-[var(--color-priority-low)]",
+    text: "text-[var(--color-priority-low)]",
+    background: "bg-[var(--color-tag-green-bg)]",
   },
 };
+
+/* =========================================================
+   STATE
+   ========================================================= */
 
 const stateConfig: Record<
   TaskState,
@@ -125,36 +144,48 @@ const stateConfig: Record<
 > = {
   todo: {
     label: "Todo",
-    className: "bg-[var(--mist)] text-[var(--ink-soft)]",
+    className:
+      "bg-[var(--color-tag-neutral-bg)] text-[var(--color-tag-neutral-text)]",
   },
 
   "in-progress": {
     label: "In Progress",
-    className: "bg-[var(--indigo)]/10 text-[var(--indigo)]",
+    className:
+      "bg-[var(--color-tag-blue-bg)] text-[var(--color-tag-blue-text)]",
   },
 
   review: {
     label: "Review",
-    className: "bg-[var(--amber)]/15 text-[var(--amber-deep)]",
+    className:
+      "bg-[var(--color-tag-purple-bg)] text-[var(--color-tag-purple-text)]",
   },
 
   done: {
     label: "Done",
-    className: "bg-[var(--sage)]/15 text-[var(--sage)]",
+    className:
+      "bg-[var(--color-tag-green-bg)] text-[var(--color-tag-green-text)]",
   },
 };
+
+/* =========================================================
+   STATE BADGE
+   ========================================================= */
 
 function TaskStateBadge({ state }: { state: TaskState }) {
   const config = stateConfig[state];
 
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2 py-1 text-[11px] font-medium ${config.className}`}
+      className={`inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1 text-[11px] font-medium ${config.className}`}
     >
       {config.label}
     </span>
   );
 }
+
+/* =========================================================
+   PRIORITY BADGE
+   ========================================================= */
 
 function PriorityBadge({ priority }: { priority: TaskPriority }) {
   const config = priorityConfig[priority];
@@ -163,26 +194,19 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
     <div className="flex items-center gap-2">
       <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${config.dot}`} />
 
-      <span className="text-sm text-[var(--ink)]">{config.label}</span>
+      <span className={`text-sm ${config.text}`}>{config.label}</span>
     </div>
   );
 }
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
 
 export default function AssignedTasksCard() {
   const params = useParams();
 
   const workspaceId = params.workspaceId as string;
-
-  /*
-   * --------------------------------------------------------------------------
-   * Fetch boards for the current logged-in user
-   * --------------------------------------------------------------------------
-   *
-   * We do NOT send userId here.
-   *
-   * Your backend authentication should identify the current user and
-   * return the boards available to that user.
-   */
 
   const {
     data: boardData,
@@ -209,25 +233,11 @@ export default function AssignedTasksCard() {
   const boards = boardData?.boards ?? [];
 
   /*
-   * --------------------------------------------------------------------------
-   * Temporary task rows
-   * --------------------------------------------------------------------------
+   * Temporary mapping.
    *
-   * For now:
-   *
-   * REAL:
-   *   board.id
-   *   board.boardName
-   *
-   * TEMPORARY:
-   *   cardName
-   *   priority
-   *   state
-   *   dueDate
-   *
-   * Later Card/List CRUD will replace mockTaskDetails completely.
+   * Board information comes from API.
+   * Task information is currently mocked.
    */
-
   const tasks = boards
     .map((board, index) => {
       const task = mockTaskDetails[index];
@@ -245,24 +255,66 @@ export default function AssignedTasksCard() {
     .filter(Boolean);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] shadow-sm">
-      {/* ------------------------------------------------------------------ */}
-      {/* Header                                                             */}
-      {/* ------------------------------------------------------------------ */}
+    <section
+      className="
+        overflow-hidden
+        rounded-[var(--radius-xl)]
+        border
+        bg-[var(--color-card-bg)]
+        shadow-[var(--shadow-sm)]
+      "
+      style={{
+        borderColor: "var(--color-border)",
+      }}
+    >
+      {/* =========================================================
+          HEADER
+      ========================================================== */}
 
-      <div className="flex items-center justify-between border-b border-[var(--mist)] px-5 py-4">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          border-b
+          px-5
+          py-4
+        "
+        style={{
+          borderColor: "var(--color-border)",
+        }}
+      >
         <div className="flex min-w-0 items-center gap-3">
           <h2
-            className="shrink-0 text-[17px] font-semibold text-[var(--ink)]"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="
+              shrink-0
+              text-[17px]
+              font-semibold
+              tracking-tight
+            "
+            style={{
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-display)",
+            }}
           >
             Assigned to me
           </h2>
 
-          <div className="hidden items-center gap-2 text-xs text-[var(--ink-soft)] sm:flex">
+          <div
+            className="
+              hidden
+              items-center
+              gap-2
+              text-xs
+              sm:flex
+            "
+            style={{
+              color: "var(--color-text-muted)",
+            }}
+          >
             <span>#All boards</span>
 
-            <span className="text-[var(--mist)]">•</span>
+            <span style={{ color: "var(--color-border)" }}>•</span>
 
             <span>assignee: me</span>
           </div>
@@ -270,96 +322,243 @@ export default function AssignedTasksCard() {
 
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-[var(--radius-sm)]
+            transition-colors
+          "
+          style={{
+            color: "var(--color-text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--color-card-hover)";
+            e.currentTarget.style.color = "var(--color-text-primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--color-text-secondary)";
+          }}
           aria-label="Task options"
         >
           <MoreHorizontal size={18} />
         </button>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Loading                                                            */}
-      {/* ------------------------------------------------------------------ */}
+      {/* =========================================================
+          LOADING
+      ========================================================== */}
 
       {isBoardsLoading && (
-        <div className="space-y-0">
+        <div>
           {Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
-              className="grid grid-cols-5 gap-4 border-b border-[var(--mist)] px-5 py-4"
+              className="
+                grid
+                grid-cols-5
+                gap-4
+                border-b
+                px-5
+                py-4
+              "
+              style={{
+                borderColor: "var(--color-border)",
+              }}
             >
-              <div className="h-4 animate-pulse rounded bg-[var(--mist)]" />
-              <div className="h-4 animate-pulse rounded bg-[var(--mist)]" />
-              <div className="h-4 animate-pulse rounded bg-[var(--mist)]" />
-              <div className="h-4 animate-pulse rounded bg-[var(--mist)]" />
-              <div className="h-4 animate-pulse rounded bg-[var(--mist)]" />
+              {Array.from({ length: 5 }).map((_, itemIndex) => (
+                <div
+                  key={itemIndex}
+                  className="
+                    h-4
+                    animate-pulse
+                    rounded
+                  "
+                  style={{
+                    background: "var(--color-column-bg)",
+                  }}
+                />
+              ))}
             </div>
           ))}
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Error                                                              */}
-      {/* ------------------------------------------------------------------ */}
+      {/* =========================================================
+          ERROR
+      ========================================================== */}
 
       {isBoardsError && (
         <div className="px-5 py-10 text-center">
-          <p className="text-sm font-medium text-[var(--coral)]">
+          <p
+            className="text-sm font-medium"
+            style={{
+              color: "var(--color-priority-high)",
+            }}
+          >
             Failed to load your boards.
           </p>
 
-          <p className="mt-1 text-xs text-[var(--ink-soft)]">
+          <p
+            className="mt-1 text-xs"
+            style={{
+              color: "var(--color-text-muted)",
+            }}
+          >
             Please refresh the page and try again.
           </p>
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* No boards                                                          */}
-      {/* ------------------------------------------------------------------ */}
+      {/* =========================================================
+          NO BOARDS
+      ========================================================== */}
 
       {!isBoardsLoading && !isBoardsError && boards.length === 0 && (
         <div className="px-5 py-12 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--mist)]">
-            <Circle size={18} className="text-[var(--ink-soft)]" />
+          <div
+            className="
+                mx-auto
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-xl
+              "
+            style={{
+              background: "var(--color-column-bg)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            <Circle size={18} />
           </div>
 
-          <p className="mt-3 text-sm font-medium text-[var(--ink)]">
+          <p
+            className="mt-3 text-sm font-medium"
+            style={{
+              color: "var(--color-text-primary)",
+            }}
+          >
             No boards yet
           </p>
 
-          <p className="mt-1 text-xs text-[var(--ink-soft)]">
+          <p
+            className="mt-1 text-xs"
+            style={{
+              color: "var(--color-text-muted)",
+            }}
+          >
             Create a board and your assigned cards will appear here.
           </p>
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Table                                                              */}
-      {/* ------------------------------------------------------------------ */}
+      {/* =========================================================
+          TABLE
+      ========================================================== */}
 
       {!isBoardsLoading && !isBoardsError && boards.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse">
             <thead>
-              <tr className="border-b border-[var(--mist)] bg-[var(--paper)]">
-                <th className="w-[180px] px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+              <tr
+                className="border-b"
+                style={{
+                  borderColor: "var(--color-border)",
+                  background: "var(--color-column-bg)",
+                }}
+              >
+                <th
+                  className="
+                      w-[180px]
+                      px-5
+                      py-3
+                      text-left
+                      text-[11px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.08em]
+                    "
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   Board
                 </th>
 
-                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <th
+                  className="
+                      px-5
+                      py-3
+                      text-left
+                      text-[11px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.08em]
+                    "
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   Card
                 </th>
 
-                <th className="w-[150px] px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <th
+                  className="
+                      w-[150px]
+                      px-5
+                      py-3
+                      text-left
+                      text-[11px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.08em]
+                    "
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   Priority
                 </th>
 
-                <th className="w-[150px] px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <th
+                  className="
+                      w-[150px]
+                      px-5
+                      py-3
+                      text-left
+                      text-[11px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.08em]
+                    "
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   State
                 </th>
 
-                <th className="w-[130px] px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <th
+                  className="
+                      w-[130px]
+                      px-5
+                      py-3
+                      text-left
+                      text-[11px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.08em]
+                    "
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
                   Due
                 </th>
               </tr>
@@ -374,70 +573,149 @@ export default function AssignedTasksCard() {
                 return (
                   <tr
                     key={task.id}
-                    className="group border-b border-[var(--mist)] last:border-b-0 hover:bg-[var(--paper)]"
+                    className="
+                        group
+                        border-b
+                        transition-colors
+                        last:border-b-0
+                      "
+                    style={{
+                      borderColor: "var(--color-border)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background =
+                        "var(--color-card-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
                   >
-                    {/* Board */}
+                    {/* =================================================
+                          BOARD
+                      ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--board-panel)] text-white">
+                        <span
+                          className="
+                              flex
+                              h-7
+                              w-7
+                              shrink-0
+                              items-center
+                              justify-center
+                              rounded-md
+                              text-white
+                            "
+                          style={{
+                            background: "var(--color-primary)",
+                          }}
+                        >
                           <span className="text-[10px] font-semibold">
                             {task.boardName.charAt(0).toUpperCase()}
                           </span>
                         </span>
 
-                        <span className="max-w-[130px] truncate text-sm font-medium text-[var(--ink)]">
+                        <span
+                          className="
+                              max-w-[130px]
+                              truncate
+                              text-sm
+                              font-medium
+                            "
+                          style={{
+                            color: "var(--color-text-primary)",
+                          }}
+                        >
                           {task.boardName}
                         </span>
                       </div>
                     </td>
 
-                    {/* Card */}
+                    {/* =================================================
+                          CARD
+                      ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <button
                         type="button"
-                        className="flex max-w-[420px] items-center gap-2 text-left"
+                        className="
+                            flex
+                            max-w-[420px]
+                            items-center
+                            gap-2
+                            text-left
+                          "
                       >
                         {task.state === "done" ? (
                           <CheckSquare2
                             size={16}
-                            className="shrink-0 text-[var(--sage)]"
+                            className="shrink-0"
+                            style={{
+                              color: "var(--color-status-done)",
+                            }}
                           />
                         ) : (
                           <Circle
                             size={16}
-                            className="shrink-0 text-[var(--indigo)]"
+                            className="shrink-0"
+                            style={{
+                              color: "var(--color-primary)",
+                            }}
                           />
                         )}
 
-                        <span className="truncate text-sm text-[var(--ink)] transition-colors group-hover:text-[var(--indigo)]">
+                        <span
+                          className="
+                              truncate
+                              text-sm
+                              transition-colors
+                            "
+                          style={{
+                            color: "var(--color-text-primary)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color =
+                              "var(--color-primary)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color =
+                              "var(--color-text-primary)";
+                          }}
+                        >
                           {task.cardName}
                         </span>
                       </button>
                     </td>
 
-                    {/* Priority */}
+                    {/* =================================================
+                          PRIORITY
+                      ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <PriorityBadge priority={task.priority} />
                     </td>
 
-                    {/* State */}
+                    {/* =================================================
+                          STATE
+                      ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <TaskStateBadge state={task.state} />
                     </td>
 
-                    {/* Due */}
+                    {/* =================================================
+                          DUE DATE
+                      ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <div
-                        className={`flex items-center gap-2 text-sm ${
-                          isOverdue
-                            ? "text-[var(--coral)]"
-                            : "text-[var(--ink-soft)]"
-                        }`}
+                        className="flex items-center gap-2 text-sm"
+                        style={{
+                          color: isOverdue
+                            ? "var(--color-priority-high)"
+                            : "var(--color-text-secondary)",
+                        }}
                       >
                         {isOverdue && <Clock3 size={14} />}
 
@@ -452,15 +730,33 @@ export default function AssignedTasksCard() {
         </div>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Footer                                                             */}
-      {/* ------------------------------------------------------------------ */}
+      {/* =========================================================
+          FOOTER
+      ========================================================== */}
 
       {!isBoardsLoading && boards.length > 0 && (
-        <div className="border-t border-[var(--mist)] px-5 py-3.5">
+        <div
+          className="border-t px-5 py-3.5"
+          style={{
+            borderColor: "var(--color-border)",
+          }}
+        >
           <button
             type="button"
-            className="text-sm font-medium text-[var(--indigo)] transition-colors hover:text-[var(--indigo-deep)]"
+            className="
+              text-sm
+              font-medium
+              transition-colors
+            "
+            style={{
+              color: "var(--color-primary)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--color-primary-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--color-primary)";
+            }}
           >
             View all my tasks →
           </button>
