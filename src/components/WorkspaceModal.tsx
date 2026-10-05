@@ -1,3 +1,4 @@
+//
 "use client";
 
 import { ReactNode } from "react";
@@ -20,13 +21,13 @@ export default function WorkspaceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(9_30_66_/_0.4)] px-4">
+      <div className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-6 shadow-xl">
         {/* Close */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--ink-soft)] transition hover:bg-[var(--mist)] hover:text-[var(--ink)]"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--color-text-muted)] transition hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)]"
         >
           ×
         </button>
@@ -34,7 +35,7 @@ export default function WorkspaceModal({
         {/* Title */}
         <div className="mb-6 pr-8">
           <h2
-            className="text-xl font-medium text-[var(--ink)]"
+            className="text-xl font-medium text-[var(--color-text-primary)]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {title}
