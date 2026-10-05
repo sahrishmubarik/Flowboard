@@ -19,6 +19,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginCard() {
   const { showToast } = useToast();
@@ -94,11 +95,11 @@ export default function LoginCard() {
         <section className="auth-brand-panel flex justify-center items-center">
           {/* Logo */}
           <div className="px-8 py-3 ml-[-460px]">
-            <a href="/" className="brand-logo ">
+            <Link href="/" className="brand-logo ">
               <span className="brand-logo-mark">F</span>
 
               <span className="brand-logo-name">Flowboard</span>
-            </a>
+            </Link>
           </div>
 
           {/* Brand Content */}
@@ -307,7 +308,7 @@ export default function LoginCard() {
               {/* Signup */}
 
               <p className="mt-6 text-center text-sm text-slate-500">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <a
                   href={registerUrl}
                   className="font-semibold text-[var(--indigo)] hover:text-[var(--indigo-deep)]"

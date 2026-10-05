@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Ellipsis, Plus, Trash2, Move, X, Pencil } from "lucide-react";
 
@@ -24,8 +24,6 @@ export default function BoardList({
   boardId,
   closeMenuSignal,
 }: BoardListProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -33,6 +31,11 @@ export default function BoardList({
   const [listName, setListName] = useState(list.listName);
 
   const queryClient = useQueryClient();
+  const [menuOpenedAtSignal, setMenuOpenedAtSignal] = useState<number | null>(
+    null,
+  );
+
+  const isMenuOpen = menuOpenedAtSignal === closeMenuSignal;
 
   // =========================================================
   // DELETE LIST
@@ -64,7 +67,7 @@ export default function BoardList({
 
     onSuccess: () => {
       setIsDeleteModalOpen(false);
-      setIsMenuOpen(false);
+      closeMenu();
 
       queryClient.invalidateQueries({
         queryKey: ["board-lists", workspaceId, boardId],
@@ -103,7 +106,7 @@ export default function BoardList({
 
     onSuccess: () => {
       setIsRenameModalOpen(false);
-      setIsMenuOpen(false);
+      closeMenu();
 
       queryClient.invalidateQueries({
         queryKey: ["board-lists", workspaceId, boardId],
@@ -116,7 +119,7 @@ export default function BoardList({
   // =========================================================
 
   const handleDeleteClick = () => {
-    setIsMenuOpen(false);
+    closeMenu();
     setIsDeleteModalOpen(true);
   };
 
@@ -135,7 +138,7 @@ export default function BoardList({
   // =========================================================
 
   const handleRenameClick = () => {
-    setIsMenuOpen(false);
+    closeMenu();
     setListName(list.listName);
     setIsRenameModalOpen(true);
   };
@@ -159,10 +162,9 @@ export default function BoardList({
 
     updateListMutation.mutate(trimmedName);
   };
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [closeMenuSignal]);
-
+  const closeMenu = () => {
+    setMenuOpenedAtSignal(null);
+  };
   return (
     <>
       {/* =====================================================
@@ -198,7 +200,10 @@ export default function BoardList({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                setIsMenuOpen((prev) => !prev);
+
+                setMenuOpenedAtSignal((previous) =>
+                  previous === closeMenuSignal ? null : closeMenuSignal,
+                );
               }}
               disabled={
                 deleteListMutation.isPending || updateListMutation.isPending
@@ -609,7 +614,7 @@ export default function BoardList({
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  "{list.listName}"
+                  &quot;{list.listName}&quot;
                 </span>
                 ? This action cannot be undone.
               </p>

@@ -1,4 +1,3 @@
-import BoardList from "@/components/board/BoardList";
 import { db } from "@/db";
 import { boardList } from "@/db/boardSchema";
 import { eq, max, and } from "drizzle-orm";

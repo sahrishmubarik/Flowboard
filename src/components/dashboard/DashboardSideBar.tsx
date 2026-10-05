@@ -49,6 +49,24 @@ type BoardResponse = {
   boards: Board[];
 };
 
+type Theme = "light" | "dark";
+
+const getInitialTheme = (): Theme => {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  const savedTheme = localStorage.getItem("flowboard-theme");
+
+  if (savedTheme === "light" || savedTheme === "dark") {
+    return savedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+};
+
 export default function DashboardSidebar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -67,37 +85,39 @@ export default function DashboardSidebar() {
      GLOBAL THEME
   ================================================================ */
 
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
+  // const [theme, setTheme] = useState<"light" | "dark">("light");
+  // const [mounted, setMounted] = useState(false);
+
+  // useEffect(() => {
+  //   const savedTheme = localStorage.getItem("flowboard-theme") as
+  //     | "light"
+  //     | "dark"
+  //     | null;
+
+  //   const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+  //     .matches
+  //     ? "dark"
+  //     : "light";
+
+  //   const nextTheme = savedTheme ?? systemTheme;
+
+  //   document.documentElement.setAttribute("data-theme", nextTheme);
+
+  //   setTheme(nextTheme);
+  //   setMounted(true);
+  // }, []);
+
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("flowboard-theme") as
-      | "light"
-      | "dark"
-      | null;
-
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-      .matches
-      ? "dark"
-      : "light";
-
-    const nextTheme = savedTheme ?? systemTheme;
-
-    document.documentElement.setAttribute("data-theme", nextTheme);
-
-    setTheme(nextTheme);
-    setMounted(true);
-  }, []);
-
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
   const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
+    const nextTheme: Theme = theme === "dark" ? "light" : "dark";
 
-    document.documentElement.setAttribute("data-theme", nextTheme);
     localStorage.setItem("flowboard-theme", nextTheme);
-
     setTheme(nextTheme);
   };
-
   /* ---------------------------------------------------------------------- */
   /* Workspaces                                                             */
   /* ---------------------------------------------------------------------- */
@@ -329,11 +349,7 @@ export default function DashboardSidebar() {
                 : "Switch to dark theme"
             }
           >
-            {mounted && theme === "dark" ? (
-              <Sun size={17} />
-            ) : (
-              <Moon size={17} />
-            )}
+            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
 
           {/* Mobile close */}

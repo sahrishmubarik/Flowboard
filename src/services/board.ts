@@ -23,7 +23,7 @@ export async function createBoard(workspaceId: string, boardName: string) {
 
   const newBoard = await db.transaction(async (tx) => {
     return BoardRepo.create(
-      tx,
+      tx as unknown as typeof db,
       workspaceId,
       validation.data.boardName,
       user.userId,

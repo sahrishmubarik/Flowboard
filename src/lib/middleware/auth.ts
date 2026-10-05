@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-export async function getCurrentUser() {
+type CurrentUserPayload = JwtPayload & {
+  userId: string;
+};
+
+export async function getCurrentUser(): Promise<CurrentUserPayload | null> {
   const cookieStore = await cookies();
 
   const token = cookieStore.get("token")?.value;
@@ -13,11 +17,14 @@ export async function getCurrentUser() {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!);
 
-    console.log("JWT PAYLOAD:", payload);
+    if (typeof payload === "string" || typeof payload.userId !== "string") {
+      return null;
+    }
 
-    return payload;
+    return payload as CurrentUserPayload;
   } catch (error) {
     console.error("JWT VERIFY ERROR:", error);
+
     return null;
   }
 }

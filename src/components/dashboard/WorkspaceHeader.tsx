@@ -23,7 +23,7 @@ export type WorkspaceAction =
   | "create-board";
 
 type WorkspaceHeaderProps = {
-  workspaceName: string;
+  workspaceName?: string;
   boardCount: number;
   onAction: (action: WorkspaceAction) => void;
 };

@@ -15,7 +15,6 @@ import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
 import { db } from "@/db";
 
-
 export async function inviteMember(
   workspaceId: string,
   body: {
@@ -64,7 +63,7 @@ export async function inviteMember(
     expiresAt,
     createdBy: user_id,
   });
-  const assignRole=invitation.role;
+  const assignRole = invitation.role;
   console.log(invitation);
   // 9. Verification URL
 
@@ -133,28 +132,22 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
 
   // 6. Status
 
-// 6. Status
+  // 6. Status
 
-if (invitation.status === "REVOKED") {
-  throw new AppError(
-    "This invitation has been cancelled by the workspace administrator.",
-    400,
-  );
-}
+  if (invitation.status === "REVOKED") {
+    throw new AppError(
+      "This invitation has been cancelled by the workspace administrator.",
+      400,
+    );
+  }
 
-if (invitation.status === "ACCEPTED") {
-  throw new AppError(
-    "This invitation has already been accepted.",
-    400,
-  );
-}
+  if (invitation.status === "ACCEPTED") {
+    throw new AppError("This invitation has already been accepted.", 400);
+  }
 
-if (invitation.status !== "PENDING") {
-  throw new AppError(
-    "This invitation is no longer available.",
-    400,
-  );
-}
+  if (invitation.status !== "PENDING") {
+    throw new AppError("This invitation is no longer available.", 400);
+  }
   // 7. Expiry
 
   if (new Date() > invitation.expiresAt) {
@@ -175,25 +168,17 @@ if (invitation.status !== "PENDING") {
 
   // 9. Transaction
 
-  const result = await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     console.log("19. Transaction started");
 
-    const member = await organizationMemberRepo.create(tx, {
+    await organizationMemberRepo.create(tx, {
       userId: user_id,
       organizationId: workspaceId,
       role: invitation.role,
       assignedBy: invitation.createdBy,
     });
 
-    const updatedInvitation = await invitationRepo.updateStatus(
-      tx,
-      invitation.id,
-    );
-
-    return {
-      member,
-      updatedInvitation,
-    };
+    await invitationRepo.updateStatus(tx, invitation.id);
   });
 
   return {
@@ -216,10 +201,7 @@ export async function revokeInvitation(
 
   const user_id = user.userId;
 
-  const validation = validateData(
-    revokeInvitationValidation,
-    body,
-  );
+  const validation = validateData(revokeInvitationValidation, body);
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
@@ -231,19 +213,14 @@ export async function revokeInvitation(
     throw new AppError("Workspace not found.", 404);
   }
 
-  await requireWorkspaceRole(
-    user_id,
-    workspaceId,
-    ["owner", "admin"],
-  );
+  await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
 
   const { email } = validation.data;
 
-  const cancelInvitation =
-    await invitationRepo.revokeInvitation(
-      workspaceId,
-      email,
-    );
+  const cancelInvitation = await invitationRepo.revokeInvitation(
+    workspaceId,
+    email,
+  );
 
   if (!cancelInvitation) {
     throw new AppError("Invitation not found.", 404);
@@ -273,26 +250,24 @@ export async function getInvitationStatus(
 
   const user_id = user.userId;
 
-  const workspaceData =
-    await workspaceRepo.findById(workspaceId);
+  const workspaceData = await workspaceRepo.findById(workspaceId);
 
   if (!workspaceData) {
     throw new AppError("Workspace not found.", 404);
   }
 
-  await requireWorkspaceRole(
-    user_id,
-    workspaceId,
-    ["owner", "admin"],
-  );
+  await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
 
-  const result =
-    await invitationRepo.getInvitationByWorkspaceId(workspaceId, page , limit);
-console.log("INVITATION RESULT:", result);
+  const result = await invitationRepo.getInvitationByWorkspaceId(
+    workspaceId,
+    page,
+    limit,
+  );
+  console.log("INVITATION RESULT:", result);
   return Response.json(
     {
       message: "Invitation status fetched successfully",
-       invitations: result.invitations,
+      invitations: result.invitations,
 
       pagination: {
         page,

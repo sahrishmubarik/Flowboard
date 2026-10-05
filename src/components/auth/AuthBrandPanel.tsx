@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AuthBrandBoard from "./AuthBrandBoard";
 
 interface AuthBrandPanelProps {
@@ -15,10 +17,10 @@ export default function AuthBrandPanel({
     <section className="auth-brand-panel">
       {/* Logo */}
       <div className="auth-brand-header ml-[-460px]">
-        <a href="/" className="brand-logo">
+        <Link href="/" className="brand-logo">
           <span className="brand-logo-mark">F</span>
           <span className="brand-logo-name">Flowboard</span>
-        </a>
+        </Link>
       </div>
 
       {/* Content */}

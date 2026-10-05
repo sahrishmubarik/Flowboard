@@ -214,7 +214,7 @@ export default function InboxPage() {
                       </span>
 
                       <span className="text-sm text-[var(--color-product-window-muted)]">
-                        Add something you don't want to forget...
+                        Add something you don&apos;t want to forget...
                       </span>
                     </div>
                   </div>
@@ -254,7 +254,7 @@ export default function InboxPage() {
                   {/* Bottom hint */}
                   <div className="mt-6 flex items-center justify-between border-t border-[var(--color-border)] pt-5">
                     <span className="text-xs text-[var(--color-text-muted)]">
-                      Move an item to a board when you're ready.
+                      Move an item to a board when you&apos;re ready.
                     </span>
 
                     <span className="hidden text-xs text-[var(--color-text-muted)] sm:block">
@@ -368,7 +368,7 @@ export default function InboxPage() {
           <div className="mx-auto grid max-w-[1000px] items-center gap-12 md:grid-cols-[0.9fr_1.1fr]">
             {/* Text */}
             <div>
-              <div className="fb-eyebrow">When you're ready</div>
+              <div className="fb-eyebrow">When you&apos;re ready</div>
 
               <h2 className="fb-heading mt-3 text-[32px] leading-tight md:text-[42px]">
                 Your inbox is the starting point.
