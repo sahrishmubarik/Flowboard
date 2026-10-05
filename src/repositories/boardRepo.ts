@@ -29,7 +29,7 @@ export const BoardRepo = {
     await tx.insert(boardMembers).values({
       boardId: boardDetails.id,
       userId: createdBy,
-      assignedBy:createdBy,
+      assignedBy: createdBy,
       role: "owner",
     });
 
@@ -85,18 +85,19 @@ export const BoardRepo = {
       .where(eq(board.id, boardId));
     return updateBoard;
   },
-  
-  async getBoardById(boardId:string){
-       const boardDetails=await db.select({
-        id:board.id,
-        boardName:board.boardName,
-        organizationId:board.organizationId,
-       }).from(board)
-       .where(eq(board.id,boardId));
-       return boardDetails;
 
+  async getBoardById(boardId: string) {
+    const boardDetails = await db
+      .select({
+        id: board.id,
+        boardName: board.boardName,
+        organizationId: board.organizationId,
+      })
+      .from(board)
+      .where(eq(board.id, boardId));
+    return boardDetails;
   },
-     async deleteBoard(boardId: string) {
+  async deleteBoard(boardId: string) {
     const [deletedBoard] = await db
       .delete(board)
       .where(eq(board.id, boardId))
@@ -104,8 +105,7 @@ export const BoardRepo = {
         id: board.id,
         boardName: board.boardName,
       });
-  
+
     return deletedBoard;
-  
-    },
+  },
 };
