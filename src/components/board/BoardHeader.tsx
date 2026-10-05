@@ -533,21 +533,3 @@ function getAvatarColor(index: number) {
 
   return colors[index % colors.length];
 }
-
-function formatSprintDate(date: string) {
-  if (!date) {
-    return "";
-  }
-
-  const parsedDate = new Date(`${date}T00:00:00`);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return date;
-  }
-
-  return parsedDate.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}

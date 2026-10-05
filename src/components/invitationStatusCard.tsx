@@ -40,55 +40,121 @@ export default function InvitationStatusCard() {
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const [error, setError] = useState("");
-
-  const fetchInvitations = async () => {
+  useEffect(() => {
     if (!workspaceId) return;
 
-    try {
-      setIsLoading(true);
-      setError("");
+    let cancelled = false;
 
-      const response = await fetch(
-        `/api/workspace/${workspaceId}/invitation?page=${page}&limit=${limit}`,
-        {
-          method: "GET",
-        },
-      );
+    async function loadInvitations() {
+      try {
+        const response = await fetch(
+          `/api/workspace/${workspaceId}/invitation?page=${page}&limit=${limit}`,
+          {
+            method: "GET",
+          },
+        );
 
-      const data: InvitationResponse = await response.json();
+        const data: InvitationResponse = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch invitations.");
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch invitations.");
+        }
+
+        if (cancelled) return;
+
+        setInvitations(data.invitations);
+        setTotalPages(data.pagination.totalPages);
+        setTotal(data.pagination.total);
+        setError("");
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("FETCH_INVITATIONS_ERROR:", error);
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch invitations.",
+        );
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-
-      setInvitations(data.invitations);
-      setTotalPages(data.pagination.totalPages);
-      setTotal(data.pagination.total);
-    } catch (error) {
-      console.error("FETCH_INVITATIONS_ERROR:", error);
-
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch invitations.",
-      );
-    } finally {
-      setIsLoading(false);
     }
-  };
 
-  useEffect(() => {
-    fetchInvitations();
+    void loadInvitations();
+
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceId, page, limit]);
+  // const fetchInvitations = async () => {
+  //   if (!workspaceId) return;
 
+  //   try {
+  //     setIsLoading(true);
+  //     setError("");
+
+  //     const response = await fetch(
+  //       `/api/workspace/${workspaceId}/invitation?page=${page}&limit=${limit}`,
+  //       {
+  //         method: "GET",
+  //       },
+  //     );
+
+  //     const data: InvitationResponse = await response.json();
+
+  //     if (!response.ok) {
+  //       throw new Error(data.message || "Failed to fetch invitations.");
+  //     }
+
+  //     setInvitations(data.invitations);
+  //     setTotalPages(data.pagination.totalPages);
+  //     setTotal(data.pagination.total);
+  //   } catch (error) {
+  //     console.error("FETCH_INVITATIONS_ERROR:", error);
+
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to fetch invitations.",
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchInvitations();
+  // }, [workspaceId, page, limit]);
+
+  // const handleLimitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  //   setLimit(Number(event.target.value));
+  //   setPage(1);
+  // };
   const handleLimitChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setIsLoading(true);
+    setError("");
     setLimit(Number(event.target.value));
     setPage(1);
   };
 
+  // const handlePrevious = () => {
+  //   setPage((currentPage) => Math.max(currentPage - 1, 1));
+  // };
   const handlePrevious = () => {
+    setIsLoading(true);
+    setError("");
+
     setPage((currentPage) => Math.max(currentPage - 1, 1));
   };
 
+  // const handleNext = () => {
+  //   setPage((currentPage) => Math.min(currentPage + 1, totalPages));
+  // };
   const handleNext = () => {
+    setIsLoading(true);
+    setError("");
+
     setPage((currentPage) => Math.min(currentPage + 1, totalPages));
   };
 

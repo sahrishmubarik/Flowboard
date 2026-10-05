@@ -2,16 +2,12 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { db } from "@/db";
 import { AppError } from "@/lib/errors/AppError";
 import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
-import {
-  validateData,
-  workspaceValidation,
-} from "@/lib/validations/workspace";
+import { validateData, workspaceValidation } from "@/lib/validations/workspace";
 
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
 
-
-export async function createWorkspace(body:{name:string}) {
+export async function createWorkspace(body: { name: string }) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -29,23 +25,18 @@ export async function createWorkspace(body:{name:string}) {
   const userId = user.userId;
   console.log("Workspace user id ", userId);
 
-  const result = await db.transaction(async (transaction) => {
-    // 1. Create workspace
-    const newWorkspace = await workspaceRepo.create(transaction, {
+  const result = await db.transaction(async (tx) => {
+    const newWorkspace = await workspaceRepo.create(tx as any, {
       workspaceName,
       createdBy: userId,
     });
 
-    // 2. Create owner membership
-    const organizationMember = await organizationMemberRepo.create(
-      transaction,
-      {
-        organizationId: newWorkspace.id,
-        userId,
-        role: "owner",
-        assignedBy: userId,
-      },
-    );
+    const organizationMember = await organizationMemberRepo.create(tx as any, {
+      organizationId: newWorkspace.id,
+      userId,
+      role: "owner",
+      assignedBy: userId,
+    });
 
     return {
       workspace: newWorkspace,
@@ -79,7 +70,7 @@ export async function getWorkspace() {
   return Response.json(
     {
       message: "Fetched workspaces successfully",
-     ...workspaceData,
+      ...workspaceData,
     },
 
     {
@@ -114,55 +105,56 @@ export async function getWorkspaceById(workspaceId: string) {
   );
 }
 
-export async function updateWorkspaceName(workspaceId:string, workspaceName:string){
-    const user = await getCurrentUser();
+export async function updateWorkspaceName(
+  workspaceId: string,
+  workspaceName: string,
+) {
+  const user = await getCurrentUser();
 
   if (!user) {
-    throw new AppError("Unauthorized user", 401); 
+    throw new AppError("Unauthorized user", 401);
   }
-const user_id=user.userId;
-const validation = validateData(
-    workspaceValidation,
-    {workspaceName,}
-  );
+  const user_id = user.userId;
+  const validation = validateData(workspaceValidation, { workspaceName });
 
   if (!validation.success) {
-   throw new AppError(validation.error, 400); 
+    throw new AppError(validation.error, 400);
   }
 
-  const { workspaceName:validateWorkspaceName }  = validation.data;
+  const { workspaceName: validateWorkspaceName } = validation.data;
 
-await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
-const result= workspaceRepo.updateWorkspaceName(workspaceId,validateWorkspaceName);
-return Response.json(
+  await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
+  const result = workspaceRepo.updateWorkspaceName(
+    workspaceId,
+    validateWorkspaceName,
+  );
+  return Response.json(
     {
       message: "Workspace Name update successfully",
       workspace: result,
-      
     },
     {
       status: 201,
-    }
+    },
   );
 }
 
-export async function deleteWorkspace(workspaceId:string){
-    const user = await getCurrentUser();
+export async function deleteWorkspace(workspaceId: string) {
+  const user = await getCurrentUser();
 
   if (!user) {
-    throw new AppError("Unauthorized user", 401); 
+    throw new AppError("Unauthorized user", 401);
   }
-const user_id=user.userId;
-await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
-const result= workspaceRepo.deleteWorkspace(workspaceId);
-return Response.json(
+  const user_id = user.userId;
+  await requireWorkspaceRole(user_id, workspaceId, ["owner"]);
+  const result = workspaceRepo.deleteWorkspace(workspaceId);
+  return Response.json(
     {
       message: "Workspace DELETE successfully",
       workspace: result,
-      
     },
     {
       status: 201,
-    }
+    },
   );
 }

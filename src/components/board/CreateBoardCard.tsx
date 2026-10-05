@@ -46,6 +46,7 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
 
       setMessage("Created board successfully.");
       setBoardName("");
+      onClose();
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",

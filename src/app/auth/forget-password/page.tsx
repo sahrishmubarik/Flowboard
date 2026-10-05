@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
 import { Suspense } from "react";
 import {
   forgotPasswordSchema,
@@ -77,11 +78,11 @@ export default function ForgotPasswordPage() {
         <section className="auth-brand-panel flex justify-center items-center">
           {/* Logo */}
           <div className="px-8 py-3 ml-[-460px]">
-            <a href="/" className="brand-logo ">
+            <Link href="/" className="brand-logo ">
               <span className="brand-logo-mark">F</span>
 
               <span className="brand-logo-name">Flowboard</span>
-            </a>
+            </Link>
           </div>
 
           {/* Brand Content */}

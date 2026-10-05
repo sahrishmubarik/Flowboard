@@ -416,7 +416,8 @@ export default function WorkspaceDashboardPage() {
     );
   }
 
-  const workspace_name = workspaceData?.workspace.workspaceName;
+  const workspace_name =
+    workspaceData?.workspace?.workspaceName ?? workspace?.workspaceName ?? "";
 
   /* =========================================================
      WORKSPACE LOADING

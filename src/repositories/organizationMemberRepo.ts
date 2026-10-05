@@ -4,10 +4,22 @@ import { organizationMembers } from "@/db/workspaceSchema";
 import { eq, and, count } from "drizzle-orm";
 import type { DbTransaction } from "@/db/types";
 
+type WorkspaceMemberRole = (typeof organizationMembers.$inferSelect)["role"];
+
 export const organizationMemberRepo = {
   async create(
     transaction: DbTransaction,
-    { organizationId, userId, role, assignedBy },
+    {
+      organizationId,
+      userId,
+      role,
+      assignedBy,
+    }: {
+      organizationId: string;
+      userId: string;
+      role: WorkspaceMemberRole;
+      assignedBy: string | null;
+    },
   ) {
     const [row] = await transaction
       .insert(organizationMembers)
@@ -16,7 +28,7 @@ export const organizationMemberRepo = {
         userId,
         role,
         assignedBy,
-      })
+      } as typeof organizationMembers.$inferInsert)
       .returning({
         id: organizationMembers.id,
       });

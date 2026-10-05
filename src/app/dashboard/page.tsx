@@ -149,7 +149,7 @@ export default function DashboardPage() {
       <main className="flex min-h-screen items-center justify-center bg-[var(--color-app-bg)] px-6">
         <div className="w-full max-w-md rounded-2xl border border-[var(--color-priority-high)] bg-[var(--color-tag-red-bg)] px-6 py-5">
           <p className="text-sm font-semibold text-[var(--color-priority-high)]">
-            We couldn't load your workspaces.
+            We couldn&apos;t load your workspaces.
           </p>
 
           <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
@@ -197,7 +197,7 @@ export default function DashboardPage() {
               >
                 A clear place to organize
                 <span className="block text-[var(--color-primary)]">
-                  your team's work.
+                  your team&apos;s work.
                 </span>
               </h1>
 
