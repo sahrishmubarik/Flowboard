@@ -87,10 +87,10 @@ export default function WorkspaceHeader({
       {/* ================================================================ */}
 
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs font-medium text-[var(--ink-soft)]">
+        <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
           <span>Workspace</span>
 
-          <span>/</span>
+          <span className="text-[var(--color-border)]">/</span>
 
           <span>
             {boardCount} {boardCount === 1 ? "board" : "boards"}
@@ -98,7 +98,7 @@ export default function WorkspaceHeader({
         </div>
 
         <h2
-          className="mt-2 truncate text-3xl font-semibold tracking-tight text-[var(--ink)]"
+          className="mt-2 truncate text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]"
           style={{
             fontFamily: "var(--font-display)",
           }}
@@ -106,7 +106,7 @@ export default function WorkspaceHeader({
           {workspaceName}
         </h2>
 
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
           Organize your work, keep your team aligned, and move ideas from
           planning to completion.
         </p>
@@ -122,7 +122,17 @@ export default function WorkspaceHeader({
         <button
           type="button"
           aria-label="Search"
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] text-[var(--ink-soft)] transition hover:border-[var(--indigo)]/30 hover:text-[var(--indigo)]"
+          className="
+            flex h-10 w-10 items-center justify-center rounded-xl
+            border border-[var(--color-border)]
+            bg-[var(--color-card-bg)]
+            text-[var(--color-text-secondary)]
+            transition-all duration-200
+            hover:border-[var(--color-primary)]/40
+            hover:bg-[var(--color-primary-active-bg)]
+            hover:text-[var(--color-primary)]
+            cursor-pointer
+          "
         >
           <Search size={17} />
         </button>
@@ -132,7 +142,17 @@ export default function WorkspaceHeader({
         <button
           type="button"
           aria-label="Notifications"
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] text-[var(--ink-soft)] transition hover:border-[var(--indigo)]/30 hover:text-[var(--indigo)]"
+          className="
+            flex h-10 w-10 items-center justify-center rounded-xl
+            border border-[var(--color-border)]
+            bg-[var(--color-card-bg)]
+            text-[var(--color-text-secondary)]
+            transition-all duration-200
+            hover:border-[var(--color-primary)]/40
+            hover:bg-[var(--color-primary-active-bg)]
+            hover:text-[var(--color-primary)]
+             cursor-pointer
+          "
         >
           <Bell size={17} />
         </button>
@@ -146,10 +166,10 @@ export default function WorkspaceHeader({
           aria-label="Workspace options"
           aria-expanded={showActions}
           onClick={() => setShowActions((previous) => !previous)}
-          className={`flex h-10 w-10 items-center justify-center rounded-xl border bg-[var(--paper-raised)] transition ${
+          className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200  cursor-pointer ${
             showActions
-              ? "border-[var(--indigo)]/40 text-[var(--indigo)]"
-              : "border-[var(--mist)] text-[var(--ink-soft)] hover:border-[var(--indigo)]/30 hover:text-[var(--ink)]"
+              ? "border-[var(--color-primary)]/50 bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]"
+              : "border-[var(--color-border)] bg-[var(--color-card-bg)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-primary-active-bg)] hover:text-[var(--color-primary)]  cursor-pointer"
           }`}
         >
           <MoreHorizontal size={18} />
@@ -167,15 +187,23 @@ export default function WorkspaceHeader({
               type="button"
               aria-label="Close workspace actions"
               onClick={() => setShowActions(false)}
-              className="fixed inset-0 z-40 cursor-default"
+              className="fixed inset-0 z-40  "
             />
 
-            <div className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] shadow-xl">
+            <div
+              className="
+                absolute right-0 top-12 z-50 w-[280px]
+                overflow-hidden rounded-2xl
+                border border-[var(--color-border)]
+                bg-[var(--color-card-bg)]
+                shadow-[var(--shadow-md)]
+              "
+            >
               {/* Dropdown header */}
 
-              <div className="border-b border-[var(--mist)] px-4 py-3">
+              <div className="border-b border-[var(--color-border)] px-4 py-3">
                 <p
-                  className="text-sm font-semibold text-[var(--ink)]"
+                  className="text-sm font-semibold text-[var(--color-text-primary)]"
                   style={{
                     fontFamily: "var(--font-display)",
                   }}
@@ -183,17 +211,16 @@ export default function WorkspaceHeader({
                   Workspace actions
                 </p>
 
-                <p className="mt-0.5 text-[11px] text-[var(--ink-soft)]">
+                <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
                   Manage {workspaceName}
                 </p>
               </div>
 
               {/* Actions */}
 
-              <div className="p-1.5">
+              <div className="p-1.5 ">
                 {actions.map((action) => {
                   const Icon = action.icon;
-
                   const isDestructive = action.destructive;
 
                   return (
@@ -201,19 +228,19 @@ export default function WorkspaceHeader({
                       key={action.value}
                       type="button"
                       onClick={() => handleAction(action.value)}
-                      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors  cursor-pointer ${
                         isDestructive
-                          ? "hover:bg-[var(--coral)]/[0.07]"
-                          : "hover:bg-[var(--mist)]"
+                          ? "hover:bg-[var(--color-tag-red-bg)]"
+                          : "hover:bg-[var(--color-card-hover)]"
                       }`}
                     >
                       {/* Icon */}
 
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
                           isDestructive
-                            ? "bg-[var(--coral)]/[0.08] text-[var(--coral)]"
-                            : "bg-[var(--indigo)]/[0.08] text-[var(--indigo)]"
+                            ? "bg-[var(--color-tag-red-bg)] text-[var(--color-priority-high)] group-hover:bg-[var(--color-priority-high)] group-hover:text-white"
+                            : "bg-[var(--color-primary-active-bg)] text-[var(--color-primary)] group-hover:bg-[var(--color-primary)] group-hover:text-white"
                         }`}
                       >
                         <Icon size={16} />
@@ -225,14 +252,14 @@ export default function WorkspaceHeader({
                         <span
                           className={`block text-xs font-medium ${
                             isDestructive
-                              ? "text-[var(--coral)]"
-                              : "text-[var(--ink)]"
+                              ? "text-[var(--color-priority-high)]"
+                              : "text-[var(--color-text-primary)]"
                           }`}
                         >
                           {action.label}
                         </span>
 
-                        <span className="mt-0.5 block truncate text-[10px] text-[var(--ink-soft)]">
+                        <span className="mt-0.5 block truncate text-[10px] text-[var(--color-text-muted)]">
                           {action.description}
                         </span>
                       </span>

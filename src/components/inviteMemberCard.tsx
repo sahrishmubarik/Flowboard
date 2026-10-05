@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -22,18 +21,17 @@ const roles = [
   },
 ];
 
-
-export default function InviteMemberCard()
-{
-
+export default function InviteMemberCard() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
   const params = useParams();
 
   const workspaceId = params.workspaceId as string;
+
   async function handleInvite() {
     setMessage("");
     setError("");
@@ -46,27 +44,22 @@ export default function InviteMemberCard()
     try {
       setLoading(true);
 
-      const response = await fetch(
-        `/api/workspace/${workspaceId}/invitation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: "invite-member",
-            email: email.trim(),
-            role,
-          }),
+      const response = await fetch(`/api/workspace/${workspaceId}/invitation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          action: "invite-member",
+          email: email.trim(),
+          role,
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to send invitation.",
-        );
+        throw new Error(data.message || "Failed to send invitation.");
       }
 
       setMessage("Invitation sent successfully.");
@@ -74,9 +67,7 @@ export default function InviteMemberCard()
       setRole("member");
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong.",
+        error instanceof Error ? error.message : "Something went wrong.",
       );
     } finally {
       setLoading(false);
@@ -84,11 +75,28 @@ export default function InviteMemberCard()
   }
 
   return (
-    <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] shadow-sm">
+    <section
+      className="w-full max-w-2xl overflow-hidden rounded-2xl shadow-sm"
+      style={{
+        border: "1px solid var(--color-border)",
+        backgroundColor: "var(--color-card-bg)",
+      }}
+    >
       {/* Header */}
-      <div className="border-b border-[var(--mist)] px-6 py-5">
+      <div
+        className="px-6 py-5"
+        style={{
+          borderBottom: "1px solid var(--color-border)",
+        }}
+      >
         <div className="flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--indigo)]/[0.08] text-[var(--indigo)]">
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+            style={{
+              backgroundColor: "var(--color-primary-active-bg)",
+              color: "var(--color-primary)",
+            }}
+          >
             <svg
               width="20"
               height="20"
@@ -108,15 +116,22 @@ export default function InviteMemberCard()
 
           <div>
             <h2
-              className="text-xl font-medium tracking-tight text-[var(--ink)]"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="text-xl font-medium tracking-tight"
+              style={{
+                fontFamily: "var(--font-display)",
+                color: "var(--color-text-primary)",
+              }}
             >
               Invite a member
             </h2>
 
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-              Add someone to your organization by sending them an
-              invitation.
+            <p
+              className="mt-1 text-sm leading-6"
+              style={{
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Add someone to your organization by sending them an invitation.
             </p>
           </div>
         </div>
@@ -128,7 +143,10 @@ export default function InviteMemberCard()
         <div>
           <label
             htmlFor="email"
-            className="mb-2 block text-sm font-medium text-[var(--ink)]"
+            className="mb-2 block text-sm font-medium"
+            style={{
+              color: "var(--color-text-primary)",
+            }}
           >
             Email address
           </label>
@@ -143,7 +161,12 @@ export default function InviteMemberCard()
               setMessage("");
             }}
             placeholder="user@example.com"
-            className="w-full rounded-xl border border-[var(--mist)] bg-[var(--paper)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-all placeholder:text-[var(--ink-soft)]/70 focus:border-[var(--indigo)] focus:bg-white focus:ring-4 focus:ring-[var(--indigo)]/[0.08]"
+            className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
+            style={{
+              border: "1px solid var(--color-border)",
+              backgroundColor: "var(--color-app-bg)",
+              color: "var(--color-text-primary)",
+            }}
           />
         </div>
 
@@ -152,12 +175,20 @@ export default function InviteMemberCard()
           <div className="mb-2">
             <label
               htmlFor="role"
-              className="block text-sm font-medium text-[var(--ink)]"
+              className="block text-sm font-medium"
+              style={{
+                color: "var(--color-text-primary)",
+              }}
             >
               Organization role
             </label>
 
-            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+            <p
+              className="mt-1 text-xs"
+              style={{
+                color: "var(--color-text-muted)",
+              }}
+            >
               Choose what this member will be allowed to manage.
             </p>
           </div>
@@ -169,7 +200,12 @@ export default function InviteMemberCard()
               setRole(event.target.value);
               setError("");
             }}
-            className="w-full appearance-none rounded-xl border border-[var(--mist)] bg-[var(--paper)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--indigo)] focus:bg-white focus:ring-4 focus:ring-[var(--indigo)]/[0.08]"
+            className="w-full appearance-none rounded-xl px-4 py-3 text-sm outline-none transition-all"
+            style={{
+              border: "1px solid var(--color-border)",
+              backgroundColor: "var(--color-app-bg)",
+              color: "var(--color-text-primary)",
+            }}
           >
             {roles.map((item) => (
               <option key={item.value} value={item.value}>
@@ -178,40 +214,94 @@ export default function InviteMemberCard()
             ))}
           </select>
 
-          <div className="mt-2 rounded-lg bg-[var(--paper)] px-3 py-2.5">
-            <p className="text-xs leading-5 text-[var(--ink-soft)]">
-              {
-                roles.find((item) => item.value === role)
-                  ?.description
-              }
+          <div
+            className="mt-2 rounded-lg px-3 py-2.5"
+            style={{
+              backgroundColor: "var(--color-app-bg)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            <p
+              className="text-xs leading-5"
+              style={{
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              {roles.find((item) => item.value === role)?.description}
             </p>
           </div>
         </div>
 
         {/* Feedback */}
         {message && (
-          <div className="flex items-start gap-3 rounded-xl border border-[var(--sage)]/30 bg-[var(--sage)]/[0.08] px-4 py-3">
-            <span className="mt-0.5 text-[var(--sage)]">✓</span>
+          <div
+            className="flex items-start gap-3 rounded-xl px-4 py-3"
+            style={{
+              border: "1px solid var(--color-tag-green-text)",
+              backgroundColor: "var(--color-tag-green-bg)",
+            }}
+          >
+            <span
+              className="mt-0.5"
+              style={{
+                color: "var(--color-status-done)",
+              }}
+            >
+              ✓
+            </span>
 
-            <p className="text-sm text-[var(--ink)]">
+            <p
+              className="text-sm"
+              style={{
+                color: "var(--color-tag-green-text)",
+              }}
+            >
               {message}
             </p>
           </div>
         )}
 
         {error && (
-          <div className="flex items-start gap-3 rounded-xl border border-[var(--coral)]/30 bg-[var(--coral)]/[0.08] px-4 py-3">
-            <span className="mt-0.5 text-[var(--coral)]">!</span>
+          <div
+            className="flex items-start gap-3 rounded-xl px-4 py-3"
+            style={{
+              border: "1px solid var(--color-tag-red-text)",
+              backgroundColor: "var(--color-tag-red-bg)",
+            }}
+          >
+            <span
+              className="mt-0.5"
+              style={{
+                color: "var(--color-priority-high)",
+              }}
+            >
+              !
+            </span>
 
-            <p className="text-sm text-[var(--ink)]">
+            <p
+              className="text-sm"
+              style={{
+                color: "var(--color-tag-red-text)",
+              }}
+            >
               {error}
             </p>
           </div>
         )}
 
         {/* Action */}
-        <div className="flex items-center justify-between gap-4 border-t border-[var(--mist)] pt-5">
-          <p className="hidden text-xs text-[var(--ink-soft)] sm:block">
+        <div
+          className="flex items-center justify-between gap-4 pt-5"
+          style={{
+            borderTop: "1px solid var(--color-border)",
+          }}
+        >
+          <p
+            className="hidden text-xs sm:block"
+            style={{
+              color: "var(--color-text-muted)",
+            }}
+          >
             An invitation will be sent to this email.
           </p>
 
@@ -219,11 +309,20 @@ export default function InviteMemberCard()
             type="button"
             onClick={handleInvite}
             disabled={loading}
-            className="ml-auto inline-flex min-w-[150px] items-center justify-center rounded-xl bg-[var(--board-panel)] px-5 py-3 text-sm font-medium text-white transition-all hover:bg-[var(--board-ink)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="ml-auto inline-flex min-w-[150px] items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            style={{
+              backgroundColor: "var(--color-primary)",
+            }}
           >
             {loading ? (
               <>
-                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <span
+                  className="mr-2 h-4 w-4 animate-spin rounded-full border-2"
+                  style={{
+                    borderColor: "rgba(255,255,255,0.3)",
+                    borderTopColor: "#ffffff",
+                  }}
+                />
                 Sending...
               </>
             ) : (
@@ -235,4 +334,3 @@ export default function InviteMemberCard()
     </section>
   );
 }
-

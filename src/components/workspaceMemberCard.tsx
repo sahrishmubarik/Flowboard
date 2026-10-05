@@ -452,15 +452,11 @@ export default function WorkspaceMemberCard() {
     }
   };
   return (
-    <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--mist)] bg-[var(--paper-raised)] shadow-sm">
-      {" "}
-      {/* Header */}{" "}
-      <div className="border-b border-[var(--mist)] px-6 py-5">
-        {" "}
+    <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
+      {/* Header */}
+      <div className="border-b border-[var(--color-border)] px-6 py-5">
         <div className="flex items-start gap-4">
-          {" "}
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--indigo)]/[0.08] text-[var(--indigo)]">
-            {" "}
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
             <svg
               width="20"
               height="20"
@@ -471,127 +467,120 @@ export default function WorkspaceMemberCard() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              {" "}
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />{" "}
-              <circle cx="9" cy="7" r="4" />{" "}
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />{" "}
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />{" "}
-            </svg>{" "}
-          </div>{" "}
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+
           <div>
-            {" "}
             <h2
-              className="text-xl font-medium tracking-tight text-[var(--ink)]"
+              className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {" "}
-              Workspace members{" "}
-            </h2>{" "}
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-              {" "}
-              View workspace members and manage their organization roles.{" "}
-            </p>{" "}
-          </div>{" "}
-        </div>{" "}
-      </div>{" "}
-      {/* Content */}{" "}
+              Workspace members
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
+              View workspace members and manage their organization roles.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
       <div className="space-y-6 p-6">
-        {" "}
-        {/* Filters */}{" "}
+        {/* Filters */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          {" "}
-          {/* Role */}{" "}
+          {/* Role */}
           <div className="flex-1">
-            {" "}
             <label
               htmlFor="member-role"
-              className="mb-2 block text-sm font-medium text-[var(--ink)]"
+              className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
             >
-              {" "}
-              Filter by role{" "}
-            </label>{" "}
+              Filter by role
+            </label>
+
             <select
               id="member-role"
               value={selectedRole}
               onChange={handleRoleChange}
-              className="w-full appearance-none rounded-xl border border-[var(--mist)] bg-[var(--paper)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--indigo)] focus:bg-white focus:ring-4 focus:ring-[var(--indigo)]/[0.08]"
+              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
             >
-              {" "}
               {roles.map((role) => (
                 <option key={role.value} value={role.value}>
-                  {" "}
-                  {role.label}{" "}
+                  {role.label}
                 </option>
-              ))}{" "}
-            </select>{" "}
-          </div>{" "}
-          {/* Limit */}{" "}
+              ))}
+            </select>
+          </div>
+
+          {/* Limit */}
           <div className="w-full sm:w-32">
-            {" "}
             <label
               htmlFor="member-limit"
-              className="mb-2 block text-sm font-medium text-[var(--ink)]"
+              className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
             >
-              {" "}
-              Per page{" "}
-            </label>{" "}
+              Per page
+            </label>
+
             <select
               id="member-limit"
               value={limit}
               onChange={handleLimitChange}
-              className="w-full appearance-none rounded-xl border border-[var(--mist)] bg-[var(--paper)] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-all focus:border-[var(--indigo)] focus:bg-white focus:ring-4 focus:ring-[var(--indigo)]/[0.08]"
+              className="w-full appearance-none rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
             >
-              {" "}
-              <option value={5}>5</option> <option value={10}>10</option>{" "}
-              <option value={20}>20</option>{" "}
-            </select>{" "}
-          </div>{" "}
-        </div>{" "}
-        {/* Member Count */}{" "}
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Member Count */}
         {!loading && !error && (
-          <div className="rounded-xl bg-[var(--paper)] px-4 py-3">
-            {" "}
-            <p className="text-xs text-[var(--ink-soft)]">
-              {" "}
+          <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-3">
+            <p className="text-xs text-[var(--color-text-muted)]">
               Showing{" "}
-              <span className="font-medium text-[var(--ink)]">
-                {" "}
-                {members.length}{" "}
+              <span className="font-medium text-[var(--color-text-primary)]">
+                {members.length}
               </span>{" "}
               of{" "}
-              <span className="font-medium text-[var(--ink)]"> {total} </span>{" "}
-              member{total === 1 ? "" : "s"}{" "}
-            </p>{" "}
+              <span className="font-medium text-[var(--color-text-primary)]">
+                {total}
+              </span>{" "}
+              member{total === 1 ? "" : "s"}
+            </p>
           </div>
-        )}{" "}
-        {/* Loading */}{" "}
+        )}
+
+        {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center rounded-xl bg-[var(--paper)] py-10">
-            {" "}
+          <div className="flex items-center justify-center rounded-xl bg-[var(--color-app-bg)] py-10">
             <div className="flex items-center gap-3">
-              {" "}
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--mist)] border-t-[var(--indigo)]" />{" "}
-              <p className="text-sm text-[var(--ink-soft)]">
-                {" "}
-                Loading members...{" "}
-              </p>{" "}
-            </div>{" "}
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
+
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Loading members...
+              </p>
+            </div>
           </div>
-        )}{" "}
-        {/* Error */}{" "}
+        )}
+
+        {/* Error */}
         {!loading && error && (
-          <div className="flex items-start gap-3 rounded-xl border border-[var(--coral)]/30 bg-[var(--coral)]/[0.08] px-4 py-3">
-            {" "}
-            <span className="mt-0.5 text-[var(--coral)]"> ! </span>{" "}
-            <p className="text-sm text-[var(--ink)]"> {error} </p>{" "}
+          <div className="flex items-start gap-3 rounded-xl border border-[var(--color-tag-red-text)] bg-[var(--color-tag-red-bg)] px-4 py-3">
+            <span className="mt-0.5 text-[var(--color-priority-high)]">!</span>
+
+            <p className="text-sm text-[var(--color-text-primary)]">{error}</p>
           </div>
-        )}{" "}
-        {/* Empty */}{" "}
+        )}
+
+        {/* Empty */}
         {!loading && !error && members.length === 0 && (
-          <div className="rounded-xl bg-[var(--paper)] px-4 py-10 text-center">
-            {" "}
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mist)] text-[var(--ink-soft)]">
-              {" "}
+          <div className="rounded-xl bg-[var(--color-app-bg)] px-4 py-10 text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-tag-neutral-bg)] text-[var(--color-text-muted)]">
               <svg
                 width="18"
                 height="18"
@@ -602,117 +591,106 @@ export default function WorkspaceMemberCard() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                {" "}
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />{" "}
-                <circle cx="9" cy="7" r="4" />{" "}
-              </svg>{" "}
-            </div>{" "}
-            <p className="mt-3 text-sm font-medium text-[var(--ink)]">
-              {" "}
-              No members found{" "}
-            </p>{" "}
-            <p className="mt-1 text-xs text-[var(--ink-soft)]">
-              {" "}
-              Try changing the role filter.{" "}
-            </p>{" "}
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
+            </div>
+
+            <p className="mt-3 text-sm font-medium text-[var(--color-text-primary)]">
+              No members found
+            </p>
+
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+              Try changing the role filter.
+            </p>
           </div>
-        )}{" "}
-        {/* Members */}{" "}
+        )}
+
+        {/* Members */}
         {!loading && !error && members.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-[var(--mist)]">
-            {" "}
-            <div className="divide-y divide-[var(--mist)]">
-              {" "}
+          <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+            <div className="divide-y divide-[var(--color-border)]">
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-[var(--paper)]"
+                  className="flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-[var(--color-app-bg)]"
                 >
-                  {" "}
-                  {/* User */}{" "}
+                  {/* User */}
                   <div className="flex min-w-0 items-center gap-3">
-                    {" "}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--indigo)]/[0.08] text-sm font-medium text-[var(--indigo)]">
-                      {" "}
-                      {member.name
-                        ? member.name.charAt(0).toUpperCase()
-                        : "U"}{" "}
-                    </div>{" "}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-medium text-[var(--color-primary)]">
+                      {member.name ? member.name.charAt(0).toUpperCase() : "U"}
+                    </div>
+
                     <div className="min-w-0">
-                      {" "}
-                      <p className="truncate text-sm font-medium text-[var(--ink)]">
-                        {" "}
-                        {member.name}{" "}
-                      </p>{" "}
-                      <p className="truncate text-xs text-[var(--ink-soft)]">
-                        {" "}
-                        {member.email}{" "}
-                      </p>{" "}
-                    </div>{" "}
-                  </div>{" "}
-                  {/* Role + Action */}{" "}
+                      <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                        {member.name}
+                      </p>
+
+                      <p className="truncate text-xs text-[var(--color-text-muted)]">
+                        {member.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Role + Action */}
                   <div className="flex shrink-0 items-center gap-2">
-                    {" "}
-                    <span className="rounded-full bg-[var(--paper)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--ink-soft)]">
-                      {" "}
-                      {member.role}{" "}
-                    </span>{" "}
-                    {/* Owner cannot be deactivated */}{" "}
+                    <span className="rounded-full bg-[var(--color-tag-neutral-bg)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
+                      {member.role}
+                    </span>
+
+                    {/* Owner cannot be deactivated */}
                     {member.role !== "owner" && (
                       <button
                         type="button"
                         onClick={() => handleDeactivateMember(member.userId)}
                         disabled={deactivatingMemberId === member.userId}
-                        className="rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition-all hover:border-[var(--coral)] hover:bg-[var(--coral)]/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {" "}
                         {deactivatingMemberId === member.userId
                           ? "Deactivating..."
-                          : "Deactivate"}{" "}
+                          : "Deactivate"}
                       </button>
-                    )}{" "}
-                  </div>{" "}
+                    )}
+                  </div>
                 </div>
-              ))}{" "}
-            </div>{" "}
+              ))}
+            </div>
           </div>
-        )}{" "}
-        {/* Pagination */}{" "}
+        )}
+
+        {/* Pagination */}
         {!loading && !error && members.length > 0 && totalPages > 1 && (
-          <div className="flex items-center justify-between gap-4 border-t border-[var(--mist)] pt-5">
-            {" "}
+          <div className="flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-5">
             <button
               type="button"
               onClick={handlePrevious}
               disabled={page === 1}
-              className="rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition-all hover:border-[var(--indigo)] hover:bg-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-app-bg)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {" "}
-              Previous{" "}
-            </button>{" "}
+              Previous
+            </button>
+
             <div className="text-center">
-              {" "}
-              <p className="text-sm font-medium text-[var(--ink)]">
-                {" "}
-                Page {page} of {totalPages}{" "}
-              </p>{" "}
-              <p className="mt-0.5 text-xs text-[var(--ink-soft)]">
-                {" "}
-                {total} total member {total === 1 ? "" : "s"}{" "}
-              </p>{" "}
-            </div>{" "}
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                Page {page} of {totalPages}
+              </p>
+
+              <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                {total} total member {total === 1 ? "" : "s"}
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={handleNext}
               disabled={page === totalPages}
-              className="rounded-xl border border-[var(--mist)] bg-[var(--paper-raised)] px-4 py-2.5 text-sm font-medium text-[var(--ink)] transition-all hover:border-[var(--indigo)] hover:bg-[var(--paper)] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-app-bg)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {" "}
-              Next{" "}
-            </button>{" "}
+              Next
+            </button>
           </div>
-        )}{" "}
-      </div>{" "}
+        )}
+      </div>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { getBoardById, updateBoardName, deleteBoard,inviteMemberInBoard } from "@/services/board";
+import { getBoardById, updateBoardName, deleteBoard } from "@/services/board";
 import { AppError } from "@/lib/errors/AppError";
-
 
 export async function GET(
   request: Request,
@@ -50,8 +49,6 @@ export async function DELETE(
   try {
     const { boardId } = await params;
 
-   
-
     return await deleteBoard(boardId);
   } catch (error) {
     console.error("BOARD_DELETE_ERROR:", error);
@@ -69,49 +66,49 @@ export async function DELETE(
     );
   }
 }
-type InviteBoardMemberBody = {
-  email: string;
-  userId?: string;
-  role: "admin" | "member" | "manager";
-};
-export async function POST(
-  request: Request,
-  {
-    params,
-  }: {
-    params: Promise<{
-      workspaceId: string;
-      boardId: string;
-    }>;
-  },
-) {
-  try {
-    const { workspaceId, boardId } = await params;
+// type InviteBoardMemberBody = {
+//   email: string;
+//   userId?: string;
+//   role: "admin" | "member" | "manager";
+// };
+// export async function POST(
+//   request: Request,
+//   {
+//     params,
+//   }: {
+//     params: Promise<{
+//       workspaceId: string;
+//       boardId: string;
+//     }>;
+//   },
+// ) {
+//   try {
+//     const { workspaceId, boardId } = await params;
 
-    const body: InviteBoardMemberBody = await request.json();
+//     const body: InviteBoardMemberBody = await request.json();
 
-    const { userId, email, role } = body;
-    return await inviteMemberInBoard(
-      workspaceId,
-      boardId,
-      userId,
-      email
-      ,role,
-    );
-  }
-catch (error) {
-    console.error("INVITE_MEMBER_IN_BOARD_ERROR:", error);
+//     const { userId, email, role } = body;
+//     return await inviteMemberInBoard(
+//       workspaceId,
+//       boardId,
+//       userId,
+//       email
+//       ,role,
+//     );
+//   }
+// catch (error) {
+//     console.error("INVITE_MEMBER_IN_BOARD_ERROR:", error);
 
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
+//     if (error instanceof AppError) {
+//       return NextResponse.json(
+//         { message: error.message },
+//         { status: error.statusCode },
+//       );
+//     }
 
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
-  }
-}
+//     return NextResponse.json(
+//       { message: "Internal server error. Please try again." },
+//       { status: 500 },
+//     );
+//   }
+// }

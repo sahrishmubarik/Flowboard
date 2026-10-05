@@ -61,14 +61,13 @@ export async function resetPasswordEmail({
   });
 }
 
-export async function sendInvitationEmail ({
-    email,
-    assignRole,
-    organizationName,
-    invitationUrl,
-}: VerificationEmailOptions)
-{
-return sendEmail({
+export async function sendInvitationEmail({
+  email,
+  assignRole,
+  organizationName,
+  invitationUrl,
+}: VerificationEmailOptions) {
+  return sendEmail({
     to: email,
     subject: `Flowboard invite from ${organizationName}`,
     html: `
@@ -92,18 +91,16 @@ return sendEmail({
       </p>
     `,
   });
-
 }
 
-export async function sendBoardInvitationEmail ({
-    email,
-    organizationName,
-    boardName,
-    role,
-    boardInviteUrl,
-}: VerificationEmailOptions)
-{
-return sendEmail({
+export async function sendBoardInvitationEmail({
+  email,
+  organizationName,
+  boardName,
+  role,
+  boardInviteUrl,
+}: VerificationEmailOptions) {
+  return sendEmail({
     to: email,
     subject: `Flowboard invite from ${organizationName}`,
     html: `
@@ -123,5 +120,4 @@ return sendEmail({
       </a>
     `,
   });
-
 }
