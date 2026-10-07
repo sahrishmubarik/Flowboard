@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import type { DbTransaction } from "@/db/types";
 import { eq, and, countDistinct, inArray } from "drizzle-orm";
 import { workspace } from "@/db/workspaceSchema";
 import { organizationMembers } from "@/db/workspaceSchema";
@@ -97,7 +98,7 @@ export const workspaceRepo = {
   },
 
   async create(
-    transaction: typeof db,
+    transaction: DbTransaction,
     { workspaceName, createdBy }: { workspaceName: string; createdBy: string },
   ) {
     const [row] = await transaction
