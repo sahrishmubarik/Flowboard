@@ -82,7 +82,7 @@ export default function BoardList({
   const updateListMutation = useMutation({
     mutationFn: async (newListName: string) => {
       const response = await fetch(
-        `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
+        `/api/workspace/${workspaceId}/board/${boardId}/boardList/${list.id}`,
         {
           method: "PATCH",
           headers: {

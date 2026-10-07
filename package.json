@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "pnpm run db:migrate && next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts"
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.3.1",

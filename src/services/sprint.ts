@@ -69,3 +69,27 @@ export async function getBoardSprint(boardId: string) {
     },
   );
 }
+
+export async function updateSprintStatus(boardId: string, sprintId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("User not found", 401);
+  }
+
+  const userId = user.userId;
+
+  await requireBoardRole(userId, boardId, ["owner", "admin"]);
+
+  const sprint = await SprintRepo.updateStatus(sprintId, boardId);
+
+  return NextResponse.json(
+    {
+      message: "Sprint status updated successfully!",
+      sprint,
+    },
+    {
+      status: 200,
+    },
+  );
+}
