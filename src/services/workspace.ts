@@ -26,12 +26,12 @@ export async function createWorkspace(body: { name: string }) {
   console.log("Workspace user id ", userId);
 
   const result = await db.transaction(async (tx) => {
-    const newWorkspace = await workspaceRepo.create(tx as any, {
+    const newWorkspace = await workspaceRepo.create(tx, {
       workspaceName,
       createdBy: userId,
     });
 
-    const organizationMember = await organizationMemberRepo.create(tx as any, {
+    const organizationMember = await organizationMemberRepo.create(tx, {
       organizationId: newWorkspace.id,
       userId,
       role: "owner",
