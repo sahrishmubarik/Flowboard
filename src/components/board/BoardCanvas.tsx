@@ -5,6 +5,7 @@ import BoardList from "./BoardList";
 import CreateListCard from "./CreateListCard";
 import { useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
+
 type BoardListType = {
   id: string;
   boardId: string;
@@ -64,15 +65,29 @@ export default function BoardCanvas({
   boardId,
 }: BoardCanvasProps) {
   const [closeMenuSignal, setCloseMenuSignal] = useState(0);
+
+  // Sprint menu
   const [isSprintMenuOpen, setIsSprintMenuOpen] = useState(false);
+
+  // Create sprint modal
   const [isSprintCreateOpen, setIsSprintCreateOpen] = useState(false);
 
+  // Activate sprint confirmation modal
+  const [isActivateSprintOpen, setIsActivateSprintOpen] = useState(false);
+  const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+
+  // Create sprint form
   const [sprintName, setSprintName] = useState("");
   const [sprintGoal, setSprintGoal] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   const queryClient = useQueryClient();
+
+  // =====================================================
+  // GET BOARD LISTS
+  // =====================================================
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["board-lists", workspaceId, boardId],
     queryFn: () => fetchBoardLists(workspaceId, boardId),
@@ -135,6 +150,7 @@ export default function BoardCanvas({
 
     onSuccess: () => {
       setIsSprintCreateOpen(false);
+
       setSprintName("");
       setSprintGoal("");
       setStartDate("");
@@ -149,6 +165,53 @@ export default function BoardCanvas({
       console.error("CREATE_SPRINT_ERROR:", error);
     },
   });
+
+  // =====================================================
+  // ACTIVATE SPRINT
+  // =====================================================
+
+  const activateSprintMutation = useMutation({
+    mutationFn: async (sprintId: string) => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sprintId,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to activate sprint");
+      }
+
+      return data;
+    },
+
+    onSuccess: () => {
+      setIsActivateSprintOpen(false);
+      setSelectedSprint(null);
+      setIsSprintMenuOpen(false);
+
+      queryClient.invalidateQueries({
+        queryKey: ["sprints", workspaceId, boardId],
+      });
+    },
+
+    onError: (error) => {
+      console.error("ACTIVATE_SPRINT_ERROR:", error);
+    },
+  });
+
+  // =====================================================
+  // BOARD LIST LOADING
+  // =====================================================
 
   if (isLoading) {
     return (
@@ -173,6 +236,10 @@ export default function BoardCanvas({
       </section>
     );
   }
+
+  // =====================================================
+  // BOARD LIST ERROR
+  // =====================================================
 
   if (isError) {
     return (
@@ -199,6 +266,11 @@ export default function BoardCanvas({
   const lists = [...(data?.lists ?? [])].sort(
     (a, b) => a.position - b.position,
   );
+
+  // =====================================================
+  // SPRINT LOADING
+  // =====================================================
+
   if (sprintLoading) {
     return (
       <div
@@ -214,6 +286,11 @@ export default function BoardCanvas({
       </div>
     );
   }
+
+  // =====================================================
+  // SPRINT ERROR
+  // =====================================================
+
   if (sprintError) {
     return (
       <div
@@ -229,12 +306,17 @@ export default function BoardCanvas({
       </div>
     );
   }
+
   const sprints = sprintData?.sprints ?? [];
 
   const activeSprint = sprints.find((sprint) => sprint.status === "ACTIVE");
+
   return (
     <main className="flex h-full min-h-0 flex-col">
-      {/* Sprint / Tabs bar */}
+      {/* =================================================
+          SPRINT / TABS BAR
+          ================================================== */}
+
       <div
         className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-3 sm:px-5 lg:px-8"
         style={{
@@ -242,6 +324,10 @@ export default function BoardCanvas({
           backgroundColor: "var(--color-card-bg)",
         }}
       >
+        {/* =================================================
+            SPRINT SELECTOR
+            ================================================== */}
+
         <div className="relative shrink-0">
           <button
             type="button"
@@ -266,8 +352,8 @@ export default function BoardCanvas({
           </button>
 
           {/* =================================================
-            SPRINT MENU
-            ================================================== */}
+              SPRINT MENU
+              ================================================== */}
 
           {isSprintMenuOpen && (
             <div
@@ -286,9 +372,19 @@ export default function BoardCanvas({
                       key={sprint.id}
                       type="button"
                       onClick={() => {
+                        // Already active sprint
+                        if (sprint.status === "ACTIVE") {
+                          setIsSprintMenuOpen(false);
+                          return;
+                        }
+
+                        // Select sprint and open confirmation modal
+                        setSelectedSprint(sprint);
                         setIsSprintMenuOpen(false);
+                        setIsActivateSprintOpen(true);
                       }}
-                      className="flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left transition hover:bg-black/5 dark:hover:bg-white/5"
+                      disabled={activateSprintMutation.isPending}
+                      className="flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/5"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -385,8 +481,8 @@ export default function BoardCanvas({
         </div>
 
         {/* =================================================
-          TABS
-          ================================================== */}
+            TABS
+            ================================================== */}
 
         <div className="min-w-0 overflow-x-auto scrollbar-none">
           <div
@@ -434,6 +530,11 @@ export default function BoardCanvas({
           </div>
         </div>
       </div>
+
+      {/* =================================================
+          BOARD
+          ================================================== */}
+
       <section
         className="min-h-0 flex-1 overflow-hidden"
         style={{
@@ -455,28 +556,12 @@ export default function BoardCanvas({
           ))}
 
           <CreateListCard workspaceId={workspaceId} boardId={boardId} />
-
-          <div>
-            <label>Start date</label>
-
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label>End date</label>
-
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
         </div>
       </section>
+
+      {/* =================================================
+          CREATE SPRINT MODAL
+          ================================================== */}
 
       {isSprintCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -679,6 +764,117 @@ export default function BoardCanvas({
                 }}
               >
                 {createSprintMutation.error.message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================
+          ACTIVATE SPRINT CONFIRMATION MODAL
+          ================================================== */}
+
+      {isActivateSprintOpen && selectedSprint && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div
+            className="w-full max-w-md rounded-xl border p-5 shadow-xl"
+            style={{
+              backgroundColor: "var(--color-card-bg)",
+              borderColor: "var(--color-border)",
+            }}
+          >
+            {/* Header */}
+
+            <div className="mb-5">
+              <h2
+                className="text-lg font-semibold"
+                style={{
+                  color: "var(--color-text-primary)",
+                }}
+              >
+                Activate Sprint
+              </h2>
+
+              <p
+                className="mt-2 text-sm leading-6"
+                style={{
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                Are you sure you want to activate{" "}
+                <span
+                  className="font-semibold"
+                  style={{
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  {selectedSprint.name}
+                </span>
+                ?
+              </p>
+
+              <p
+                className="mt-2 text-sm leading-6"
+                style={{
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                The current active sprint will be marked as completed.
+              </p>
+            </div>
+
+            {/* Actions */}
+
+            <div className="flex justify-end gap-2">
+              {/* Cancel */}
+
+              <button
+                type="button"
+                disabled={activateSprintMutation.isPending}
+                onClick={() => {
+                  setIsActivateSprintOpen(false);
+                  setSelectedSprint(null);
+                  activateSprintMutation.reset();
+                }}
+                className="cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-text-secondary)",
+                  backgroundColor: "var(--color-card-bg)",
+                }}
+              >
+                Cancel
+              </button>
+
+              {/* Activate */}
+
+              <button
+                type="button"
+                disabled={activateSprintMutation.isPending}
+                onClick={() => {
+                  activateSprintMutation.mutate(selectedSprint.id);
+                }}
+                className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                }}
+              >
+                {activateSprintMutation.isPending
+                  ? "Activating..."
+                  : "Activate Sprint"}
+              </button>
+            </div>
+
+            {/* Error */}
+
+            {activateSprintMutation.isError && (
+              <p
+                className="mt-3 text-sm"
+                style={{
+                  color: "var(--color-priority-high)",
+                }}
+              >
+                {activateSprintMutation.error.message}
               </p>
             )}
           </div>
