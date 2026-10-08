@@ -1,21 +1,23 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, Plus, X } from "lucide-react";
+
 import BoardList from "./BoardList";
 import CreateListCard from "./CreateListCard";
-import { useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+
+/*
+ * ============================================================
+ * TYPES
+ * ============================================================
+ */
 
 type BoardListType = {
   id: string;
   boardId: string;
   listName: string;
   position: number;
-};
-
-type BoardListsResponse = {
-  message: string;
-  lists: BoardListType[];
 };
 
 type BoardCanvasProps = {
@@ -45,62 +47,134 @@ type CreateSprintPayload = {
   endDate: string;
 };
 
+type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
+
+type Card = {
+  id: string;
+  boardId: string;
+  boardListId: string;
+  sprintId: string | null;
+  cardNumber: number;
+  title: string;
+  description: string | null;
+  priority: CardPriority;
+  position: number;
+  reporterId: string;
+  startDate: string | null;
+  dueDate: string | null;
+  completedAt: string | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+type CardResponse = {
+  message: string;
+  cards: Card[];
+};
+
+/*
+ * ============================================================
+ * BOARD LISTS API
+ * ============================================================
+ */
+
 async function fetchBoardLists(
   workspaceId: string,
   boardId: string,
-): Promise<BoardListsResponse> {
+): Promise<BoardListType[]> {
   const response = await fetch(
     `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
   );
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error("Failed to fetch board lists");
+    throw new Error(data?.message ?? "Failed to fetch board lists");
   }
 
-  return response.json();
+  return data.boardLists ?? data.lists ?? [];
 }
+
+/*
+ * ============================================================
+ * MAIN COMPONENT
+ * ============================================================
+ */
 
 export default function BoardCanvas({
   workspaceId,
   boardId,
 }: BoardCanvasProps) {
-  const [closeMenuSignal, setCloseMenuSignal] = useState(0);
-
-  // Sprint menu
-  const [isSprintMenuOpen, setIsSprintMenuOpen] = useState(false);
-
-  // Create sprint modal
-  const [isSprintCreateOpen, setIsSprintCreateOpen] = useState(false);
-
-  // Activate sprint confirmation modal
-  const [isActivateSprintOpen, setIsActivateSprintOpen] = useState(false);
-  const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
-
-  // Create sprint form
-  const [sprintName, setSprintName] = useState("");
-  const [sprintGoal, setSprintGoal] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
   const queryClient = useQueryClient();
 
-  // =====================================================
-  // GET BOARD LISTS
-  // =====================================================
+  /*
+   * ==========================================================
+   * GENERAL UI STATE
+   * ==========================================================
+   */
 
-  const { data, isLoading, isError } = useQuery({
+  const [closeMenuSignal, setCloseMenuSignal] = useState(0);
+
+  /*
+   * ==========================================================
+   * SPRINT STATE
+   * ==========================================================
+   */
+
+  const [isSprintMenuOpen, setIsSprintMenuOpen] = useState(false);
+
+  const [isSprintCreateOpen, setIsSprintCreateOpen] = useState(false);
+
+  const [isActivateSprintOpen, setIsActivateSprintOpen] = useState(false);
+
+  const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+
+  /*
+   * ==========================================================
+   * CREATE SPRINT FORM
+   * ==========================================================
+   */
+
+  const [sprintName, setSprintName] = useState("");
+
+  const [sprintGoal, setSprintGoal] = useState("");
+
+  const [startDate, setStartDate] = useState("");
+
+  const [endDate, setEndDate] = useState("");
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+
+  const [isCardDetailsOpen, setIsCardDetailsOpen] = useState(false);
+  /*
+   * ============================================================
+   * GET BOARD LISTS
+   * ============================================================
+   */
+
+  const {
+    data: lists = [],
+    isLoading: isListsLoading,
+    isError: isListsError,
+  } = useQuery<BoardListType[]>({
     queryKey: ["board-lists", workspaceId, boardId],
+
     queryFn: () => fetchBoardLists(workspaceId, boardId),
-    enabled: !!workspaceId && !!boardId,
+
+    enabled: Boolean(workspaceId && boardId),
   });
 
-  // =====================================================
-  // GET SPRINTS
-  // =====================================================
+  /*
+   * ============================================================
+   * GET SPRINTS
+   * ============================================================
+   */
 
   const {
     data: sprintData,
-    isLoading: sprintLoading,
+    isLoading: isSprintsLoading,
+    isError: isSprintsError,
     error: sprintError,
   } = useQuery<SprintResponse>({
     queryKey: ["sprints", workspaceId, boardId],
@@ -113,18 +187,83 @@ export default function BoardCanvas({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to get sprints");
+        throw new Error(data?.message ?? "Failed to fetch sprints");
       }
 
       return data;
     },
 
-    enabled: !!workspaceId && !!boardId,
+    enabled: Boolean(workspaceId && boardId),
   });
 
-  // =====================================================
-  // CREATE SPRINT
-  // =====================================================
+  const sprints = sprintData?.sprints ?? [];
+
+  /*
+   * ============================================================
+   * ACTIVE SPRINT
+   * ============================================================
+   */
+
+  const activeSprint = sprints.find((sprint) => sprint.status === "ACTIVE");
+
+  /*
+   * ============================================================
+   * GET CARDS
+   *
+   * BoardCanvas only FETCHES cards.
+   *
+   * Card creation belongs to BoardList.
+   * ============================================================
+   */
+
+  const {
+    data: cardData,
+    isLoading: isCardsLoading,
+    isError: isCardsError,
+    error: cardsError,
+  } = useQuery<CardResponse>({
+    queryKey: ["board-cards", workspaceId, boardId, activeSprint?.id ?? null],
+
+    queryFn: async () => {
+      if (!activeSprint?.id) {
+        return {
+          message: "No active sprint",
+          cards: [],
+        };
+      }
+
+      /*
+       * IMPORTANT:
+       * GET request uses query parameter.
+       *
+       * Do NOT send sprintId inside GET request body.
+       */
+
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/card?sprintId=${encodeURIComponent(
+          activeSprint.id,
+        )}`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch board cards");
+      }
+
+      return data;
+    },
+
+    enabled: Boolean(workspaceId && boardId && activeSprint?.id),
+  });
+
+  const cards = cardData?.cards ?? [];
+
+  /*
+   * ============================================================
+   * CREATE SPRINT MUTATION
+   * ============================================================
+   */
 
   const createSprintMutation = useMutation({
     mutationFn: async (payload: CreateSprintPayload) => {
@@ -132,9 +271,11 @@ export default function BoardCanvas({
         `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify(payload),
         },
       );
@@ -142,7 +283,7 @@ export default function BoardCanvas({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create sprint");
+        throw new Error(data?.message ?? "Failed to create sprint");
       }
 
       return data;
@@ -160,15 +301,47 @@ export default function BoardCanvas({
         queryKey: ["sprints", workspaceId, boardId],
       });
     },
-
-    onError: (error) => {
-      console.error("CREATE_SPRINT_ERROR:", error);
-    },
   });
 
-  // =====================================================
-  // ACTIVATE SPRINT
-  // =====================================================
+  /*
+   * ============================================================
+   * CREATE SPRINT HANDLER
+   * ============================================================
+   */
+
+  const handleCreateSprint = (payload: CreateSprintPayload) => {
+    if (!payload.sprintName.trim()) {
+      return;
+    }
+
+    if (!payload.startDate) {
+      return;
+    }
+
+    if (!payload.endDate) {
+      return;
+    }
+
+    if (new Date(payload.endDate) < new Date(payload.startDate)) {
+      return;
+    }
+
+    createSprintMutation.mutate({
+      sprintName: payload.sprintName.trim(),
+
+      goal: payload.goal.trim(),
+
+      startDate: payload.startDate,
+
+      endDate: payload.endDate,
+    });
+  };
+
+  /*
+   * ============================================================
+   * ACTIVATE SPRINT MUTATION
+   * ============================================================
+   */
 
   const activateSprintMutation = useMutation({
     mutationFn: async (sprintId: string) => {
@@ -176,9 +349,11 @@ export default function BoardCanvas({
         `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
         {
           method: "PATCH",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             sprintId,
           }),
@@ -188,7 +363,7 @@ export default function BoardCanvas({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to activate sprint");
+        throw new Error(data?.message ?? "Failed to activate sprint");
       }
 
       return data;
@@ -196,146 +371,150 @@ export default function BoardCanvas({
 
     onSuccess: () => {
       setIsActivateSprintOpen(false);
+
       setSelectedSprint(null);
+
       setIsSprintMenuOpen(false);
 
       queryClient.invalidateQueries({
         queryKey: ["sprints", workspaceId, boardId],
       });
-    },
 
-    onError: (error) => {
-      console.error("ACTIVATE_SPRINT_ERROR:", error);
+      queryClient.invalidateQueries({
+        queryKey: ["board-cards", workspaceId, boardId],
+      });
     },
   });
 
-  // =====================================================
-  // BOARD LIST LOADING
-  // =====================================================
+  /*
+   * ============================================================
+   * ACTIVATE SPRINT HANDLER
+   * ============================================================
+   */
 
-  if (isLoading) {
+  const handleActivateSprint = (sprintId: string) => {
+    if (!sprintId) {
+      return;
+    }
+
+    activateSprintMutation.mutate(sprintId);
+  };
+
+  /*
+   * ============================================================
+   * LOADING
+   * ============================================================
+   */
+
+  if (isListsLoading || isSprintsLoading) {
     return (
       <section
-        className="min-h-screen overflow-hidden"
+        className="flex h-full min-h-screen items-center justify-center"
         style={{
           backgroundColor: "var(--color-board-bg)",
+
+          color: "var(--color-text-secondary)",
         }}
       >
-        <div className="flex min-h-screen gap-4 overflow-x-auto p-6">
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="h-32 min-w-[280px] animate-pulse rounded-2xl"
-              style={{
-                backgroundColor: "var(--color-column-bg)",
-                border: "1px solid var(--color-border)",
-              }}
-            />
-          ))}
-        </div>
+        Loading board...
       </section>
     );
   }
 
-  // =====================================================
-  // BOARD LIST ERROR
-  // =====================================================
+  /*
+   * ============================================================
+   * ERROR
+   * ============================================================
+   */
 
-  if (isError) {
+  if (isListsError || isSprintsError) {
     return (
       <section
-        className="min-h-screen p-6"
+        className="flex h-full min-h-screen items-center justify-center p-6"
         style={{
           backgroundColor: "var(--color-board-bg)",
         }}
       >
         <div
-          className="rounded-xl border p-4 text-sm"
+          className="rounded-lg border px-4 py-3 text-sm"
           style={{
-            borderColor: "var(--color-tag-red-text)",
             backgroundColor: "var(--color-tag-red-bg)",
+
+            borderColor: "var(--color-tag-red-text)",
+
             color: "var(--color-tag-red-text)",
           }}
         >
-          Failed to load board lists.
+          Failed to load board data.
+          {sprintError instanceof Error ? ` ${sprintError.message}` : ""}
+          {cardsError instanceof Error ? ` ${cardsError.message}` : ""}
         </div>
       </section>
     );
   }
 
-  const lists = [...(data?.lists ?? [])].sort(
-    (a, b) => a.position - b.position,
-  );
+  /*
+   * ============================================================
+   * SORT LISTS
+   * ============================================================
+   */
 
-  // =====================================================
-  // SPRINT LOADING
-  // =====================================================
+  const sortedLists = [...lists].sort((a, b) => a.position - b.position);
 
-  if (sprintLoading) {
-    return (
-      <div
-        className="border-b px-8 py-5"
-        style={{
-          borderColor: "var(--color-border)",
-          backgroundColor: "var(--color-card-bg)",
-        }}
-      >
-        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-          Loading board...
-        </p>
-      </div>
-    );
-  }
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
-  // =====================================================
-  // SPRINT ERROR
-  // =====================================================
+  const handleCardClick = async (cardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
+      );
 
-  if (sprintError) {
-    return (
-      <div
-        className="border-b px-8 py-5"
-        style={{
-          borderColor: "var(--color-border)",
-          backgroundColor: "var(--color-card-bg)",
-        }}
-      >
-        <p className="text-sm" style={{ color: "var(--color-priority-high)" }}>
-          Failed to load sprint data.
-        </p>
-      </div>
-    );
-  }
+      const data = await response.json();
 
-  const sprints = sprintData?.sprints ?? [];
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch card");
+      }
 
-  const activeSprint = sprints.find((sprint) => sprint.status === "ACTIVE");
-
+      setSelectedCard(data.card);
+      setIsCardDetailsOpen(true);
+    } catch (error) {
+      console.error("GET_CARD_ERROR:", error);
+    }
+  };
   return (
-    <main className="flex h-full min-h-0 flex-col">
-      {/* =================================================
-          SPRINT / TABS BAR
-          ================================================== */}
-
+    <main
+      className="flex h-full min-h-0 flex-col overflow-hidden "
+      style={{
+        backgroundColor: "var(--color-column-bg)",
+      }}
+    >
+      {/* TOP BAR */}
       <div
         className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-3 sm:px-5 lg:px-8"
         style={{
           borderColor: "var(--color-border)",
+
           backgroundColor: "var(--color-card-bg)",
         }}
       >
-        {/* =================================================
+        {/* ==================================================
             SPRINT SELECTOR
             ================================================== */}
 
         <div className="relative shrink-0">
           <button
             type="button"
-            onClick={() => setIsSprintMenuOpen((prev) => !prev)}
+            onClick={() => setIsSprintMenuOpen((previous) => !previous)}
             className="flex h-8 max-w-[220px] items-center gap-2 rounded-lg border px-3 text-sm font-medium transition"
             style={{
               borderColor: "var(--color-border)",
+
               color: "var(--color-text-secondary)",
+
               backgroundColor: "var(--color-card-bg)",
             }}
           >
@@ -353,37 +532,37 @@ export default function BoardCanvas({
 
           {/* =================================================
               SPRINT MENU
-              ================================================== */}
+              ================================================= */}
 
           {isSprintMenuOpen && (
             <div
               className="absolute left-0 top-full z-40 mt-2 w-72 rounded-lg border p-1.5 shadow-lg"
               style={{
                 backgroundColor: "var(--color-card-bg)",
+
                 borderColor: "var(--color-border)",
               }}
             >
-              {/* Existing Sprints */}
-
               {sprints.length > 0 ? (
                 <div className="max-h-72 space-y-1 overflow-y-auto">
                   {sprints.map((sprint) => (
                     <button
                       key={sprint.id}
                       type="button"
+                      disabled={activateSprintMutation.isPending}
                       onClick={() => {
-                        // Already active sprint
                         if (sprint.status === "ACTIVE") {
                           setIsSprintMenuOpen(false);
+
                           return;
                         }
 
-                        // Select sprint and open confirmation modal
                         setSelectedSprint(sprint);
+
                         setIsSprintMenuOpen(false);
+
                         setIsActivateSprintOpen(true);
                       }}
-                      disabled={activateSprintMutation.isPending}
                       className="flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/5"
                     >
                       <div className="min-w-0">
@@ -399,9 +578,10 @@ export default function BoardCanvas({
 
                           {sprint.status === "ACTIVE" && (
                             <span
-                              className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+                              className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
                               style={{
                                 backgroundColor: "var(--color-tag-green-bg)",
+
                                 color: "var(--color-tag-green-text)",
                               }}
                             >
@@ -428,6 +608,7 @@ export default function BoardCanvas({
                             sprint.status === "ACTIVE"
                               ? "var(--color-tag-green-bg)"
                               : "var(--color-border)",
+
                           color:
                             sprint.status === "ACTIVE"
                               ? "var(--color-tag-green-text)"
@@ -450,8 +631,6 @@ export default function BoardCanvas({
                 </div>
               )}
 
-              {/* Divider */}
-
               <div
                 className="my-1.5 border-t"
                 style={{
@@ -459,12 +638,13 @@ export default function BoardCanvas({
                 }}
               />
 
-              {/* New Sprint */}
-
               <button
                 type="button"
                 onClick={() => {
                   setIsSprintMenuOpen(false);
+
+                  createSprintMutation.reset();
+
                   setIsSprintCreateOpen(true);
                 }}
                 className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/5"
@@ -480,7 +660,7 @@ export default function BoardCanvas({
           )}
         </div>
 
-        {/* =================================================
+        {/* ==================================================
             TABS
             ================================================== */}
 
@@ -491,24 +671,21 @@ export default function BoardCanvas({
               backgroundColor: "var(--color-column-bg)",
             }}
           >
-            {/* Board */}
-
             <button
               type="button"
               className="rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm sm:px-4 sm:text-sm"
               style={{
                 backgroundColor: "var(--color-card-bg)",
+
                 color: "var(--color-text-primary)",
               }}
             >
               Board
             </button>
 
-            {/* Backlog */}
-
             <button
               type="button"
-              className="rounded-md px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm"
+              className="rounded-md px-3 py-1.5 text-xs sm:px-4 sm:text-sm"
               style={{
                 color: "var(--color-text-muted)",
               }}
@@ -516,11 +693,9 @@ export default function BoardCanvas({
               Backlog
             </button>
 
-            {/* Burndown */}
-
             <button
               type="button"
-              className="rounded-md px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm"
+              className="rounded-md px-3 py-1.5 text-xs sm:px-4 sm:text-sm"
               style={{
                 color: "var(--color-text-muted)",
               }}
@@ -530,74 +705,102 @@ export default function BoardCanvas({
           </div>
         </div>
       </div>
-
-      {/* =================================================
+      {/* ======================================================
           BOARD
-          ================================================== */}
-
+          ====================================================== */}
       <section
-        className="min-h-0 flex-1 overflow-hidden"
+        className="min-h-0 flex-1 overflow-hidden "
         style={{
           backgroundColor: "var(--color-border)",
         }}
-        onClick={() => {
-          setCloseMenuSignal((prev) => prev + 1);
-        }}
+        onClick={() => setCloseMenuSignal((previous) => previous + 1)}
       >
-        <div className="flex min-h-screen gap-4 overflow-x-auto p-6">
-          {lists.map((list) => (
-            <BoardList
-              key={list.id}
-              list={list}
-              workspaceId={workspaceId}
-              boardId={boardId}
-              closeMenuSignal={closeMenuSignal}
-            />
-          ))}
+        <div className="flex h-full min-h-0 gap-3 overflow-x-auto overflow-y-auto pl-6 pr-6 pt-8 pb-12">
+          {sortedLists.map((list) => {
+            const listCards = cards.filter(
+              (card) =>
+                card.boardListId === list.id &&
+                !card.isArchived &&
+                !card.deletedAt,
+            );
+
+            return (
+              <div
+                key={list.id}
+                className="flex w-[280px] min-w-[280px] flex-col "
+                onClick={(event) => event.stopPropagation()}
+              >
+                <BoardList
+                  list={list}
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  closeMenuSignal={closeMenuSignal}
+                  cards={listCards}
+                  activeSprintId={activeSprint?.id ?? null}
+                  isCardsLoading={isCardsLoading}
+                  isCardsError={isCardsError}
+                  onCardClick={handleCardClick}
+                />
+              </div>
+            );
+          })}
 
           <CreateListCard workspaceId={workspaceId} boardId={boardId} />
         </div>
       </section>
 
-      {/* =================================================
+      {/* ======================================================
           CREATE SPRINT MODAL
-          ================================================== */}
-
+          ====================================================== */}
       {isSprintCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
             className="w-full max-w-md rounded-xl border p-5 shadow-xl"
             style={{
               backgroundColor: "var(--color-card-bg)",
+
               borderColor: "var(--color-border)",
             }}
           >
-            {/* Header */}
+            <div className="mb-5 flex items-start justify-between">
+              <div>
+                <h2
+                  className="text-lg font-semibold"
+                  style={{
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  Create Sprint
+                </h2>
 
-            <div className="mb-5">
-              <h2
-                className="text-lg font-semibold"
+                <p
+                  className="mt-1 text-sm"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Create a sprint for this board.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSprintCreateOpen(false);
+
+                  createSprintMutation.reset();
+                }}
+                className="rounded-md p-1"
                 style={{
-                  color: "var(--color-text-primary)",
+                  color: "var(--color-text-muted)",
                 }}
               >
-                Create Sprint
-              </h2>
-
-              <p
-                className="mt-1 text-sm"
-                style={{
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Create a sprint for this board.
-              </p>
+                <X size={18} />
+              </button>
             </div>
 
-            {/* Form */}
-
             <div className="space-y-4">
-              {/* Sprint Name */}
+              {/* Sprint name */}
 
               <div>
                 <label
@@ -617,7 +820,9 @@ export default function BoardCanvas({
                   className="h-10 w-full rounded-lg border px-3 text-sm outline-none"
                   style={{
                     backgroundColor: "var(--color-input-bg)",
+
                     borderColor: "var(--color-border)",
+
                     color: "var(--color-text-primary)",
                   }}
                 />
@@ -643,7 +848,9 @@ export default function BoardCanvas({
                   className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none"
                   style={{
                     backgroundColor: "var(--color-input-bg)",
+
                     borderColor: "var(--color-border)",
+
                     color: "var(--color-text-primary)",
                   }}
                 />
@@ -652,8 +859,6 @@ export default function BoardCanvas({
               {/* Dates */}
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Start Date */}
-
                 <div>
                   <label
                     className="mb-1.5 block text-sm font-medium"
@@ -671,13 +876,13 @@ export default function BoardCanvas({
                     className="h-10 w-full rounded-lg border px-3 text-sm outline-none"
                     style={{
                       backgroundColor: "var(--color-input-bg)",
+
                       borderColor: "var(--color-border)",
+
                       color: "var(--color-text-primary)",
                     }}
                   />
                 </div>
-
-                {/* End Date */}
 
                 <div>
                   <label
@@ -692,11 +897,14 @@ export default function BoardCanvas({
                   <input
                     type="date"
                     value={endDate}
+                    min={startDate || undefined}
                     onChange={(event) => setEndDate(event.target.value)}
                     className="h-10 w-full rounded-lg border px-3 text-sm outline-none"
                     style={{
                       backgroundColor: "var(--color-input-bg)",
+
                       borderColor: "var(--color-border)",
+
                       color: "var(--color-text-primary)",
                     }}
                   />
@@ -704,28 +912,38 @@ export default function BoardCanvas({
               </div>
             </div>
 
-            {/* Actions */}
+            {createSprintMutation.isError && (
+              <div
+                className="mt-4 rounded-lg border px-3 py-2 text-sm"
+                style={{
+                  backgroundColor: "var(--color-tag-red-bg)",
+
+                  borderColor: "var(--color-tag-red-text)",
+
+                  color: "var(--color-tag-red-text)",
+                }}
+              >
+                {createSprintMutation.error.message}
+              </div>
+            )}
 
             <div className="mt-6 flex justify-end gap-2">
-              {/* Cancel */}
-
               <button
                 type="button"
                 onClick={() => {
                   setIsSprintCreateOpen(false);
+
                   createSprintMutation.reset();
                 }}
-                className="cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition"
+                className="rounded-lg border px-4 py-2 text-sm font-medium"
                 style={{
                   borderColor: "var(--color-border)",
+
                   color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
                 }}
               >
                 Cancel
               </button>
-
-              {/* Create */}
 
               <button
                 type="button"
@@ -733,17 +951,21 @@ export default function BoardCanvas({
                   createSprintMutation.isPending ||
                   !sprintName.trim() ||
                   !startDate ||
-                  !endDate
+                  !endDate ||
+                  new Date(endDate) < new Date(startDate)
                 }
                 onClick={() =>
-                  createSprintMutation.mutate({
+                  handleCreateSprint({
                     sprintName: sprintName.trim(),
+
                     goal: sprintGoal.trim(),
+
                     startDate,
+
                     endDate,
                   })
                 }
-                className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   backgroundColor: "var(--color-primary)",
                 }}
@@ -753,108 +975,99 @@ export default function BoardCanvas({
                   : "Create Sprint"}
               </button>
             </div>
-
-            {/* Error */}
-
-            {createSprintMutation.isError && (
-              <p
-                className="mt-3 text-sm"
-                style={{
-                  color: "var(--color-priority-high)",
-                }}
-              >
-                {createSprintMutation.error.message}
-              </p>
-            )}
           </div>
         </div>
       )}
-
-      {/* =================================================
-          ACTIVATE SPRINT CONFIRMATION MODAL
-          ================================================== */}
-
+      {/* ======================================================
+          ACTIVATE SPRINT MODAL
+          ====================================================== */}
       {isActivateSprintOpen && selectedSprint && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
           <div
             className="w-full max-w-md rounded-xl border p-5 shadow-xl"
             style={{
               backgroundColor: "var(--color-card-bg)",
+
               borderColor: "var(--color-border)",
             }}
           >
-            {/* Header */}
+            <h2
+              className="text-lg font-semibold"
+              style={{
+                color: "var(--color-text-primary)",
+              }}
+            >
+              Activate Sprint
+            </h2>
 
-            <div className="mb-5">
-              <h2
-                className="text-lg font-semibold"
+            <p
+              className="mt-2 text-sm leading-6"
+              style={{
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Are you sure you want to activate{" "}
+              <span
+                className="font-semibold"
                 style={{
                   color: "var(--color-text-primary)",
                 }}
               >
-                Activate Sprint
-              </h2>
+                {selectedSprint.name}
+              </span>
+              ?
+            </p>
 
-              <p
-                className="mt-2 text-sm leading-6"
+            <p
+              className="mt-2 text-sm"
+              style={{
+                color: "var(--color-text-muted)",
+              }}
+            >
+              The current active sprint will be marked as completed.
+            </p>
+
+            {activateSprintMutation.isError && (
+              <div
+                className="mt-4 rounded-lg border px-3 py-2 text-sm"
                 style={{
-                  color: "var(--color-text-secondary)",
+                  backgroundColor: "var(--color-tag-red-bg)",
+
+                  borderColor: "var(--color-tag-red-text)",
+
+                  color: "var(--color-tag-red-text)",
                 }}
               >
-                Are you sure you want to activate{" "}
-                <span
-                  className="font-semibold"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {selectedSprint.name}
-                </span>
-                ?
-              </p>
+                {activateSprintMutation.error.message}
+              </div>
+            )}
 
-              <p
-                className="mt-2 text-sm leading-6"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                The current active sprint will be marked as completed.
-              </p>
-            </div>
-
-            {/* Actions */}
-
-            <div className="flex justify-end gap-2">
-              {/* Cancel */}
-
+            <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
                 disabled={activateSprintMutation.isPending}
                 onClick={() => {
                   setIsActivateSprintOpen(false);
+
                   setSelectedSprint(null);
+
                   activateSprintMutation.reset();
                 }}
-                className="cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
                 style={{
                   borderColor: "var(--color-border)",
+
                   color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
                 }}
               >
                 Cancel
               </button>
 
-              {/* Activate */}
-
               <button
                 type="button"
                 disabled={activateSprintMutation.isPending}
-                onClick={() => {
-                  activateSprintMutation.mutate(selectedSprint.id);
-                }}
-                className="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => handleActivateSprint(selectedSprint.id)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                 style={{
                   backgroundColor: "var(--color-primary)",
                 }}
@@ -864,18 +1077,133 @@ export default function BoardCanvas({
                   : "Activate Sprint"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Error */}
+      {/* ======================================================
+    CARD DETAILS MODAL
+    ======================================================= */}
 
-            {activateSprintMutation.isError && (
-              <p
-                className="mt-3 text-sm"
+      {isCardDetailsOpen && selectedCard && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsCardDetailsOpen(false);
+              setSelectedCard(null);
+            }
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border p-6 shadow-xl"
+            style={{
+              backgroundColor: "var(--color-card-bg)",
+              borderColor: "var(--color-border)",
+            }}
+          >
+            {/* Header */}
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p
+                  className="text-xs font-semibold"
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  CARD-{selectedCard.cardNumber}
+                </p>
+
+                <h2
+                  className="mt-1 text-xl font-semibold"
+                  style={{
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  {selectedCard.title}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCardDetailsOpen(false);
+                  setSelectedCard(null);
+                }}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
-                  color: "var(--color-priority-high)",
+                  color: "var(--color-text-muted)",
                 }}
               >
-                {activateSprintMutation.error.message}
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Priority */}
+
+            <div className="mt-5">
+              <span
+                className="rounded-full px-2.5 py-1 text-xs font-semibold capitalize"
+                style={getPriorityStyle(selectedCard.priority)}
+              >
+                {selectedCard.priority}
+              </span>
+            </div>
+
+            {/* Description */}
+
+            <div className="mt-6">
+              <h3
+                className="mb-2 text-sm font-semibold"
+                style={{
+                  color: "var(--color-text-primary)",
+                }}
+              >
+                Description
+              </h3>
+
+              <p
+                className="whitespace-pre-wrap text-sm leading-6"
+                style={{
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                {selectedCard.description || "No description added."}
               </p>
+            </div>
+            {/* Dates */}
+
+            {(selectedCard.startDate || selectedCard.dueDate) && (
+              <div className="mt-5">
+                <h3
+                  className="mb-2 text-sm font-semibold"
+                  style={{
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  Dates
+                </h3>
+
+                <div
+                  className="flex items-center gap-2 text-sm"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  {selectedCard.startDate && (
+                    <span>{formatSprintDate(selectedCard.startDate)}</span>
+                  )}
+
+                  {selectedCard.startDate && selectedCard.dueDate && (
+                    <span>→</span>
+                  )}
+
+                  {selectedCard.dueDate && (
+                    <span>{formatSprintDate(selectedCard.dueDate)}</span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -883,6 +1211,12 @@ export default function BoardCanvas({
     </main>
   );
 }
+
+/*
+ * ============================================================
+ * DATE HELPERS
+ * ============================================================
+ */
 
 function formatSprintDate(date: string) {
   if (!date) {
@@ -900,4 +1234,39 @@ function formatSprintDate(date: string) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function getPriorityStyle(priority: CardPriority) {
+  switch (priority) {
+    case "critical":
+      return {
+        backgroundColor: "var(--color-tag-red-bg)",
+        color: "var(--color-tag-red-text)",
+      };
+
+    case "show stopper":
+      return {
+        backgroundColor: "var(--color-tag-orange-bg)",
+        color: "var(--color-tag-orange-text)",
+      };
+
+    case "major":
+      return {
+        backgroundColor: "var(--color-tag-yellow-bg)",
+        color: "var(--color-tag-yellow-text)",
+      };
+
+    case "minor":
+      return {
+        backgroundColor: "var(--color-tag-blue-bg)",
+        color: "var(--color-tag-blue-text)",
+      };
+
+    case "normal":
+    default:
+      return {
+        backgroundColor: "var(--color-tag-green-bg)",
+        color: "var(--color-tag-green-text)",
+      };
+  }
 }
