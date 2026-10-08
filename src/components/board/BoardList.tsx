@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, Ellipsis, Plus, Trash2, Move, X, Pencil } from "lucide-react";
+import { Archive, Copy, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import CreateCard from "@/components/card/CreateCard";
+
+/*
+ * ============================================================
+ * TYPES
+ * ============================================================
+ */
 
 type BoardListType = {
   id: string;
@@ -11,35 +18,108 @@ type BoardListType = {
   position: number;
 };
 
+type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
+
+type CardType = {
+  id: string;
+  boardId: string;
+  boardListId: string;
+  sprintId: string | null;
+  cardNumber: number;
+  title: string;
+  description: string | null;
+  priority: CardPriority;
+  position: number;
+  reporterId: string;
+  startDate: string | null;
+  dueDate: string | null;
+  completedAt: string | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 type BoardListProps = {
   list: BoardListType;
+
   workspaceId: string;
+
   boardId: string;
+
   closeMenuSignal: number;
+
+  cards?: CardType[];
+
+  activeSprintId?: string | null;
+
+  isCardsLoading?: boolean;
+
+  isCardsError?: boolean;
+
+  onCardClick?: (cardId: string) => void;
 };
+
+/*
+ * ============================================================
+ * COMPONENT
+ * ============================================================
+ */
 
 export default function BoardList({
   list,
   workspaceId,
   boardId,
   closeMenuSignal,
+  cards = [],
+  activeSprintId = null,
+  isCardsLoading = false,
+  isCardsError = false,
+  onCardClick,
 }: BoardListProps) {
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  /*
+   * ============================================================
+   * LIST MENU
+   * ============================================================
+   */
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  /*
+   * ============================================================
+   * RENAME MODAL
+   * ============================================================
+   */
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
   const [listName, setListName] = useState(list.listName);
 
-  const queryClient = useQueryClient();
-  const [menuOpenedAtSignal, setMenuOpenedAtSignal] = useState<number | null>(
-    null,
-  );
+  /*
+   * ============================================================
+   * DELETE MODAL
+   * ============================================================
+   */
 
-  const isMenuOpen = menuOpenedAtSignal === closeMenuSignal;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // =========================================================
-  // DELETE LIST
-  // =========================================================
+  /*
+   * ============================================================
+   * CLOSE MENU WHEN BOARD CANVAS SIGNAL CHANGES
+   * ============================================================
+   */
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [closeMenuSignal]);
+
+  /*
+   * ============================================================
+   * DELETE LIST
+   * ============================================================
+   */
 
   const deleteListMutation = useMutation({
     mutationFn: async () => {
@@ -47,37 +127,59 @@ export default function BoardList({
         `/api/workspace/${workspaceId}/board/${boardId}/boardList/${list.id}`,
         {
           method: "DELETE",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             listId: list.id,
           }),
         },
       );
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
+      const data = await response.json().catch(() => null);
 
+      if (!response.ok) {
         throw new Error(data?.message || "Failed to delete list");
       }
 
-      return response.json();
+      return data;
     },
 
     onSuccess: () => {
+      /*
+       * Close dialogs/menu.
+       */
+
       setIsDeleteModalOpen(false);
-      closeMenu();
+
+      setIsMenuOpen(false);
+
+      /*
+       * Refresh lists.
+       */
 
       queryClient.invalidateQueries({
         queryKey: ["board-lists", workspaceId, boardId],
       });
+
+      /*
+       * Refresh cards because deleting a list
+       * also affects its cards.
+       */
+
+      queryClient.invalidateQueries({
+        queryKey: ["board-cards", workspaceId, boardId],
+      });
     },
   });
 
-  // =========================================================
-  // UPDATE LIST NAME
-  // =========================================================
+  /*
+   * ============================================================
+   * UPDATE LIST NAME
+   * ============================================================
+   */
 
   const updateListMutation = useMutation({
     mutationFn: async (newListName: string) => {
@@ -85,9 +187,11 @@ export default function BoardList({
         `/api/workspace/${workspaceId}/board/${boardId}/boardList/${list.id}`,
         {
           method: "PATCH",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             listId: list.id,
             listName: newListName,
@@ -95,18 +199,27 @@ export default function BoardList({
         },
       );
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
+      const data = await response.json().catch(() => null);
 
+      if (!response.ok) {
         throw new Error(data?.message || "Failed to update list");
       }
 
-      return response.json();
+      return data;
     },
 
     onSuccess: () => {
+      /*
+       * Close rename modal and menu.
+       */
+
       setIsRenameModalOpen(false);
-      closeMenu();
+
+      setIsMenuOpen(false);
+
+      /*
+       * Refresh lists.
+       */
 
       queryClient.invalidateQueries({
         queryKey: ["board-lists", workspaceId, boardId],
@@ -114,12 +227,67 @@ export default function BoardList({
     },
   });
 
-  // =========================================================
-  // DELETE HANDLERS
-  // =========================================================
+  /*
+   * ============================================================
+   * RENAME HANDLERS
+   * ============================================================
+   */
+
+  const handleRenameClick = () => {
+    setIsMenuOpen(false);
+
+    setListName(list.listName);
+
+    setIsRenameModalOpen(true);
+  };
+
+  const handleCloseRenameModal = () => {
+    /*
+     * Do not close while request is running.
+     */
+
+    if (updateListMutation.isPending) {
+      return;
+    }
+
+    setListName(list.listName);
+
+    setIsRenameModalOpen(false);
+  };
+
+  const handleUpdateListName = () => {
+    const trimmedName = listName.trim();
+
+    /*
+     * Empty list name is not allowed.
+     */
+
+    if (!trimmedName) {
+      return;
+    }
+
+    /*
+     * Nothing changed.
+     */
+
+    if (trimmedName === list.listName) {
+      setIsRenameModalOpen(false);
+
+      return;
+    }
+
+    updateListMutation.mutate(trimmedName);
+  };
+
+  /*
+   * ============================================================
+   * DELETE HANDLERS
+   * ============================================================
+   */
 
   const handleDeleteClick = () => {
-    closeMenu();
+    setIsMenuOpen(false);
+
     setIsDeleteModalOpen(true);
   };
 
@@ -128,160 +296,163 @@ export default function BoardList({
   };
 
   const handleCloseDeleteModal = () => {
-    if (deleteListMutation.isPending) return;
+    /*
+     * Do not close while deleting.
+     */
+
+    if (deleteListMutation.isPending) {
+      return;
+    }
 
     setIsDeleteModalOpen(false);
   };
 
-  // =========================================================
-  // RENAME HANDLERS
-  // =========================================================
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
-  const handleRenameClick = () => {
-    closeMenu();
-    setListName(list.listName);
-    setIsRenameModalOpen(true);
-  };
-
-  const handleCloseRenameModal = () => {
-    if (updateListMutation.isPending) return;
-
-    setListName(list.listName);
-    setIsRenameModalOpen(false);
-  };
-
-  const handleUpdateListName = () => {
-    const trimmedName = listName.trim();
-
-    if (!trimmedName) return;
-
-    if (trimmedName === list.listName) {
-      setIsRenameModalOpen(false);
-      return;
-    }
-
-    updateListMutation.mutate(trimmedName);
-  };
-  const closeMenu = () => {
-    setMenuOpenedAtSignal(null);
-  };
   return (
     <>
-      {/* =====================================================
+      {/* ======================================================
           LIST
-      ====================================================== */}
+      ======================================================= */}
 
       <div
-        className="relative flex h-fit min-w-[280px] flex-col rounded-2xl border shadow-sm"
+        className="flex h-fit min-h-[180px] w-[280px] shrink-0 flex-col rounded-xl border"
         style={{
           backgroundColor: "var(--color-column-bg)",
+
           borderColor: "var(--color-border)",
         }}
       >
-        {/* LIST HEADER */}
+        {/* ====================================================
+            LIST HEADER
+        ===================================================== */}
 
         <div
-          className="flex items-center justify-between border-b px-4 py-3"
+          className="flex items-center justify-between border-b px-3 py-3"
           style={{
             borderColor: "var(--color-border)",
           }}
         >
-          <h3
-            className="truncate text-sm font-semibold"
-            style={{
-              color: "var(--color-text-primary)",
-            }}
-          >
-            {list.listName}
-          </h3>
+          {/* List name + card count */}
 
-          <div className="relative">
+          <div className="flex min-w-0 items-center gap-2">
+            <h3
+              className="truncate text-sm font-semibold"
+              style={{
+                color: "var(--color-text-primary)",
+              }}
+            >
+              {list.listName}
+            </h3>
+
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              style={{
+                backgroundColor: "var(--color-card-bg)",
+
+                color: "var(--color-text-muted)",
+              }}
+            >
+              {cards.length}
+            </span>
+          </div>
+
+          {/* ==================================================
+              LIST MENU
+          =================================================== */}
+
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
 
-                setMenuOpenedAtSignal((previous) =>
-                  previous === closeMenuSignal ? null : closeMenuSignal,
-                );
+                setIsMenuOpen((previous) => !previous);
               }}
-              disabled={
-                deleteListMutation.isPending || updateListMutation.isPending
-              }
-              className="cursor-pointer rounded-lg p-1 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
               style={{
-                color: "var(--color-text-secondary)",
+                color: "var(--color-text-muted)",
               }}
               aria-label="List options"
             >
-              <Ellipsis size={18} />
+              <MoreHorizontal size={17} />
             </button>
-
-            {/* =================================================
-      DROPDOWN
-  ================================================== */}
 
             {isMenuOpen && (
               <div
-                onClick={(event) => event.stopPropagation()}
-                className="absolute right-0 top-9 z-50 w-48 rounded-xl border p-1.5 shadow-lg"
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+                className="absolute right-0 top-8 z-40 w-48 rounded-lg border p-1.5 shadow-lg"
                 style={{
                   backgroundColor: "var(--color-card-bg)",
+
                   borderColor: "var(--color-border)",
                 }}
               >
-                {/* ADD CARD */}
+                {/* ==================================================
+                    ADD CARD
+                =================================================== */}
 
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-black/5"
-                  style={{
-                    color: "var(--color-text-primary)",
+                {/*
+                 * Card creation belongs to the Card component.
+                 *
+                 * We don't implement any card state,
+                 * mutation or modal here.
+                 *
+                 * The Card component should expose its own
+                 * create-card trigger.
+                 */}
+
+                <CreateCard
+                  mode="create"
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={list.id}
+                  listName={list.listName}
+                  activeSprintId={activeSprintId}
+                  onCreateClick={() => {
+                    setIsMenuOpen(false);
                   }}
-                >
-                  <Plus size={16} />
-                  Add card
-                </button>
+                  trigger="menu"
+                />
 
-                {/* RENAME LIST */}
+                {/* ==================================================
+                    RENAME LIST
+                =================================================== */}
 
                 <button
                   type="button"
                   onClick={handleRenameClick}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-black/5"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
                   style={{
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  <Pencil size={16} />
+                  <Pencil size={15} />
                   Rename list
                 </button>
 
-                {/* COPY LIST */}
+                {/* ==================================================
+                    COPY LIST
+                =================================================== */}
 
                 <button
                   type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-black/5"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
                   style={{
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  <Copy size={16} />
+                  <Copy size={15} />
                   Copy list
                 </button>
 
-                {/* MOVE LIST */}
-
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-black/5"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  <Move size={16} />
-                  Move list
-                </button>
+                {/* Divider */}
 
                 <div
                   className="my-1 border-t"
@@ -290,18 +461,35 @@ export default function BoardList({
                   }}
                 />
 
-                {/* DELETE LIST */}
+                {/* ==================================================
+                    ARCHIVE LIST
+                =================================================== */}
+
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <Archive size={15} />
+                  Archive list
+                </button>
+
+                {/* ==================================================
+                    DELETE LIST
+                =================================================== */}
 
                 <button
                   type="button"
                   onClick={handleDeleteClick}
                   disabled={deleteListMutation.isPending}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     color: "var(--color-tag-red-text)",
                   }}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                   Delete list
                 </button>
               </div>
@@ -309,33 +497,109 @@ export default function BoardList({
           </div>
         </div>
 
-        {/* CARDS AREA */}
+        {/* ====================================================
+            CARDS
+        ===================================================== */}
 
-        <div className="min-h-[120px] p-3">
-          <p
-            className="text-xs"
-            style={{
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            No cards yet
-          </p>
-          <button
-            type="button"
-            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-black/5"
-            style={{
-              color: "var(--color-text-primary)",
-            }}
-          >
-            <Plus size={16} />
-            Add card
-          </button>
+        <div className="flex flex-col gap-2 p-2">
+          {/* ==================================================
+              LOADING
+          =================================================== */}
+
+          {isCardsLoading ? (
+            <>
+              <div
+                className="h-24 animate-pulse rounded-lg"
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
+                }}
+              />
+
+              <div
+                className="h-24 animate-pulse rounded-lg"
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
+                }}
+              />
+            </>
+          ) : isCardsError ? (
+            /* ==================================================
+               ERROR
+            =================================================== */
+
+            <div
+              className="rounded-lg border p-3 text-xs"
+              style={{
+                backgroundColor: "var(--color-card-bg)",
+
+                borderColor: "var(--color-border)",
+
+                color: "var(--color-tag-red-text)",
+              }}
+            >
+              Failed to load cards.
+            </div>
+          ) : cards.length > 0 ? (
+            /* ==================================================
+               CARD LIST
+            =================================================== */
+
+            [...cards]
+              .sort((a, b) => a.position - b.position)
+              .map((card) => (
+                <CreateCard
+                  key={card.id}
+                  mode="display"
+                  card={card}
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={list.id}
+                  listName={list.listName}
+                  activeSprintId={activeSprintId}
+                  onCardClick={onCardClick}
+                />
+              ))
+          ) : (
+            /* ==================================================
+               EMPTY
+            =================================================== */
+
+            <div
+              className="px-2 py-5 text-center text-xs"
+              style={{
+                color: "var(--color-text-muted)",
+              }}
+            >
+              No cards yet
+            </div>
+          )}
         </div>
+
+        {/* ====================================================
+            ADD CARD BUTTON
+        ===================================================== */}
+
+        {/*
+         * The complete Add Card functionality belongs
+         * to Card component.
+         *
+         * BoardList only asks Card to render its trigger.
+         */}
+
+        <CreateCard
+          mode="create"
+          workspaceId={workspaceId}
+          boardId={boardId}
+          listId={list.id}
+          listName={list.listName}
+          activeSprintId={activeSprintId}
+          trigger="button"
+        />
       </div>
 
-      {/* =====================================================
+      {/* ======================================================
           RENAME LIST MODAL
-      ====================================================== */}
+      ======================================================= */}
 
       {isRenameModalOpen && (
         <div
@@ -344,7 +608,8 @@ export default function BoardList({
           aria-modal="true"
           aria-labelledby="rename-list-title"
         >
-          {/* BACKDROP */}
+          {/* Backdrop */}
+
           <button
             type="button"
             aria-label="Close rename modal"
@@ -352,15 +617,18 @@ export default function BoardList({
             className="absolute inset-0 cursor-default bg-black/40"
           />
 
-          {/* MODAL */}
+          {/* Modal */}
+
           <div
             className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
             style={{
               backgroundColor: "var(--color-card-bg)",
+
               borderColor: "var(--color-border)",
             }}
           >
-            {/* CLOSE BUTTON */}
+            {/* Close */}
+
             <button
               type="button"
               onClick={handleCloseRenameModal}
@@ -369,32 +637,26 @@ export default function BoardList({
               style={{
                 color: "var(--color-text-secondary)",
               }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor =
-                  "var(--color-column-bg)";
-                event.currentTarget.style.color = "var(--color-text-primary)";
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "transparent";
-                event.currentTarget.style.color = "var(--color-text-secondary)";
-              }}
               aria-label="Close"
             >
               <X size={18} />
             </button>
 
-            {/* ICON */}
+            {/* Icon */}
+
             <div
               className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
               style={{
                 backgroundColor: "var(--color-primary)",
+
                 color: "var(--color-primary-active-bg)",
               }}
             >
               <Pencil size={20} />
             </div>
 
-            {/* TITLE */}
+            {/* Title */}
+
             <h2
               id="rename-list-title"
               className="text-lg font-semibold"
@@ -405,6 +667,8 @@ export default function BoardList({
               Rename list
             </h2>
 
+            {/* Description */}
+
             <p
               className="mt-1 text-sm"
               style={{
@@ -414,7 +678,8 @@ export default function BoardList({
               Update the name of this list.
             </p>
 
-            {/* INPUT */}
+            {/* Input */}
+
             <div className="mt-5">
               <label
                 htmlFor={`list-name-${list.id}`}
@@ -446,22 +711,16 @@ export default function BoardList({
                 className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
                 style={{
                   backgroundColor: "var(--color-app-bg)",
+
                   borderColor: "var(--color-border)",
+
                   color: "var(--color-text-primary)",
-                }}
-                onFocus={(event) => {
-                  event.currentTarget.style.borderColor = "var(--color-indigo)";
-                  event.currentTarget.style.boxShadow =
-                    "0 0 0 3px var(--color-indigo-soft)";
-                }}
-                onBlur={(event) => {
-                  event.currentTarget.style.borderColor = "var(--color-border)";
-                  event.currentTarget.style.boxShadow = "none";
                 }}
                 placeholder="Enter list name"
               />
 
-              {/* ERROR */}
+              {/* Error */}
+
               {updateListMutation.isError && (
                 <p
                   className="mt-2 text-xs"
@@ -476,9 +735,9 @@ export default function BoardList({
               )}
             </div>
 
-            {/* ACTIONS */}
+            {/* Actions */}
+
             <div className="mt-6 flex justify-end gap-3">
-              {/* CANCEL */}
               <button
                 type="button"
                 onClick={handleCloseRenameModal}
@@ -486,22 +745,15 @@ export default function BoardList({
                 className="rounded-xl border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   borderColor: "var(--color-border)",
+
                   backgroundColor: "var(--color-card-bg)",
+
                   color: "var(--color-text-primary)",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.backgroundColor =
-                    "var(--color-column-bg)";
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.backgroundColor =
-                    "var(--color-card-bg)";
                 }}
               >
                 Cancel
               </button>
 
-              {/* UPDATE */}
               <button
                 type="button"
                 onClick={handleUpdateListName}
@@ -510,19 +762,9 @@ export default function BoardList({
                   !listName.trim() ||
                   listName.trim() === list.listName
                 }
-                className="rounded-xl px-5 py-2.5  text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   backgroundColor: "var(--color-primary)",
-                }}
-                onMouseEnter={(event) => {
-                  if (!event.currentTarget.disabled) {
-                    event.currentTarget.style.backgroundColor =
-                      "var(--color-primary-hover)";
-                  }
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.backgroundColor =
-                    "var(--color-primary-hover)";
                 }}
               >
                 {updateListMutation.isPending ? "Updating..." : "Update list"}
@@ -532,9 +774,9 @@ export default function BoardList({
         </div>
       )}
 
-      {/* =====================================================
+      {/* ======================================================
           DELETE LIST MODAL
-      ====================================================== */}
+      ======================================================= */}
 
       {isDeleteModalOpen && (
         <div
@@ -543,7 +785,7 @@ export default function BoardList({
           aria-modal="true"
           aria-labelledby="delete-list-title"
         >
-          {/* BACKDROP */}
+          {/* Backdrop */}
 
           <button
             type="button"
@@ -552,16 +794,17 @@ export default function BoardList({
             className="absolute inset-0 cursor-default bg-black/40"
           />
 
-          {/* MODAL */}
+          {/* Modal */}
 
           <div
             className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
             style={{
               backgroundColor: "var(--color-card-bg)",
+
               borderColor: "var(--color-border)",
             }}
           >
-            {/* CLOSE */}
+            {/* Close */}
 
             <button
               type="button"
@@ -576,19 +819,20 @@ export default function BoardList({
               <X size={18} />
             </button>
 
-            {/* ICON */}
+            {/* Icon */}
 
             <div
               className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
               style={{
                 backgroundColor: "var(--color-tag-red-bg)",
+
                 color: "var(--color-tag-red-text)",
               }}
             >
               <Trash2 size={20} />
             </div>
 
-            {/* CONTENT */}
+            {/* Content */}
 
             <div className="pr-8">
               <h2
@@ -614,13 +858,15 @@ export default function BoardList({
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  &quot;{list.listName}&quot;
+                  &quot;
+                  {list.listName}
+                  &quot;
                 </span>
                 ? This action cannot be undone.
               </p>
             </div>
 
-            {/* ACTIONS */}
+            {/* Actions */}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -630,6 +876,7 @@ export default function BoardList({
                 className="rounded-xl border px-4 py-2.5 text-sm font-medium transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   borderColor: "var(--color-border)",
+
                   color: "var(--color-text-primary)",
                 }}
               >

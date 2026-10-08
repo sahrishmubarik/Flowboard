@@ -1548,3 +1548,281 @@ body {
     border-color 200ms ease,
     color 200ms ease;
 }
+
+.card-description-editor .tiptap {
+  min-height: 180px;
+  padding: 12px;
+  outline: none;
+  color: var(--color-text-primary);
+}
+
+.card-description-editor .tiptap p {
+  margin: 0.35rem 0;
+}
+
+.card-description-editor .tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.75rem 0;
+}
+
+.card-description-editor .tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.65rem 0;
+}
+
+.card-description-editor .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.card-description-editor .tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.card-description-editor .tiptap li {
+  margin: 0.2rem 0;
+}
+
+.card-description-editor .tiptap blockquote {
+  border-left: 3px solid var(--color-border);
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.card-description-editor .tiptap code {
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--color-column-bg);
+  font-family: monospace;
+}
+
+.card-description-editor .tiptap hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.card-description-editor .tiptap a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/*
+ * ============================================================
+ * CHECKLIST
+ * ============================================================
+ */
+
+.card-description-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  margin-top: 3px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/*
+ * ============================================================
+ * TABLE
+ * ============================================================
+ */
+
+.card-description-editor .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.card-description-editor .tiptap th,
+.card-description-editor .tiptap td {
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  min-width: 80px;
+  vertical-align: top;
+}
+
+.card-description-editor .tiptap th {
+  font-weight: 600;
+  background: var(--color-column-bg);
+}
+
+/* ============================================================
+   CARD DESCRIPTION EDITOR
+   ============================================================ */
+.card-scroll {
+  max-height: 660px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.card-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.card-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+.card-description-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Editor content */
+
+.card-description-editor .tiptap {
+  min-height: 140px;
+  padding: 12px;
+  outline: none;
+}
+
+/* Scrollbar */
+
+.card-description-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-description-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-description-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.card-description-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Firefox */
+
+.card-description-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Typography */
+
+.card-description-editor .tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.card-description-editor .tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.875rem 0 0.5rem;
+}
+
+.card-description-editor .tiptap p {
+  margin: 0.4rem 0;
+}
+
+.card-description-editor .tiptap ul,
+.card-description-editor .tiptap ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.card-description-editor .tiptap blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 12px;
+  margin: 12px 0;
+  color: var(--color-text-secondary);
+}
+
+.card-description-editor .tiptap code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background-color: var(--color-column-bg);
+  font-size: 0.875em;
+}
+
+.card-description-editor .tiptap hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.card-description-editor .tiptap a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* Checklist */
+
+.card-description-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  margin-top: 4px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Tables */
+
+.card-description-editor .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.card-description-editor .tiptap th,
+.card-description-editor .tiptap td {
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  text-align: left;
+}
+
+.card-description-editor .tiptap th {
+  background-color: var(--color-column-bg);
+  font-weight: 600;
+}
+
+/* Placeholder */
+
+.card-description-editor .tiptap p.is-editor-empty:first-child::before {
+  color: var(--color-text-secondary);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

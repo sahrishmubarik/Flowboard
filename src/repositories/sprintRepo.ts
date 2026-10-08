@@ -112,4 +112,23 @@ export const SprintRepo = {
       return updatedSprint[0];
     });
   },
+  async getSprintById(sprintId: string) {
+    const sprintDetails = await db
+      .select({
+        id: sprint.id,
+        boardId: sprint.boardId,
+        name: sprint.sprintName,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        goal: sprint.goal,
+        status: sprint.status,
+        createdBy: sprint.createdBy,
+        createdAt: sprint.createdAt,
+        updatedAt: sprint.updatedAt,
+      })
+      .from(sprint)
+      .where(eq(sprint.id, sprintId));
+
+    return sprintDetails;
+  },
 };
