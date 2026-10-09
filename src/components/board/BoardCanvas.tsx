@@ -6,7 +6,7 @@ import { ChevronDown, Plus, X } from "lucide-react";
 
 import BoardList from "./BoardList";
 import CreateListCard from "./CreateListCard";
-
+import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 /*
  * ============================================================
  * TYPES
@@ -1163,14 +1163,10 @@ export default function BoardCanvas({
                 Description
               </h3>
 
-              <p
-                className="whitespace-pre-wrap text-sm leading-6"
-                style={{
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                {selectedCard.description || "No description added."}
-              </p>
+              <CardDescriptionViewer
+                content={selectedCard.description}
+                className="text-sm leading-6"
+              />
             </div>
             {/* Dates */}
 
