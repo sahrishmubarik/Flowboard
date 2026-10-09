@@ -296,15 +296,28 @@ export default function CreateCard({
           </p>
 
           {/* Description */}
+          {/* Description */}
           {card.description && (
-            <p
+            <div
               className="mt-1 line-clamp-2 text-xs leading-4"
               style={{
                 color: "var(--color-text-muted)",
               }}
             >
-              {card.description}
-            </p>
+              {card.description
+                .replace(/<br\s*\/?>/gi, " ")
+                .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, " ")
+                .replace(/<[^>]*>/g, "")
+                .replace(/&nbsp;/gi, " ")
+                .replace(/&amp;/gi, "&")
+                .replace(/&lt;/gi, "<")
+                .replace(/&gt;/gi, ">")
+                .replace(/&quot;/gi, '"')
+                .replace(/&#39;/gi, "'")
+                .replace(/[#*_~`]/g, "")
+                .replace(/\s+/g, " ")
+                .trim()}
+            </div>
           )}
 
           {/* Dates */}
