@@ -12,6 +12,7 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TextAlign from "@tiptap/extension-text-align";
+import { Markdown } from "tiptap-markdown";
 import {
   Bold,
   Italic,
@@ -31,6 +32,7 @@ import {
   AlignLeft,
   Eraser,
 } from "lucide-react";
+import { useEffect } from "react";
 
 type CardDescriptionEditorProps = {
   value: string;
@@ -46,7 +48,10 @@ export default function CardDescriptionEditor({
 
     extensions: [
       StarterKit,
-
+      Markdown.configure({
+        html: true, // Allows parsing of existing HTML tags safely
+        linkify: true, // Auto-converts text URLs to links
+      }),
       Underline,
 
       Link.configure({
@@ -80,9 +85,24 @@ export default function CardDescriptionEditor({
     content: value,
 
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.storage.markdown.getMarkdown());
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+
+    // Only update the editor if the value changed externally
+    // and does not match the editor's current internal state
+    const currentContent = value.includes("<")
+      ? editor.getHTML()
+      : editor.storage.markdown.getMarkdown();
+
+    if (value !== currentContent && value !== "") {
+      // The second argument 'false' prevents cursor jumping
+      editor.commands.setContent(value, false);
+    }
+  }, [value, editor]);
 
   if (!editor) {
     return null;
@@ -318,7 +338,10 @@ export default function CardDescriptionEditor({
       {/* Editor */}
 
       <div className="card-description-scroll">
-        <EditorContent editor={editor} className="card-description-editor" />
+        <EditorContent
+          editor={editor}
+          className="card-description-editor prose max-w-none p-4 focus:outline-none"
+        />
       </div>
     </div>
   );

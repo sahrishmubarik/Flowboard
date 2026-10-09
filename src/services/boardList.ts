@@ -116,3 +116,63 @@ export async function deleteListById(boardId: string, listId: string) {
     },
   );
 }
+
+export async function reorderBoardLists(boardId: string, orderedIds: string[]) {
+  // 1. Authenticate the user
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("User not found", 403);
+  }
+
+  const userId = user.userId;
+
+  // 2. Check board permissions
+  await requireBoardRole(userId, boardId, ["owner", "admin", "manager"]);
+
+  // 3. Validate the request
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    throw new AppError("orderedIds must be a non-empty array", 400);
+  }
+
+  if (
+    orderedIds.some((id) => typeof id !== "string" || id.trim().length === 0)
+  ) {
+    throw new AppError("Every list ID must be a non-empty string", 400);
+  }
+
+  // Prevent the same list from appearing more than once
+  if (new Set(orderedIds).size !== orderedIds.length) {
+    throw new AppError("Duplicate list IDs are not allowed", 400);
+  }
+
+  // 4. Confirm that the submitted IDs match every list on this board
+  const existingLists = await BoardListRepo.getListByBoardId(boardId);
+
+  const existingIds = new Set(existingLists.map((list) => list.id));
+
+  const allIdsBelongToBoard = orderedIds.every((id) => existingIds.has(id));
+
+  const allListsIncluded = orderedIds.length === existingLists.length;
+
+  if (!allIdsBelongToBoard || !allListsIncluded) {
+    throw new AppError(
+      "orderedIds must contain every list on this board exactly once",
+      400,
+    );
+  }
+
+  // 5. Persist the new order
+  const boardLists = await BoardListRepo.reorderLists(boardId, orderedIds);
+
+  // 6. Return the updated order
+  return NextResponse.json(
+    {
+      message: "Board lists reordered successfully",
+      lists: boardLists,
+    },
+    {
+      status: 200,
+    },
+  );
+}
