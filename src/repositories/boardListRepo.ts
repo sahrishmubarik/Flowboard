@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { boardList } from "@/db/boardSchema";
-import { eq, max, and } from "drizzle-orm";
+import { eq, max, and, asc } from "drizzle-orm";
 
 export const BoardListRepo = {
   async create(boardId: string, listName: string, createdBy: string) {
@@ -30,16 +30,17 @@ export const BoardListRepo = {
 
     return boardLists;
   },
+
   async getListByBoardId(boardId: string) {
-    const Lists = await db
+    return await db
       .select({
         id: boardList.id,
         listName: boardList.listName,
         position: boardList.position,
       })
       .from(boardList)
-      .where(eq(boardList.boardId, boardId));
-    return Lists;
+      .where(eq(boardList.boardId, boardId))
+      .orderBy(asc(boardList.position));
   },
   async getListByListId(boardId: string, listId: string) {
     const List = await db
@@ -74,5 +75,27 @@ export const BoardListRepo = {
         listName: boardList.listName,
       });
     return list;
+  },
+  async reorderLists(boardId: string, orderedIds: string[]) {
+    return await db.transaction(async (tx) => {
+      for (const [index, listId] of orderedIds.entries()) {
+        await tx
+          .update(boardList)
+          .set({
+            position: index + 1,
+          })
+          .where(and(eq(boardList.boardId, boardId), eq(boardList.id, listId)));
+      }
+
+      return await tx
+        .select({
+          id: boardList.id,
+          listName: boardList.listName,
+          position: boardList.position,
+        })
+        .from(boardList)
+        .where(eq(boardList.boardId, boardId))
+        .orderBy(asc(boardList.position));
+    });
   },
 };
