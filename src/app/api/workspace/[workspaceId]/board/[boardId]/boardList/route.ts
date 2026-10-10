@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { createBoardList, getBoardList } from "@/services/boardList";
+import {
+  createBoardList,
+  getBoardList,
+  reorderBoardLists,
+} from "@/services/boardList";
 import { AppError } from "@/lib/errors/AppError";
 
 type BoardListBody = {
@@ -50,6 +54,41 @@ export async function GET(
 
     return NextResponse.json(
       { message: "Internal server error. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+type ReorderBoardListsBody = {
+  orderedIds: string[];
+};
+
+export async function PATCH(
+  request: Request,
+  {
+    params,
+  }: {
+    params: Promise<{ workspaceId: string; boardId: string }>;
+  },
+) {
+  try {
+    const { boardId } = await params;
+
+    const body: ReorderBoardListsBody = await request.json();
+
+    return await reorderBoardLists(boardId, body.orderedIds);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
+    }
+
+    console.error("Failed to reorder board lists:", error);
+
+    return NextResponse.json(
+      { message: "Internal server error" },
       { status: 500 },
     );
   }
