@@ -107,7 +107,7 @@ export async function getBoardCardDetail(boardId: string, cardId: string) {
   if (cardDetails.length === 0) {
     throw new Error("Card not found");
   }
-
+  console.log("cardDetails:", cardDetails);
   return NextResponse.json(
     {
       message: "Card details retrieved successfully!",
@@ -116,5 +116,57 @@ export async function getBoardCardDetail(boardId: string, cardId: string) {
     {
       status: 200,
     },
+  );
+}
+export async function moveBoardCard(
+  boardId: string,
+  cardId: string,
+  destinationListId: string,
+  position: number,
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  // 1. Check that the board exists.
+  const boardDetails = await BoardRepo.getBoardById(boardId);
+
+  if (boardDetails.length === 0) {
+    throw new AppError("Board not found", 404);
+  }
+
+  // 2. Check that the card exists in this board.
+  const cardDetails = await CardRepo.getCardForMove(boardId, cardId);
+
+  if (!cardDetails) {
+    throw new AppError("Card not found", 404);
+  }
+
+  // 3. Check that the destination list belongs to this board.
+  const destinationList = await BoardListRepo.getListByListId(
+    boardId,
+    destinationListId,
+  );
+
+  if (destinationList.length === 0) {
+    throw new AppError("Destination list not found", 404);
+  }
+
+  // 4. Move the card and recalculate affected positions.
+  const movedCard = await CardRepo.moveCard(
+    boardId,
+    cardId,
+    destinationListId,
+    position,
+  );
+
+  return NextResponse.json(
+    {
+      message: "Card moved successfully!",
+      card: movedCard,
+    },
+    { status: 200 },
   );
 }

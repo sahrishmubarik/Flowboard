@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Archive, Copy, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import CreateCard from "@/components/card/CreateCard";
-
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import SortableCard from "./SortableCard";
+import { useDroppable } from "@dnd-kit/core";
 /*
  * ============================================================
  * TYPES
@@ -25,6 +30,7 @@ type CardType = {
   boardId: string;
   boardListId: string;
   sprintId: string | null;
+  sprintName?: string | null;
   cardNumber: number;
   title: string;
   description: string | null;
@@ -42,21 +48,14 @@ type CardType = {
 
 type BoardListProps = {
   list: BoardListType;
-
   workspaceId: string;
-
   boardId: string;
-
   closeMenuSignal: number;
-
   cards?: CardType[];
-
   activeSprintId?: string | null;
-
+  activeSprintName?: string | null;
   isCardsLoading?: boolean;
-
   isCardsError?: boolean;
-
   onCardClick?: (cardId: string) => void;
 };
 
@@ -73,6 +72,7 @@ export default function BoardList({
   closeMenuSignal,
   cards = [],
   activeSprintId = null,
+  activeSprintName = null,
   isCardsLoading = false,
   isCardsError = false,
   onCardClick,
@@ -95,6 +95,13 @@ export default function BoardList({
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
+  const { setNodeRef: setCardsDropRef, isOver } = useDroppable({
+    id: `list-${list.id}`,
+    data: {
+      type: "list",
+      listId: list.id,
+    },
+  });
   const [listName, setListName] = useState(list.listName);
 
   /*
@@ -414,6 +421,7 @@ export default function BoardList({
                   boardId={boardId}
                   listId={list.id}
                   listName={list.listName}
+                  sprintName={activeSprintName}
                   activeSprintId={activeSprintId}
                   onCreateClick={() => {
                     setIsMenuOpen(false);
@@ -501,7 +509,15 @@ export default function BoardList({
             CARDS
         ===================================================== */}
 
-        <div className="flex flex-col gap-2 p-2">
+        <div
+          ref={setCardsDropRef}
+          className="flex min-h-16 flex-col gap-2 p-2"
+          style={{
+            backgroundColor: isOver
+              ? "var(--color-primary-soft, var(--color-column-bg))"
+              : undefined,
+          }}
+        >
           {/* ==================================================
               LOADING
           =================================================== */}
@@ -544,21 +560,29 @@ export default function BoardList({
                CARD LIST
             =================================================== */
 
-            [...cards]
-              .sort((a, b) => a.position - b.position)
-              .map((card) => (
-                <CreateCard
-                  key={card.id}
-                  mode="display"
-                  card={card}
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  listId={list.id}
-                  listName={list.listName}
-                  activeSprintId={activeSprintId}
-                  onCardClick={onCardClick}
-                />
-              ))
+            <SortableContext
+              items={[...cards]
+                .sort((a, b) => a.position - b.position)
+                .map((card) => card.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {[...cards]
+                .sort((a, b) => a.position - b.position)
+                .map((card) => (
+                  <SortableCard key={card.id} card={card}>
+                    <CreateCard
+                      card={card}
+                      workspaceId={workspaceId}
+                      boardId={boardId}
+                      listId={list.id}
+                      listName={list.listName}
+                      sprintName={card.sprintName ?? activeSprintName}
+                      activeSprintId={activeSprintId}
+                      onCardClick={onCardClick}
+                    />
+                  </SortableCard>
+                ))}
+            </SortableContext>
           ) : (
             /* ==================================================
                EMPTY
@@ -593,6 +617,7 @@ export default function BoardList({
           listId={list.id}
           listName={list.listName}
           activeSprintId={activeSprintId}
+          sprintName={activeSprintName}
           trigger="button"
         />
       </div>

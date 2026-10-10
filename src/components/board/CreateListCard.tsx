@@ -123,7 +123,7 @@ export default function CreateListCard({
     <button
       type="button"
       onClick={() => setIsCreating(true)}
-      className="flex h-fit min-w-[280px] items-center gap-2 rounded-2xl border border-dashed border-[var(--color-card)] bg-[var(--color-column-bg)] px-4 py-4 text-left text-sm font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-card-bg)] hover:text-[var(--color-primary)]"
+      className="flex h-fit min-w-[280px] items-center gap-2 rounded-2xl  bg-[var(--color-card)] px-4 py-4 text-left text-sm font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-card-bg)] hover:text-[var(--color-card)]"
     >
       <Plus size={18} />
       Add another list
