@@ -1,49 +1,91 @@
 "use client";
 
 import { useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { ChevronDown, Plus, X } from "lucide-react";
 
 import BoardList from "./BoardList";
+
 import CreateListCard from "./CreateListCard";
+
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
+
+/* dray and drop  */
+import type { DragOverEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+
+import SortableBoardList from "./SortableBoardList";
+
 /*
+
  * ============================================================
+
  * TYPES
+
  * ============================================================
+
  */
 
 type BoardListType = {
   id: string;
+
   boardId: string;
+
   listName: string;
+
   position: number;
 };
 
 type BoardCanvasProps = {
   workspaceId: string;
+
   boardId: string;
 };
 
 type Sprint = {
   id: string;
+
   boardId: string;
+
   name: string;
+
   goal: string;
+
   status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+
   startDate: string;
+
   endDate: string;
 };
 
 type SprintResponse = {
   message: string;
+
   sprints: Sprint[];
 };
 
 type CreateSprintPayload = {
   sprintName: string;
+
   goal: string;
+
   startDate: string;
+
   endDate: string;
 };
 
@@ -51,37 +93,61 @@ type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
 type Card = {
   id: string;
+
   boardId: string;
+
   boardListId: string;
+
   sprintId: string | null;
+
+  sprintName?: string | null;
+
   cardNumber: number;
+
   title: string;
+
   description: string | null;
+
   priority: CardPriority;
+
   position: number;
+
   reporterId: string;
+
   startDate: string | null;
+
   dueDate: string | null;
+
   completedAt: string | null;
+
   isArchived: boolean;
+
   createdAt: string;
+
   updatedAt: string;
+
   deletedAt: string | null;
 };
 
 type CardResponse = {
   message: string;
+
   cards: Card[];
 };
 
 /*
+
  * ============================================================
+
  * BOARD LISTS API
+
  * ============================================================
+
  */
 
 async function fetchBoardLists(
   workspaceId: string,
+
   boardId: string,
 ): Promise<BoardListType[]> {
   const response = await fetch(
@@ -97,30 +163,33 @@ async function fetchBoardLists(
   return data.boardLists ?? data.lists ?? [];
 }
 
-/*
- * ============================================================
- * MAIN COMPONENT
- * ============================================================
- */
-
 export default function BoardCanvas({
   workspaceId,
+
   boardId,
 }: BoardCanvasProps) {
   const queryClient = useQueryClient();
 
   /*
+
    * ==========================================================
+
    * GENERAL UI STATE
+
    * ==========================================================
+
    */
 
   const [closeMenuSignal, setCloseMenuSignal] = useState(0);
 
   /*
+
    * ==========================================================
+
    * SPRINT STATE
+
    * ==========================================================
+
    */
 
   const [isSprintMenuOpen, setIsSprintMenuOpen] = useState(false);
@@ -132,9 +201,13 @@ export default function BoardCanvas({
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
 
   /*
+
    * ==========================================================
+
    * CREATE SPRINT FORM
+
    * ==========================================================
+
    */
 
   const [sprintName, setSprintName] = useState("");
@@ -144,18 +217,26 @@ export default function BoardCanvas({
   const [startDate, setStartDate] = useState("");
 
   const [endDate, setEndDate] = useState("");
+
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   const [isCardDetailsOpen, setIsCardDetailsOpen] = useState(false);
+
   /*
+
    * ============================================================
+
    * GET BOARD LISTS
+
    * ============================================================
+
    */
 
   const {
     data: lists = [],
+
     isLoading: isListsLoading,
+
     isError: isListsError,
   } = useQuery<BoardListType[]>({
     queryKey: ["board-lists", workspaceId, boardId],
@@ -165,16 +246,100 @@ export default function BoardCanvas({
     enabled: Boolean(workspaceId && boardId),
   });
 
+  const listQueryKey = ["board-lists", workspaceId, boardId];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+
+  const reorderListsMutation = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
+
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({ orderedIds }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to reorder board lists");
+      }
+
+      return data;
+    },
+
+    onMutate: async (orderedIds) => {
+      await queryClient.cancelQueries({
+        queryKey: listQueryKey,
+      });
+
+      const previousLists =
+        queryClient.getQueryData<BoardListType[]>(listQueryKey);
+
+      if (previousLists) {
+        const listById = new Map(previousLists.map((list) => [list.id, list]));
+
+        const reorderedLists = orderedIds
+
+          .map((id) => listById.get(id))
+
+          .filter((list): list is BoardListType => list !== undefined)
+
+          .map((list, index) => ({
+            ...list,
+
+            position: index + 1,
+          }));
+
+        queryClient.setQueryData<BoardListType[]>(listQueryKey, reorderedLists);
+      }
+
+      return { previousLists };
+    },
+
+    onError: (_error, _orderedIds, context) => {
+      if (context?.previousLists) {
+        queryClient.setQueryData(listQueryKey, context.previousLists);
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: listQueryKey,
+      });
+    },
+  });
+
   /*
+
    * ============================================================
+
    * GET SPRINTS
+
    * ============================================================
+
    */
 
   const {
     data: sprintData,
+
     isLoading: isSprintsLoading,
+
     isError: isSprintsError,
+
     error: sprintError,
   } = useQuery<SprintResponse>({
     queryKey: ["sprints", workspaceId, boardId],
@@ -199,27 +364,42 @@ export default function BoardCanvas({
   const sprints = sprintData?.sprints ?? [];
 
   /*
+
    * ============================================================
+
    * ACTIVE SPRINT
+
    * ============================================================
+
    */
 
   const activeSprint = sprints.find((sprint) => sprint.status === "ACTIVE");
 
   /*
+
    * ============================================================
+
    * GET CARDS
+
    *
+
    * BoardCanvas only FETCHES cards.
+
    *
+
    * Card creation belongs to BoardList.
+
    * ============================================================
+
    */
 
   const {
     data: cardData,
+
     isLoading: isCardsLoading,
+
     isError: isCardsError,
+
     error: cardsError,
   } = useQuery<CardResponse>({
     queryKey: ["board-cards", workspaceId, boardId, activeSprint?.id ?? null],
@@ -228,15 +408,21 @@ export default function BoardCanvas({
       if (!activeSprint?.id) {
         return {
           message: "No active sprint",
+
           cards: [],
         };
       }
 
       /*
+
        * IMPORTANT:
+
        * GET request uses query parameter.
+
        *
+
        * Do NOT send sprintId inside GET request body.
+
        */
 
       const response = await fetch(
@@ -259,16 +445,72 @@ export default function BoardCanvas({
 
   const cards = cardData?.cards ?? [];
 
+  const cardQueryKey = [
+    "board-cards",
+    workspaceId,
+    boardId,
+    activeSprint?.id ?? null,
+  ];
+
+  const moveCardMutation = useMutation({
+    mutationFn: async ({
+      cardId,
+      destinationListId,
+      position,
+    }: {
+      cardId: string;
+      destinationListId: string;
+      position: number;
+    }) => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            destinationListId,
+            position,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to move card");
+      }
+
+      return data;
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: cardQueryKey,
+      });
+    },
+
+    onError: (error) => {
+      console.error("MOVE_CARD_ERROR:", error);
+    },
+  });
+
   /*
+
    * ============================================================
+
    * CREATE SPRINT MUTATION
+
    * ============================================================
+
    */
 
   const createSprintMutation = useMutation({
     mutationFn: async (payload: CreateSprintPayload) => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
+
         {
           method: "POST",
 
@@ -293,8 +535,11 @@ export default function BoardCanvas({
       setIsSprintCreateOpen(false);
 
       setSprintName("");
+
       setSprintGoal("");
+
       setStartDate("");
+
       setEndDate("");
 
       queryClient.invalidateQueries({
@@ -304,9 +549,13 @@ export default function BoardCanvas({
   });
 
   /*
+
    * ============================================================
+
    * CREATE SPRINT HANDLER
+
    * ============================================================
+
    */
 
   const handleCreateSprint = (payload: CreateSprintPayload) => {
@@ -338,15 +587,20 @@ export default function BoardCanvas({
   };
 
   /*
+
    * ============================================================
+
    * ACTIVATE SPRINT MUTATION
+
    * ============================================================
+
    */
 
   const activateSprintMutation = useMutation({
     mutationFn: async (sprintId: string) => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
+
         {
           method: "PATCH",
 
@@ -387,9 +641,13 @@ export default function BoardCanvas({
   });
 
   /*
+
    * ============================================================
+
    * ACTIVATE SPRINT HANDLER
+
    * ============================================================
+
    */
 
   const handleActivateSprint = (sprintId: string) => {
@@ -401,9 +659,13 @@ export default function BoardCanvas({
   };
 
   /*
+
    * ============================================================
+
    * LOADING
+
    * ============================================================
+
    */
 
   if (isListsLoading || isSprintsLoading) {
@@ -422,9 +684,13 @@ export default function BoardCanvas({
   }
 
   /*
+
    * ============================================================
+
    * ERROR
+
    * ============================================================
+
    */
 
   if (isListsError || isSprintsError) {
@@ -454,17 +720,132 @@ export default function BoardCanvas({
   }
 
   /*
+
    * ============================================================
+
    * SORT LISTS
+
    * ============================================================
+
    */
 
   const sortedLists = [...lists].sort((a, b) => a.position - b.position);
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeType = active.data.current?.type;
+
+    // ------------------------------------------
+    // MOVE BOARD LIST
+    // ------------------------------------------
+
+    if (!activeType) {
+      const currentIds = sortedLists.map((list) => list.id);
+
+      const oldIndex = currentIds.indexOf(String(active.id));
+      const newIndex = currentIds.indexOf(String(over.id));
+
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
+
+      reorderListsMutation.mutate(arrayMove(currentIds, oldIndex, newIndex));
+
+      return;
+    }
+
+    // ------------------------------------------
+    // MOVE CARD
+    // ------------------------------------------
+
+    if (activeType === "card") {
+      const activeCard = active.data.current?.card as Card | undefined;
+
+      if (!activeCard) {
+        return;
+      }
+
+      const overType = over.data.current?.type;
+
+      let destinationListId: string;
+      let destinationCardId: string | null = null;
+
+      if (overType === "list") {
+        destinationListId = String(over.data.current?.listId);
+      } else {
+        const overCard = over.data.current?.card as Card | undefined;
+
+        if (!overCard) {
+          return;
+        }
+
+        destinationListId = overCard.boardListId;
+        destinationCardId = overCard.id;
+      }
+
+      const destinationCards = cards
+        .filter(
+          (card) =>
+            card.boardListId === destinationListId &&
+            card.id !== activeCard.id &&
+            !card.isArchived &&
+            !card.deletedAt,
+        )
+        .sort((a, b) => a.position - b.position);
+
+      let targetIndex = destinationCards.length;
+
+      if (destinationCardId) {
+        const overIndex = destinationCards.findIndex(
+          (card) => card.id === destinationCardId,
+        );
+
+        if (overIndex !== -1) {
+          targetIndex = overIndex;
+        }
+      }
+
+      // Position is 1-based in the database.
+      const position = targetIndex + 1;
+
+      if (
+        activeCard.boardListId === destinationListId &&
+        destinationCardId === null
+      ) {
+        return;
+      }
+
+      moveCardMutation.mutate({
+        cardId: activeCard.id,
+        destinationListId,
+        position,
+      });
+    }
+  };
+
   /*
+  
    * ============================================================
+  
+   * MAIN COMPONENT
+  
+   * ============================================================
+  
+   */
+
+  /*
+
+   * ============================================================
+
    * RENDER
+
    * ============================================================
+
    */
 
   const handleCardClick = async (cardId: string) => {
@@ -480,11 +861,13 @@ export default function BoardCanvas({
       }
 
       setSelectedCard(data.card);
+
       setIsCardDetailsOpen(true);
     } catch (error) {
       console.error("GET_CARD_ERROR:", error);
     }
   };
+
   return (
     <main
       className="flex h-full min-h-0 flex-col overflow-hidden "
@@ -493,6 +876,7 @@ export default function BoardCanvas({
       }}
     >
       {/* TOP BAR */}
+
       <div
         className="flex shrink-0 items-center justify-between gap-3 border-b px-3 py-3 sm:px-5 lg:px-8"
         style={{
@@ -502,8 +886,10 @@ export default function BoardCanvas({
         }}
       >
         {/* ==================================================
+
             SPRINT SELECTOR
-            ================================================== */}
+
+            \================================================== */}
 
         <div className="relative shrink-0">
           <button
@@ -531,8 +917,10 @@ export default function BoardCanvas({
           </button>
 
           {/* =================================================
+
               SPRINT MENU
-              ================================================= */}
+
+              \================================================= */}
 
           {isSprintMenuOpen && (
             <div
@@ -661,8 +1049,10 @@ export default function BoardCanvas({
         </div>
 
         {/* ==================================================
+
             TABS
-            ================================================== */}
+
+            \================================================== */}
 
         <div className="min-w-0 overflow-x-auto scrollbar-none">
           <div
@@ -705,9 +1095,13 @@ export default function BoardCanvas({
           </div>
         </div>
       </div>
+
       {/* ======================================================
+
           BOARD
-          ====================================================== */}
+
+          \====================================================== */}
+
       <section
         className="min-h-0 flex-1 overflow-hidden "
         style={{
@@ -715,43 +1109,54 @@ export default function BoardCanvas({
         }}
         onClick={() => setCloseMenuSignal((previous) => previous + 1)}
       >
-        <div className="flex h-full min-h-0 gap-3 overflow-x-auto overflow-y-auto pl-6 pr-6 pt-8 pb-12">
-          {sortedLists.map((list) => {
-            const listCards = cards.filter(
-              (card) =>
-                card.boardListId === list.id &&
-                !card.isArchived &&
-                !card.deletedAt,
-            );
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex h-full min-h-0 gap-3 overflow-x-auto overflow-y-auto pl-6 pr-6 pt-8 pb-12">
+            <SortableContext
+              items={sortedLists.map((list) => list.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {sortedLists.map((list) => {
+                const listCards = cards.filter(
+                  (card) =>
+                    card.boardListId === list.id &&
+                    !card.isArchived &&
+                    !card.deletedAt,
+                );
 
-            return (
-              <div
-                key={list.id}
-                className="flex w-[280px] min-w-[280px] flex-col "
-                onClick={(event) => event.stopPropagation()}
-              >
-                <BoardList
-                  list={list}
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  closeMenuSignal={closeMenuSignal}
-                  cards={listCards}
-                  activeSprintId={activeSprint?.id ?? null}
-                  isCardsLoading={isCardsLoading}
-                  isCardsError={isCardsError}
-                  onCardClick={handleCardClick}
-                />
-              </div>
-            );
-          })}
+                return (
+                  <SortableBoardList key={list.id} id={list.id}>
+                    <BoardList
+                      list={list}
+                      workspaceId={workspaceId}
+                      boardId={boardId}
+                      closeMenuSignal={closeMenuSignal}
+                      cards={listCards}
+                      activeSprintId={activeSprint?.id ?? null}
+                      activeSprintName={activeSprint?.name ?? null}
+                      isCardsLoading={isCardsLoading}
+                      isCardsError={isCardsError}
+                      onCardClick={handleCardClick}
+                    />
+                  </SortableBoardList>
+                );
+              })}
+            </SortableContext>
 
-          <CreateListCard workspaceId={workspaceId} boardId={boardId} />
-        </div>
+            <CreateListCard workspaceId={workspaceId} boardId={boardId} />
+          </div>
+        </DndContext>
       </section>
 
       {/* ======================================================
+
           CREATE SPRINT MODAL
-          ====================================================== */}
+
+          \====================================================== */}
+
       {isSprintCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
@@ -978,9 +1383,13 @@ export default function BoardCanvas({
           </div>
         </div>
       )}
+
       {/* ======================================================
+
           ACTIVATE SPRINT MODAL
-          ====================================================== */}
+
+          \====================================================== */}
+
       {isActivateSprintOpen && selectedSprint && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
           <div
@@ -1082,8 +1491,10 @@ export default function BoardCanvas({
       )}
 
       {/* ======================================================
+
     CARD DETAILS MODAL
-    ======================================================= */}
+
+    \======================================================= */}
 
       {isCardDetailsOpen && selectedCard && (
         <div
@@ -1091,6 +1502,7 @@ export default function BoardCanvas({
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setIsCardDetailsOpen(false);
+
               setSelectedCard(null);
             }
           }}
@@ -1099,6 +1511,7 @@ export default function BoardCanvas({
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border p-6 shadow-xl"
             style={{
               backgroundColor: "var(--color-card-bg)",
+
               borderColor: "var(--color-border)",
             }}
           >
@@ -1112,7 +1525,9 @@ export default function BoardCanvas({
                     color: "var(--color-text-muted)",
                   }}
                 >
-                  CARD-{selectedCard.cardNumber}
+                  {selectedCard.sprintName
+                    ? `${selectedCard.sprintName}_${selectedCard.cardNumber}`
+                    : `CARD-${selectedCard.cardNumber}`}
                 </p>
 
                 <h2
@@ -1129,6 +1544,7 @@ export default function BoardCanvas({
                 type="button"
                 onClick={() => {
                   setIsCardDetailsOpen(false);
+
                   setSelectedCard(null);
                 }}
                 className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
@@ -1168,6 +1584,7 @@ export default function BoardCanvas({
                 className="text-sm leading-6"
               />
             </div>
+
             {/* Dates */}
 
             {(selectedCard.startDate || selectedCard.dueDate) && (
@@ -1209,9 +1626,13 @@ export default function BoardCanvas({
 }
 
 /*
+
  * ============================================================
+
  * DATE HELPERS
+
  * ============================================================
+
  */
 
 function formatSprintDate(date: string) {
@@ -1227,7 +1648,9 @@ function formatSprintDate(date: string) {
 
   return parsedDate.toLocaleDateString("en-US", {
     month: "short",
+
     day: "numeric",
+
     year: "numeric",
   });
 }
@@ -1237,31 +1660,37 @@ function getPriorityStyle(priority: CardPriority) {
     case "critical":
       return {
         backgroundColor: "var(--color-tag-red-bg)",
+
         color: "var(--color-tag-red-text)",
       };
 
     case "show stopper":
       return {
         backgroundColor: "var(--color-tag-orange-bg)",
+
         color: "var(--color-tag-orange-text)",
       };
 
     case "major":
       return {
         backgroundColor: "var(--color-tag-yellow-bg)",
+
         color: "var(--color-tag-yellow-text)",
       };
 
     case "minor":
       return {
         backgroundColor: "var(--color-tag-blue-bg)",
+
         color: "var(--color-tag-blue-text)",
       };
 
     case "normal":
+
     default:
       return {
         backgroundColor: "var(--color-tag-green-bg)",
+
         color: "var(--color-tag-green-text)",
       };
   }
