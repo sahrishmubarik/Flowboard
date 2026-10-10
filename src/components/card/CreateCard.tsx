@@ -17,6 +17,7 @@ type CardType = {
   boardId: string;
   boardListId: string;
   sprintId: string | null;
+  sprintName?: string | null;
   cardNumber: number;
   title: string;
   description: string | null;
@@ -38,6 +39,7 @@ type CardProps = {
   boardId: string;
   listId: string;
   listName: string;
+  sprintName?: string | null;
 
   activeSprintId?: string | null;
 
@@ -53,6 +55,7 @@ type CreateCardPayload = {
   dueDate: string;
   priority: CardPriority;
   sprintId: string | null;
+  sprintName?: string | null;
   listId: string;
 };
 
@@ -70,18 +73,40 @@ const priorities: CardPriority[] = [
   "minor",
 ];
 
+const getPriorityColor = (priority: CardPriority) => {
+  switch (priority) {
+    case "normal":
+      return "#3b82f6"; // Blue
+
+    case "show stopper":
+      return "#a855f7"; // Purple
+
+    case "critical":
+      return "#ef4444"; // Red
+
+    case "major":
+      return "#eab308"; // Yellow
+
+    case "minor":
+      return "#9ca3af"; // Gray
+
+    default:
+      return "var(--color-border)";
+  }
+};
+
 /*
  * ============================================================
  * COMPONENT
  * ============================================================
  */
-
 export default function CreateCard({
   card,
   workspaceId,
   boardId,
   listId,
   listName,
+  sprintName,
   activeSprintId = null,
   onCreateClick,
   onCardClick,
@@ -228,6 +253,7 @@ export default function CreateCard({
        * Never send an empty string.
        */
       sprintId: activeSprintId ?? null,
+      sprintName: sprintName ?? null,
 
       listId,
     });
@@ -259,10 +285,11 @@ export default function CreateCard({
             onCardClick?.(card.id);
           }
         }}
-        className="group cursor-pointer rounded-lg border p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md"
+        className="group cursor-pointer rounded-lg border border-l-4 p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md"
         style={{
           backgroundColor: "var(--color-card-bg)",
           borderColor: "var(--color-border)",
+          borderLeftColor: getPriorityColor(card.priority),
         }}
       >
         <div className="pr-1">
@@ -274,29 +301,23 @@ export default function CreateCard({
                 color: "var(--color-text-muted)",
               }}
             >
-              CARD-{card.cardNumber}
+              {sprintName
+                ? `${sprintName}_${card.cardNumber}`
+                : `CARD-${card.cardNumber}`}
             </span>
-
-            <span
-              className="rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize"
-              style={getPriorityStyle(card.priority)}
+            {/* Title */}
+            <p
+              className="line-clamp-2 text-sm font-medium leading-5"
+              style={{
+                color: "var(--color-text-primary)",
+              }}
             >
-              {card.priority}
-            </span>
+              {card.title}
+            </p>
           </div>
 
-          {/* Title */}
-          <p
-            className="line-clamp-2 text-sm font-medium leading-5"
-            style={{
-              color: "var(--color-text-primary)",
-            }}
-          >
-            {card.title}
-          </p>
+          {/* Description */}
 
-          {/* Description */}
-          {/* Description */}
           {card.description && (
             <div
               className="mt-1 line-clamp-2 text-xs leading-4"
