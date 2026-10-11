@@ -20,6 +20,7 @@ import {
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function LoginCard() {
   const { showToast } = useToast();
@@ -96,9 +97,12 @@ export default function LoginCard() {
           {/* Logo */}
           <div className="px-8 py-3 ml-[-460px]">
             <Link href="/" className="brand-logo ">
-              <span className="brand-logo-mark">F</span>
-
-              <span className="brand-logo-name">Flowboard</span>
+              <BrandLogo
+                className="brand-logo"
+                markClassName="brand-logo-mark"
+                nameClassName="brand-logo-name"
+                size={28}
+              />
             </Link>
           </div>
 
