@@ -12,6 +12,7 @@ import {
 
 import { useToast } from "@/components/ui/ToastProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function ForgotPasswordPage() {
   const { showToast } = useToast();
@@ -79,9 +80,12 @@ export default function ForgotPasswordPage() {
           {/* Logo */}
           <div className="px-8 py-3 ml-[-460px]">
             <Link href="/" className="brand-logo ">
-              <span className="brand-logo-mark">F</span>
-
-              <span className="brand-logo-name">Flowboard</span>
+              <BrandLogo
+                className="brand-logo"
+                markClassName="brand-logo-mark"
+                nameClassName="brand-logo-name"
+                size={28}
+              />
             </Link>
           </div>
 
