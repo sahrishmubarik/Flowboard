@@ -1,5 +1,7 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
+
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -320,14 +322,11 @@ export default function DashboardSidebar() {
             onClick={() => router.push("/dashboard")}
             className="flex cursor-pointer items-center gap-2"
           >
-            <span
-              className="text-[19px] font-semibold tracking-tight text-[var(--color-text-primary)]"
-              style={{
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              Flowboard
-            </span>
+            <BrandLogo
+              className="flex items-center gap-2"
+              markClassName="h-8 w-8 rounded-[7px]"
+              nameClassName="text-[19px] font-semibold tracking-tight text-[var(--color-text-primary)]"
+            />
 
             <span className="h-2 w-2 rounded-full bg-[var(--color-priority-medium)]" />
           </button>
