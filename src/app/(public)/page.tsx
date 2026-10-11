@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 const inboxItems = [
   {
@@ -144,15 +145,11 @@ export default function InboxPage() {
               <div className="grid md:grid-cols-[210px_1fr]">
                 {/* Mini sidebar */}
                 <aside className="hidden border-r border-[var(--color-border)] p-5 md:block">
-                  <div className="mb-7 flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-primary)] text-xs font-bold text-[var(--color-product-window-text)]">
-                      F
-                    </span>
-
-                    <span className="text-sm font-semibold text-[var(--color-product-window-text)]">
-                      Flowboard
-                    </span>
-                  </div>
+                  <BrandLogo
+                    className="mb-7 flex items-center gap-2"
+                    markClassName="h-7 w-7 rounded-md"
+                    nameClassName="text-sm font-semibold text-[var(--color-product-window-text)]"
+                  />
 
                   <div className="space-y-1">
                     <div className="rounded-lg bg-[var(--color-product-window-soft)] px-3 py-2.5 text-xs font-medium text-[var(--color-product-window-text)]">
