@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 
 const footerLinks = [
   { label: "Product", href: "#board" },
@@ -14,8 +15,11 @@ export default function Footer() {
       <div className="site-footer-inner">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <span className="brand-mark">F</span>
-            <span className="brand-name">Flowboard</span>
+            <BrandLogo
+              className="brand"
+              markClassName="brand-mark"
+              nameClassName="brand-name"
+            />
           </Link>
 
           <p className="footer-description">
