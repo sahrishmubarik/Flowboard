@@ -1,14 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import CreateCard from "@/components/card/CreateCard";
 
 import {
   ChevronDown,
-  MoreHorizontal,
-  Plus,
-  Share2,
-  SlidersHorizontal,
   Star,
 } from "lucide-react";
 
@@ -46,11 +45,73 @@ type BoardMemberResponse = {
   };
 };
 
+type BoardList = {
+  id: string;
+  listName: string;
+  position: number;
+};
+
+type BoardListsResponse = {
+  lists?: BoardList[];
+  boardLists?: BoardList[];
+};
+
+type Sprint = {
+  id: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+};
+
+type SprintResponse = {
+  sprints: Sprint[];
+};
+
 export default function BoardHeader() {
   const params = useParams();
+  const [favoriteBoardId, setFavoriteBoardId] = useState<string | null>(null);
 
   const workspaceId = params.workspaceId as string;
   const boardId = params.boardId as string;
+  const listQuery = useQuery<BoardListsResponse>({
+    queryKey: ["board-header-lists", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch board lists");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId && boardId),
+  });
+  const sprintQuery = useQuery<SprintResponse>({
+    queryKey: ["sprints", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch sprints");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId && boardId),
+  });
+
+  const boardLists = (listQuery.data?.boardLists ?? listQuery.data?.lists ?? [])
+    .slice()
+    .sort((first, second) => first.position - second.position);
+  const firstList = boardLists[0];
+  const activeSprintId =
+    sprintQuery.data?.sprints?.find((sprint) => sprint.status === "ACTIVE")?.id ??
+    null;
+  const isBoardFavorited = favoriteBoardId === boardId;
 
   // =====================================================
   // WORKSPACE
@@ -232,14 +293,15 @@ export default function BoardHeader() {
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               {/* Organization */}
 
-              <span
+              <Link
+                href={`/dashboard/workspace/${workspaceId}`}
                 className="max-w-[120px] truncate text-xs sm:max-w-[180px] sm:text-sm lg:max-w-none lg:text-[15px]"
                 style={{
                   color: "var(--color-text-secondary)",
                 }}
               >
                 {workspaceName}
-              </span>
+              </Link>
 
               <span
                 className="shrink-0"
@@ -252,8 +314,8 @@ export default function BoardHeader() {
 
               {/* Board */}
 
-              <button
-                type="button"
+              <Link
+                href={`/dashboard/workspace/${workspaceId}/board/${boardId}`}
                 className="group flex min-w-0 items-center gap-1.5"
               >
                 <h1
@@ -272,19 +334,25 @@ export default function BoardHeader() {
                     color: "var(--color-text-muted)",
                   }}
                 />
-              </button>
+              </Link>
 
               {/* Star */}
 
               <button
                 type="button"
+                onClick={() =>
+                  setFavoriteBoardId(isBoardFavorited ? null : boardId)
+                }
                 className="ml-1 hidden rounded-md p-1.5 transition lg:block"
                 style={{
                   color: "var(--color-priority-medium)",
                 }}
-                aria-label="Favorite board"
+                aria-label={
+                  isBoardFavorited ? "Remove board favorite" : "Favorite board"
+                }
+                aria-pressed={isBoardFavorited}
               >
-                <Star size={19} />
+                <Star size={19} fill={isBoardFavorited ? "currentColor" : "none"} />
               </button>
             </div>
 
@@ -318,61 +386,25 @@ export default function BoardHeader() {
                 </div>
               )}
 
-              {/* Share */}
-
-              <button
-                type="button"
-                className="flex h-9 items-center gap-2 rounded-md border px-4 text-sm font-medium transition"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-              >
-                <Share2 size={16} />
-                Share
-              </button>
-
-              {/* Settings */}
-
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-md border transition"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Board settings"
-              >
-                <SlidersHorizontal size={17} />
-              </button>
-
-              {/* More */}
-
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-md transition"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-                aria-label="More actions"
-              >
-                <MoreHorizontal size={19} />
-              </button>
-
               {/* New Card */}
 
-              <button
-                type="button"
-                className="flex h-9 items-center gap-2 rounded-md px-4 text-sm font-semibold text-white transition"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-              >
-                <Plus size={17} />
-                New card
-              </button>
+              {firstList && (
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={firstList.id}
+                  listName={firstList.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel="New card"
+                  triggerClassName="flex h-9 items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                  triggerDisabled={
+                    listQuery.isLoading ||
+                    sprintQuery.isLoading ||
+                    !activeSprintId
+                  }
+                  triggerIconSize={17}
+                />
+              )}
             </div>
           </div>
 
@@ -388,13 +420,19 @@ export default function BoardHeader() {
 
               <button
                 type="button"
+                onClick={() =>
+                  setFavoriteBoardId(isBoardFavorited ? null : boardId)
+                }
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition"
                 style={{
                   color: "var(--color-priority-medium)",
                 }}
-                aria-label="Favorite board"
+                aria-label={
+                  isBoardFavorited ? "Remove board favorite" : "Favorite board"
+                }
+                aria-pressed={isBoardFavorited}
               >
-                <Star size={18} />
+                <Star size={18} fill={isBoardFavorited ? "currentColor" : "none"} />
               </button>
 
               {/* Members */}
@@ -440,61 +478,26 @@ export default function BoardHeader() {
             {/* RIGHT */}
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {/* Share */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md border transition sm:h-9 sm:w-9"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Share"
-              >
-                <Share2 size={15} />
-              </button>
-
-              {/* Settings */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md border transition sm:h-9 sm:w-9"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Board settings"
-              >
-                <SlidersHorizontal size={15} />
-              </button>
-
-              {/* More */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md transition sm:h-9 sm:w-9"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-                aria-label="More actions"
-              >
-                <MoreHorizontal size={19} />
-              </button>
-
               {/* New Card */}
 
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-white transition sm:h-9 sm:w-9"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-                aria-label="New card"
-              >
-                <Plus size={17} />
-              </button>
+              {firstList && (
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={firstList.id}
+                  listName={firstList.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel=""
+                  triggerClassName="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-9"
+                  triggerAriaLabel="New card"
+                  triggerDisabled={
+                    listQuery.isLoading ||
+                    sprintQuery.isLoading ||
+                    !activeSprintId
+                  }
+                  triggerIconSize={17}
+                />
+              )}
             </div>
           </div>
         </div>
