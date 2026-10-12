@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { ChevronDown, Plus, X } from "lucide-react";
 
@@ -10,10 +11,7 @@ import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
 
-import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
-
 /* dray and drop  */
-import type { DragOverEvent } from "@dnd-kit/core";
 import {
   DndContext,
   PointerSensor,
@@ -169,6 +167,7 @@ export default function BoardCanvas({
   boardId,
 }: BoardCanvasProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   /*
 
@@ -217,10 +216,6 @@ export default function BoardCanvas({
   const [startDate, setStartDate] = useState("");
 
   const [endDate, setEndDate] = useState("");
-
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-
-  const [isCardDetailsOpen, setIsCardDetailsOpen] = useState(false);
 
   /*
 
@@ -848,24 +843,10 @@ export default function BoardCanvas({
 
    */
 
-  const handleCardClick = async (cardId: string) => {
-    try {
-      const response = await fetch(
-        `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message ?? "Failed to fetch card");
-      }
-
-      setSelectedCard(data.card);
-
-      setIsCardDetailsOpen(true);
-    } catch (error) {
-      console.error("GET_CARD_ERROR:", error);
-    }
+  const handleCardClick = (cardId: string) => {
+    router.push(
+      `/dashboard/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
+    );
   };
 
   return (
@@ -1047,53 +1028,6 @@ export default function BoardCanvas({
             </div>
           )}
         </div>
-
-        {/* ==================================================
-
-            TABS
-
-            \================================================== */}
-
-        <div className="min-w-0 overflow-x-auto scrollbar-none">
-          <div
-            className="flex w-max items-center rounded-lg p-1"
-            style={{
-              backgroundColor: "var(--color-column-bg)",
-            }}
-          >
-            <button
-              type="button"
-              className="rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm sm:px-4 sm:text-sm"
-              style={{
-                backgroundColor: "var(--color-card-bg)",
-
-                color: "var(--color-text-primary)",
-              }}
-            >
-              Board
-            </button>
-
-            <button
-              type="button"
-              className="rounded-md px-3 py-1.5 text-xs sm:px-4 sm:text-sm"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              Backlog
-            </button>
-
-            <button
-              type="button"
-              className="rounded-md px-3 py-1.5 text-xs sm:px-4 sm:text-sm"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              Burndown
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ======================================================
@@ -1114,7 +1048,7 @@ export default function BoardCanvas({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex h-full min-h-0 gap-3 overflow-x-auto overflow-y-auto pl-6 pr-6 pt-8 pb-12">
+          <div className="flex h-full min-h-0 items-start gap-0 overflow-auto pl-6 pr-6 pb-12">
             <SortableContext
               items={sortedLists.map((list) => list.id)}
               strategy={horizontalListSortingStrategy}
@@ -1489,138 +1423,6 @@ export default function BoardCanvas({
           </div>
         </div>
       )}
-
-      {/* ======================================================
-
-    CARD DETAILS MODAL
-
-    \======================================================= */}
-
-      {isCardDetailsOpen && selectedCard && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setIsCardDetailsOpen(false);
-
-              setSelectedCard(null);
-            }
-          }}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border p-6 shadow-xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
-
-              borderColor: "var(--color-border)",
-            }}
-          >
-            {/* Header */}
-
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p
-                  className="text-xs font-semibold"
-                  style={{
-                    color: "var(--color-text-muted)",
-                  }}
-                >
-                  {selectedCard.sprintName
-                    ? `${selectedCard.sprintName}_${selectedCard.cardNumber}`
-                    : `CARD-${selectedCard.cardNumber}`}
-                </p>
-
-                <h2
-                  className="mt-1 text-xl font-semibold"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {selectedCard.title}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCardDetailsOpen(false);
-
-                  setSelectedCard(null);
-                }}
-                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Priority */}
-
-            <div className="mt-5">
-              <span
-                className="rounded-full px-2.5 py-1 text-xs font-semibold capitalize"
-                style={getPriorityStyle(selectedCard.priority)}
-              >
-                {selectedCard.priority}
-              </span>
-            </div>
-
-            {/* Description */}
-
-            <div className="mt-6">
-              <h3
-                className="mb-2 text-sm font-semibold"
-                style={{
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                Description
-              </h3>
-
-              <CardDescriptionViewer
-                content={selectedCard.description}
-                className="text-sm leading-6"
-              />
-            </div>
-
-            {/* Dates */}
-
-            {(selectedCard.startDate || selectedCard.dueDate) && (
-              <div className="mt-5">
-                <h3
-                  className="mb-2 text-sm font-semibold"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  Dates
-                </h3>
-
-                <div
-                  className="flex items-center gap-2 text-sm"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  {selectedCard.startDate && (
-                    <span>{formatSprintDate(selectedCard.startDate)}</span>
-                  )}
-
-                  {selectedCard.startDate && selectedCard.dueDate && (
-                    <span>→</span>
-                  )}
-
-                  {selectedCard.dueDate && (
-                    <span>{formatSprintDate(selectedCard.dueDate)}</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </main>
   );
 }
@@ -1653,45 +1455,4 @@ function formatSprintDate(date: string) {
 
     year: "numeric",
   });
-}
-
-function getPriorityStyle(priority: CardPriority) {
-  switch (priority) {
-    case "critical":
-      return {
-        backgroundColor: "var(--color-tag-red-bg)",
-
-        color: "var(--color-tag-red-text)",
-      };
-
-    case "show stopper":
-      return {
-        backgroundColor: "var(--color-tag-orange-bg)",
-
-        color: "var(--color-tag-orange-text)",
-      };
-
-    case "major":
-      return {
-        backgroundColor: "var(--color-tag-yellow-bg)",
-
-        color: "var(--color-tag-yellow-text)",
-      };
-
-    case "minor":
-      return {
-        backgroundColor: "var(--color-tag-blue-bg)",
-
-        color: "var(--color-tag-blue-text)",
-      };
-
-    case "normal":
-
-    default:
-      return {
-        backgroundColor: "var(--color-tag-green-bg)",
-
-        color: "var(--color-tag-green-text)",
-      };
-  }
 }
