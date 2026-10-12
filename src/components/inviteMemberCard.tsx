@@ -76,7 +76,7 @@ export default function InviteMemberCard() {
 
   return (
     <section
-      className="w-full max-w-2xl overflow-hidden rounded-2xl shadow-sm"
+      className="w-full max-w-3xl overflow-hidden rounded-2xl shadow-sm"
       style={{
         border: "1px solid var(--color-border)",
         backgroundColor: "var(--color-card-bg)",
