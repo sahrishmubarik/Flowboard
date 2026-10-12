@@ -41,20 +41,46 @@ export async function inviteMemberInBoard(
   role: "owner" | "admin" | "manager" | "member",
 ) {
   const user = await getCurrentUser();
+
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  const user_id = user.userId;
-  await requireBoardRole(user_id, boardId, ["owner", "admin", "manager"]);
-  /* first check add person  already part of  member of that board */
-  const existingBoardMember = await boardMemberRepo.findByUserAndBoard(
+
+  const currentUserId = user.userId;
+
+  // 1. Check whether the current user can manage this board.
+  await requireBoardRole(currentUserId, boardId, ["owner", "admin", "manager"]);
+
+  // 2. Check whether the target user already has a membership record.
+  const existingMember = await boardMemberRepo.findByUserAndBoard(
     userId,
     boardId,
   );
-  if (existingBoardMember) {
-    throw new AppError("Member already exist in that board ", 404);
+
+  // 3. If the membership exists but was deactivated, reactivate it.
+  if (existingMember) {
+    if (existingMember.status === "DEACTIVATED") {
+      const reactivatedMember = await boardMemberRepo.reactivateMember(
+        userId,
+        boardId,
+        role,
+        currentUserId,
+      );
+
+      return Response.json(
+        {
+          message: "Board membership reactivated successfully",
+          Board: reactivatedMember,
+        },
+        { status: 200 },
+      );
+    }
+
+    // 4. If already active, return a conflict.
+    throw new AppError("Member already exists in that board", 409);
   }
-  /*get board name and organization name for that pass to email for user to know in which board add you */
+
+  // 5. Get workspace and board details for the invitation email.
   const [workspaceData, boardData] = await Promise.all([
     workspaceRepo.findById(workspaceId),
     BoardRepo.getBoardById(boardId),
@@ -64,6 +90,8 @@ export async function inviteMemberInBoard(
     organizationName: workspaceData?.workspaceName,
     boardName: boardData?.[0]?.boardName,
   };
+
+  // 6. Send the invitation email for a new board membership.
   const boardInviteUrl =
     `${process.env.NEXT_PUBLIC_APP_URL}` +
     `/dashboard/workspace/${workspaceId}/board`;
@@ -75,22 +103,21 @@ export async function inviteMemberInBoard(
     role,
     boardInviteUrl,
   });
-  const currentUserId = user_id;
-  /* add member to your board member table */
+
+  // 7. Create the new board membership.
   const newBoardMember = await boardMemberRepo.create(
-    userId, // invited user's ID
+    userId,
     boardId,
     role,
-    currentUserId, // admin/owner who is assigning them
+    currentUserId,
   );
+
   return Response.json(
     {
-      message: "Add member in Board successfully",
+      message: "Board member added successfully",
       Board: newBoardMember,
     },
-    {
-      status: 201,
-    },
+    { status: 201 },
   );
 }
 

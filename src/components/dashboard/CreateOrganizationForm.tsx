@@ -16,10 +16,12 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type CreateWorkspaceFormProps = {
   isModal?: boolean;
+  onCreated?: (workspaceId: string) => void;
 };
 
 export default function CreateWorkspaceForm({
   isModal = false,
+  onCreated,
 }: CreateWorkspaceFormProps) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -61,7 +63,11 @@ export default function CreateWorkspaceForm({
     onSuccess: (data) => {
       showToast(data.message || "Workspace created successfully!", "success");
       const workspaceId = data.workspace.id;
-      router.replace(`/dashboard/workspace/${workspaceId}`);
+      if (isModal && onCreated) {
+        onCreated(workspaceId);
+      } else {
+        router.replace(`/dashboard/workspace/${workspaceId}`);
+      }
     },
 
     onError: (error) => {

@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CreateWorkspaceForm from "@/components/dashboard/CreateOrganizationForm";
 
 export default function CreateWorkspaceModal() {
   const router = useRouter();
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-[2px]">
@@ -18,7 +24,13 @@ export default function CreateWorkspaceModal() {
           ×
         </button>
 
-        <CreateWorkspaceForm isModal />
+        <CreateWorkspaceForm
+          isModal
+          onCreated={(workspaceId) => {
+            setIsOpen(false);
+            router.replace(`/dashboard/workspace/${workspaceId}`);
+          }}
+        />
       </div>
     </div>
   );

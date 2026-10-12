@@ -84,4 +84,31 @@ export const boardMemberRepo = {
 
     return deletedMember;
   },
+
+  async reactivateMember(
+    userId: string,
+    boardId: string,
+    role: "owner" | "admin" | "manager" | "member",
+    assignedBy: string,
+  ) {
+    const [member] = await db
+      .update(boardMembers)
+      .set({
+        status: "ACTIVE",
+        role,
+        assignedBy,
+      })
+      .where(
+        and(eq(boardMembers.userId, userId), eq(boardMembers.boardId, boardId)),
+      )
+      .returning({
+        id: boardMembers.id,
+        userId: boardMembers.userId,
+        boardId: boardMembers.boardId,
+        role: boardMembers.role,
+        status: boardMembers.status,
+      });
+
+    return member;
+  },
 };

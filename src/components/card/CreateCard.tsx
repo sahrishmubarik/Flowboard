@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Check, Plus, X } from "lucide-react";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
@@ -40,6 +41,11 @@ type CardProps = {
   listId: string;
   listName: string;
   sprintName?: string | null;
+  triggerLabel?: string;
+  triggerClassName?: string;
+  triggerAriaLabel?: string;
+  triggerDisabled?: boolean;
+  triggerIconSize?: number;
 
   activeSprintId?: string | null;
 
@@ -107,6 +113,11 @@ export default function CreateCard({
   listId,
   listName,
   sprintName,
+  triggerLabel = "Add card",
+  triggerClassName,
+  triggerAriaLabel,
+  triggerDisabled = false,
+  triggerIconSize = 16,
   activeSprintId = null,
   onCreateClick,
   onCardClick,
@@ -375,24 +386,33 @@ export default function CreateCard({
     <>
       <button
         type="button"
+        disabled={triggerDisabled}
+        aria-label={triggerAriaLabel}
         onClick={openCreateCardModal}
-        className="mx-2 mb-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-        style={{
-          color: "var(--color-text-muted)",
-        }}
+        className={
+          triggerClassName ??
+          "mx-2 mb-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+        }
+        style={
+          triggerClassName
+            ? undefined
+            : { color: "var(--color-text-muted)" }
+        }
       >
-        <Plus size={16} />
+        <Plus size={triggerIconSize} />
 
-        <span>Add card</span>
+        <span>{triggerLabel}</span>
       </button>
 
       {/* ======================================================
           CREATE CARD MODAL
       ======================================================= */}
 
-      {isCreateCardOpen && (
+      {isCreateCardOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 "
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               closeCreateCardModal();
@@ -419,14 +439,20 @@ export default function CreateCard({
                   Create card
                 </h2>
 
-                <p
-                  className="mt-1 text-sm"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  Add a card to <span className="font-medium">{listName}</span>.
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                  <span style={{ color: "var(--color-text-secondary)" }}>
+                    Add to list
+                  </span>
+                  <span
+                    className="rounded-md px-2 py-1 font-medium"
+                    style={{
+                      backgroundColor: "var(--color-column-bg)",
+                      color: "var(--color-text-primary)",
+                    }}
+                  >
+                    {listName}
+                  </span>
+                </div>
               </div>
 
               <button
@@ -658,8 +684,9 @@ export default function CreateCard({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }
