@@ -28,7 +28,7 @@ export default function SortableBoardList({
       {...attributes}
       {...listeners}
       onClick={(event) => event.stopPropagation()}
-      className="flex w-[280px] min-w-[280px] flex-col"
+      className="relative flex min-h-full w-[280px] min-w-[280px] flex-col"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
