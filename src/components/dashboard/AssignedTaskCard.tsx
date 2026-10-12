@@ -1,12 +1,9 @@
 "use client";
 
-import { CheckSquare2, Circle, Clock3, MoreHorizontal } from "lucide-react";
+import { Circle } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-
-type TaskPriority = "critical" | "high" | "medium" | "low";
-
-type TaskState = "todo" | "in-progress" | "review" | "done";
+import { useQueries, useQuery } from "@tanstack/react-query";
 
 type Board = {
   id: string;
@@ -22,182 +19,30 @@ type BoardResponse = {
   boards: Board[];
 };
 
-type TaskDetails = {
+type Sprint = {
   id: string;
-  cardName: string;
-  priority: TaskPriority;
-  state: TaskState;
-  dueDate: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 };
 
-/*
- * Temporary task data.
- *
- * List/Card CRUD does not exist yet,
- * so these values are temporarily mocked.
- */
-const mockTaskDetails: TaskDetails[] = [
-  {
-    id: "task-1",
-    cardName: "Fix coupon validation on checkout",
-    priority: "critical",
-    state: "in-progress",
-    dueDate: "Sep 28",
-  },
-  {
-    id: "task-2",
-    cardName: "Build notification settings screen",
-    priority: "high",
-    state: "review",
-    dueDate: "Sep 29",
-  },
-  {
-    id: "task-3",
-    cardName: "Add API authentication guide",
-    priority: "medium",
-    state: "todo",
-    dueDate: "Oct 01",
-  },
-  {
-    id: "task-4",
-    cardName: "Add responsive navbar drawer",
-    priority: "high",
-    state: "in-progress",
-    dueDate: "Oct 02",
-  },
-  {
-    id: "task-5",
-    cardName: "Prepare homepage feature copy",
-    priority: "medium",
-    state: "todo",
-    dueDate: "Oct 03",
-  },
-  {
-    id: "task-6",
-    cardName: "Fix Android push notification issue",
-    priority: "critical",
-    state: "todo",
-    dueDate: "Oct 04",
-  },
-  {
-    id: "task-7",
-    cardName: "Clean up footer spacing on Safari",
-    priority: "low",
-    state: "done",
-    dueDate: "Oct 05",
-  },
-];
-
-/* =========================================================
-   PRIORITY
-   Uses new global color schema
-   ========================================================= */
-
-const priorityConfig: Record<
-  TaskPriority,
-  {
-    label: string;
-    dot: string;
-    text: string;
-    background: string;
-  }
-> = {
-  critical: {
-    label: "Critical",
-    dot: "bg-[var(--color-priority-high)]",
-    text: "text-[var(--color-priority-high)]",
-    background: "bg-[var(--color-tag-red-bg)]",
-  },
-
-  high: {
-    label: "High",
-    dot: "bg-[var(--color-priority-high)]",
-    text: "text-[var(--color-priority-high)]",
-    background: "bg-[var(--color-tag-red-bg)]",
-  },
-
-  medium: {
-    label: "Medium",
-    dot: "bg-[var(--color-priority-medium)]",
-    text: "text-[var(--color-priority-medium)]",
-    background: "bg-[var(--color-tag-neutral-bg)]",
-  },
-
-  low: {
-    label: "Low",
-    dot: "bg-[var(--color-priority-low)]",
-    text: "text-[var(--color-priority-low)]",
-    background: "bg-[var(--color-tag-green-bg)]",
-  },
+type BoardList = {
+  id: string;
+  position: number;
 };
 
-/* =========================================================
-   STATE
-   ========================================================= */
-
-const stateConfig: Record<
-  TaskState,
-  {
-    label: string;
-    className: string;
-  }
-> = {
-  todo: {
-    label: "Todo",
-    className:
-      "bg-[var(--color-tag-neutral-bg)] text-[var(--color-tag-neutral-text)]",
-  },
-
-  "in-progress": {
-    label: "In Progress",
-    className:
-      "bg-[var(--color-tag-blue-bg)] text-[var(--color-tag-blue-text)]",
-  },
-
-  review: {
-    label: "Review",
-    className:
-      "bg-[var(--color-tag-purple-bg)] text-[var(--color-tag-purple-text)]",
-  },
-
-  done: {
-    label: "Done",
-    className:
-      "bg-[var(--color-tag-green-bg)] text-[var(--color-tag-green-text)]",
-  },
+type Card = {
+  boardListId: string;
+  isArchived: boolean;
+  deletedAt: string | null;
 };
 
-/* =========================================================
-   STATE BADGE
-   ========================================================= */
-
-function TaskStateBadge({ state }: { state: TaskState }) {
-  const config = stateConfig[state];
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1 text-[11px] font-medium ${config.className}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
-/* =========================================================
-   PRIORITY BADGE
-   ========================================================= */
-
-function PriorityBadge({ priority }: { priority: TaskPriority }) {
-  const config = priorityConfig[priority];
-
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${config.dot}`} />
-
-      <span className={`text-sm ${config.text}`}>{config.label}</span>
-    </div>
-  );
-}
+type BoardSprintSummary = {
+  activeSprint: Sprint | null;
+  totalCards: number;
+  resolvedCards: number;
+};
 
 /* =========================================================
    COMPONENT
@@ -231,28 +76,69 @@ export default function AssignedTasksCard() {
   });
 
   const boards = boardData?.boards ?? [];
+  const sprintSummaryQueries = useQueries({
+    queries: boards.map((board) => ({
+      queryKey: ["dashboard-active-sprint-summary", workspaceId, board.id],
+      enabled: Boolean(workspaceId),
+      queryFn: async (): Promise<BoardSprintSummary> => {
+        const [sprintResponse, listResponse] = await Promise.all([
+          fetch(`/api/workspace/${workspaceId}/board/${board.id}/sprint`),
+          fetch(`/api/workspace/${workspaceId}/board/${board.id}/boardList`),
+        ]);
+        const sprintData = await sprintResponse.json();
+        const listData = await listResponse.json();
 
-  /*
-   * Temporary mapping.
-   *
-   * Board information comes from API.
-   * Task information is currently mocked.
-   */
-  const tasks = boards
-    .map((board, index) => {
-      const task = mockTaskDetails[index];
+        if (!sprintResponse.ok) {
+          throw new Error(sprintData.message || "Failed to load board sprints");
+        }
+        if (!listResponse.ok) {
+          throw new Error(listData.message || "Failed to load board lists");
+        }
 
-      if (!task) {
-        return null;
-      }
+        const activeSprint: Sprint | null =
+          sprintData.sprints?.find(
+            (sprint: Sprint) => sprint.status === "ACTIVE",
+          ) ?? null;
+        if (!activeSprint) {
+          return { activeSprint: null, totalCards: 0, resolvedCards: 0 };
+        }
 
-      return {
-        ...task,
-        boardId: board.id,
-        boardName: board.boardName,
-      };
-    })
-    .filter(Boolean);
+        const cardResponse = await fetch(
+          `/api/workspace/${workspaceId}/board/${board.id}/card?sprintId=${encodeURIComponent(activeSprint.id)}`,
+        );
+        const cardData = await cardResponse.json();
+
+        if (!cardResponse.ok) {
+          throw new Error(cardData.message || "Failed to load sprint cards");
+        }
+
+        const lists: BoardList[] = (listData.boardLists ?? listData.lists ?? [])
+          .slice()
+          .sort((first: BoardList, second: BoardList) => first.position - second.position);
+        const cards: Card[] = cardData.cards ?? [];
+        const visibleCards = cards.filter(
+          (card) => !card.isArchived && !card.deletedAt,
+        );
+        const resolvedListId = lists.at(-1)?.id;
+
+        return {
+          activeSprint,
+          totalCards: visibleCards.length,
+          resolvedCards: resolvedListId
+            ? visibleCards.filter((card) => card.boardListId === resolvedListId)
+                .length
+            : 0,
+        };
+      },
+    })),
+  });
+  const boardRows = boards.map((board, index) => ({
+    board,
+    summary: sprintSummaryQueries[index]?.data,
+    isLoading: sprintSummaryQueries[index]?.isLoading ?? true,
+    error: sprintSummaryQueries[index]?.error,
+  }));
+  const firstBoard = boards[0];
 
   return (
     <section
@@ -320,33 +206,6 @@ export default function AssignedTasksCard() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="
-            flex
-            h-8
-            w-8
-            shrink-0
-            items-center
-            justify-center
-            rounded-[var(--radius-sm)]
-            transition-colors
-          "
-          style={{
-            color: "var(--color-text-secondary)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--color-card-hover)";
-            e.currentTarget.style.color = "var(--color-text-primary)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "var(--color-text-secondary)";
-          }}
-          aria-label="Task options"
-        >
-          <MoreHorizontal size={18} />
-        </button>
       </div>
 
       {/* =========================================================
@@ -505,7 +364,7 @@ export default function AssignedTasksCard() {
                     color: "var(--color-text-muted)",
                   }}
                 >
-                  Card
+                  Active sprint
                 </th>
 
                 <th
@@ -523,7 +382,7 @@ export default function AssignedTasksCard() {
                     color: "var(--color-text-muted)",
                   }}
                 >
-                  Priority
+                  Progress
                 </th>
 
                 <th
@@ -559,20 +418,21 @@ export default function AssignedTasksCard() {
                     color: "var(--color-text-muted)",
                   }}
                 >
-                  Due
+                  Sprint due
                 </th>
               </tr>
             </thead>
 
             <tbody>
-              {tasks.map((task) => {
-                if (!task) return null;
-
-                const isOverdue = false;
-
+              {boardRows.map(({ board, summary, isLoading, error }) => {
+                const totalCards = summary?.totalCards ?? 0;
+                const resolvedCards = summary?.resolvedCards ?? 0;
+                const progress = totalCards
+                  ? Math.round((resolvedCards / totalCards) * 100)
+                  : 0;
                 return (
                   <tr
-                    key={task.id}
+                    key={board.id}
                     className="
                         group
                         border-b
@@ -612,114 +472,146 @@ export default function AssignedTasksCard() {
                           }}
                         >
                           <span className="text-[10px] font-semibold">
-                            {task.boardName.charAt(0).toUpperCase()}
+                            {board.boardName.charAt(0).toUpperCase()}
                           </span>
                         </span>
 
-                        <span
+                        <Link
+                          href={`/dashboard/workspace/${workspaceId}/board/${board.id}`}
                           className="
                               max-w-[130px]
                               truncate
                               text-sm
                               font-medium
+                              hover:text-[var(--color-primary)]
                             "
                           style={{
                             color: "var(--color-text-primary)",
                           }}
                         >
-                          {task.boardName}
-                        </span>
+                          {board.boardName}
+                        </Link>
                       </div>
                     </td>
 
                     {/* =================================================
-                          CARD
+                          ACTIVE SPRINT
                       ================================================== */}
 
                     <td className="px-5 py-3.5">
-                      <button
-                        type="button"
-                        className="
-                            flex
-                            max-w-[420px]
-                            items-center
-                            gap-2
-                            text-left
-                          "
-                      >
-                        {task.state === "done" ? (
-                          <CheckSquare2
-                            size={16}
-                            className="shrink-0"
-                            style={{
-                              color: "var(--color-status-done)",
-                            }}
-                          />
-                        ) : (
-                          <Circle
-                            size={16}
-                            className="shrink-0"
-                            style={{
-                              color: "var(--color-primary)",
-                            }}
-                          />
-                        )}
-
+                      {isLoading ? (
                         <span
-                          className="
-                              truncate
-                              text-sm
-                              transition-colors
-                            "
-                          style={{
-                            color: "var(--color-text-primary)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color =
-                              "var(--color-primary)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color =
-                              "var(--color-text-primary)";
-                          }}
+                          className="inline-block h-4 w-28 animate-pulse rounded"
+                          style={{ background: "var(--color-column-bg)" }}
+                        />
+                      ) : error ? (
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--color-priority-high)" }}
                         >
-                          {task.cardName}
+                          Failed to load sprint
                         </span>
-                      </button>
+                      ) : summary?.activeSprint ? (
+                        <span
+                          className="truncate text-sm font-medium"
+                          style={{ color: "var(--color-text-primary)" }}
+                        >
+                          {summary.activeSprint.name}
+                        </span>
+                      ) : (
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          No active sprint
+                        </span>
+                      )}
                     </td>
 
                     {/* =================================================
-                          PRIORITY
+                          SPRINT PROGRESS
                       ================================================== */}
 
                     <td className="px-5 py-3.5">
-                      <PriorityBadge priority={task.priority} />
+                      {isLoading ? (
+                        <span
+                          className="inline-block h-4 w-16 animate-pulse rounded"
+                          style={{ background: "var(--color-column-bg)" }}
+                        />
+                      ) : error ? (
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          —
+                        </span>
+                      ) : (
+                        <div className="min-w-[90px]">
+                          <div
+                            className="mb-1 text-xs font-medium"
+                            style={{ color: "var(--color-text-secondary)" }}
+                          >
+                            {resolvedCards} / {totalCards} resolved
+                          </div>
+                          <div
+                            className="h-1.5 overflow-hidden rounded-full"
+                            style={{ background: "var(--color-column-bg)" }}
+                          >
+                            <div
+                              className="h-full rounded-full bg-[var(--color-status-done)] transition-[width]"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* =================================================
-                          STATE
+                          SPRINT STATE
                       ================================================== */}
 
                     <td className="px-5 py-3.5">
-                      <TaskStateBadge state={task.state} />
+                      {isLoading ? (
+                        <span
+                          className="inline-block h-6 w-20 animate-pulse rounded"
+                          style={{ background: "var(--color-column-bg)" }}
+                        />
+                      ) : error ? (
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          —
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--color-tag-blue-bg)] px-2 py-1 text-[11px] font-medium text-[var(--color-tag-blue-text)]"
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]" />
+                          {summary?.activeSprint ? "In Progress" : "No active sprint"}
+                        </span>
+                      )}
                     </td>
 
                     {/* =================================================
-                          DUE DATE
+                          SPRINT DATES
                       ================================================== */}
 
                     <td className="px-5 py-3.5">
                       <div
                         className="flex items-center gap-2 text-sm"
                         style={{
-                          color: isOverdue
-                            ? "var(--color-priority-high)"
-                            : "var(--color-text-secondary)",
+                          color: "var(--color-text-secondary)",
                         }}
                       >
-                        {isOverdue && <Clock3 size={14} />}
-
-                        <span>{task.dueDate}</span>
+                        {summary?.activeSprint ? (
+                          <span>
+                            {formatSprintDate(summary.activeSprint.startDate)} –{" "}
+                            {formatSprintDate(summary.activeSprint.endDate)}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--color-text-muted)" }}>—</span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -741,8 +633,8 @@ export default function AssignedTasksCard() {
             borderColor: "var(--color-border)",
           }}
         >
-          <button
-            type="button"
+          <Link
+            href={`/dashboard/workspace/${workspaceId}/board/${firstBoard.id}`}
             className="
               text-sm
               font-medium
@@ -759,9 +651,22 @@ export default function AssignedTasksCard() {
             }}
           >
             View all my tasks →
-          </button>
+          </Link>
         </div>
       )}
     </section>
   );
+}
+
+function formatSprintDate(date: string) {
+  const parsedDate = new Date(`${date}T00:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date;
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
