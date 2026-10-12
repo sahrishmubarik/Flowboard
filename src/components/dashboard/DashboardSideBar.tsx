@@ -5,7 +5,16 @@ import BrandLogo from "@/components/BrandLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Moon, Sun } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Menu,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Sun,
+  X,
+} from "lucide-react";
 
 import CreateBoard from "@/components/board/CreateBoardCard";
 import WorkspaceModal from "@/components/WorkspaceModal";
@@ -77,6 +86,7 @@ export default function DashboardSidebar() {
   const [showMembers, setShowMembers] = useState(false);
   const [showInvitations, setShowInvitations] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
   const [showBoardsDropdown, setShowBoardsDropdown] = useState(false);
   const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false);
@@ -269,24 +279,27 @@ export default function DashboardSidebar() {
 
       <button
         type="button"
-        onClick={() => setIsMobileOpen(true)}
+        onClick={() => setIsMobileOpen((open) => !open)}
         className="fixed left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-[var(--color-text-primary)] shadow-sm lg:hidden"
-        aria-label="Open dashboard sidebar"
+        aria-label={
+          isMobileOpen ? "Close dashboard sidebar" : "Open dashboard sidebar"
+        }
+        aria-expanded={isMobileOpen}
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        >
-          <path d="M4 6h16" />
-          <path d="M4 12h16" />
-          <path d="M4 18h16" />
-        </svg>
+        {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
+
+      {isDesktopCollapsed && (
+        <button
+          type="button"
+          onClick={() => setIsDesktopCollapsed(false)}
+          className="fixed bottom-4 left-4 z-50 hidden h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-[var(--color-text-primary)] shadow-sm lg:flex"
+          aria-label="Open dashboard sidebar"
+          title="Open sidebar"
+        >
+          <PanelLeftOpen size={18} />
+        </button>
+      )}
 
       {/* ================================================================== */}
       {/* Mobile overlay                                                     */}
@@ -306,15 +319,19 @@ export default function DashboardSidebar() {
       {/* ================================================================== */}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col border-r border-[var(--color-border)] bg-[var(--color-card-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-card-bg)] transition-[transform,width] duration-200 lg:sticky lg:top-0 lg:h-screen ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        } ${
+          isDesktopCollapsed
+            ? "lg:w-0 lg:min-w-0 lg:-translate-x-full lg:border-r-0"
+            : "lg:w-[240px] lg:translate-x-0"
         }`}
       >
         {/* ================================================================ */}
         {/* Logo + Theme                                                     */}
         {/* ================================================================ */}
 
-        <div className="flex h-[62px] justify-between shrink-0 items-center border-b border-[var(--color-border)] px-4">
+        <div className="flex h-[62px] shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4">
           {/* Flowboard logo */}
 
           <button
@@ -777,12 +794,11 @@ export default function DashboardSidebar() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowMembers(true);
-                  setShowInvitations(false);
-                  setShowBoardsDropdown(false);
-                  setShowWorkspaceDropdown(false);
-                }}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/workspace/${selectedWorkspace.workspaceId}/member`,
+                  )
+                }
                 className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
                   showMembers
                     ? "bg-[var(--color-border)] text-[var(--color-text-primary)]"
@@ -898,11 +914,11 @@ export default function DashboardSidebar() {
 
           {/* Logout */}
 
-          <div className="mt-2 border-t border-[var(--color-border)] pt-2">
+          <div className="mt-2 flex items-center gap-1 border-t border-[var(--color-border)] pt-2">
             <button
               type="button"
               onClick={handleLogout}
-              className="mt-1 flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] text-[var(--color-priority-high)] transition-colors hover:bg-[var(--color-border)]"
+              className="mt-1 flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] text-[var(--color-priority-high)] transition-colors hover:bg-[var(--color-border)]"
             >
               <svg
                 width="18"
@@ -919,6 +935,16 @@ export default function DashboardSidebar() {
                 <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
               </svg>
               Sign out
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsDesktopCollapsed(true)}
+              className="hidden h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)] lg:flex"
+              aria-label="Close dashboard sidebar"
+              title="Close sidebar"
+            >
+              <PanelLeftClose size={17} />
             </button>
           </div>
         </div>
