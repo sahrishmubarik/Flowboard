@@ -327,7 +327,7 @@ export default function BoardList({
       ======================================================= */}
 
       <div
-        className="flex h-fit min-h-[180px] w-[280px] shrink-0 flex-col rounded-xl border"
+        className="flex min-h-full w-full shrink-0 flex-col rounded-xl border"
         style={{
           backgroundColor: "var(--color-column-bg)",
 
@@ -339,8 +339,9 @@ export default function BoardList({
         ===================================================== */}
 
         <div
-          className="flex items-center justify-between border-b px-3 py-3"
+          className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b px-3 py-3"
           style={{
+            backgroundColor: "var(--color-column-bg)",
             borderColor: "var(--color-border)",
           }}
         >
