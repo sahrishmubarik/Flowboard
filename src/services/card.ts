@@ -319,10 +319,10 @@ export async function updateCardDetail(
       );
     }
 
-    case "assignedTo": {
-      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-        assignedTo: input.assignedTo === null ? null : String(input.assignedTo),
-      });
+    // case "assignedTo": {
+    //   const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+    //     assignedTo: input.assignedTo === null ? null : String(input.assignedTo),
+    //   });
 
       return NextResponse.json(
         {

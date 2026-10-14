@@ -33,6 +33,7 @@
     "@tiptap/pm": "^3.31.4",
     "@tiptap/react": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
+    "@vercel/blob": "^2.8.1",
     "add": "^2.0.9",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",

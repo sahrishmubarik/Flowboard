@@ -1,25 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { Archive, Copy, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+
 import CreateCard from "@/components/card/CreateCard";
+
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+
 import SortableCard from "./SortableCard";
+
 import { useDroppable } from "@dnd-kit/core";
+
 /*
+
  * ============================================================
+
  * TYPES
+
  * ============================================================
+
  */
 
 type BoardListType = {
   id: string;
+
   boardId: string;
+
   listName: string;
+
   position: number;
 };
 
@@ -27,95 +41,153 @@ type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
 type CardType = {
   id: string;
+
   boardId: string;
+
   boardListId: string;
+
   sprintId: string | null;
+
   sprintName?: string | null;
+
   cardNumber: number;
+
   title: string;
+
   description: string | null;
+
   priority: CardPriority;
+
   position: number;
+
   reporterId: string;
+
   startDate: string | null;
+
   dueDate: string | null;
+
   completedAt: string | null;
+
   isArchived: boolean;
+
   createdAt: string;
+
   updatedAt: string;
+
   deletedAt: string | null;
 };
 
 type BoardListProps = {
   list: BoardListType;
+
   workspaceId: string;
+
   boardId: string;
+
   closeMenuSignal: number;
+
   cards?: CardType[];
+
   activeSprintId?: string | null;
+
   activeSprintName?: string | null;
+
   isCardsLoading?: boolean;
+
   isCardsError?: boolean;
+
   onCardClick?: (cardId: string) => void;
 };
 
 /*
+
  * ============================================================
+
  * COMPONENT
+
  * ============================================================
+
  */
 
 export default function BoardList({
   list,
+
   workspaceId,
+
   boardId,
+
   closeMenuSignal,
+
   cards = [],
+
   activeSprintId = null,
+
   activeSprintName = null,
+
   isCardsLoading = false,
+
   isCardsError = false,
+
   onCardClick,
 }: BoardListProps) {
   const queryClient = useQueryClient();
 
   /*
+
    * ============================================================
+
    * LIST MENU
+
    * ============================================================
+
    */
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   /*
+
    * ============================================================
+
    * RENAME MODAL
+
    * ============================================================
+
    */
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
   const { setNodeRef: setCardsDropRef, isOver } = useDroppable({
     id: `list-${list.id}`,
+
     data: {
       type: "list",
+
       listId: list.id,
     },
   });
+
   const [listName, setListName] = useState(list.listName);
 
   /*
+
    * ============================================================
+
    * DELETE MODAL
+
    * ============================================================
+
    */
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   /*
+
    * ============================================================
+
    * CLOSE MENU WHEN BOARD CANVAS SIGNAL CHANGES
+
    * ============================================================
+
    */
 
   useEffect(() => {
@@ -123,15 +195,20 @@ export default function BoardList({
   }, [closeMenuSignal]);
 
   /*
+
    * ============================================================
+
    * DELETE LIST
+
    * ============================================================
+
    */
 
   const deleteListMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/boardList/${list.id}`,
+
         {
           method: "DELETE",
 
@@ -156,7 +233,9 @@ export default function BoardList({
 
     onSuccess: () => {
       /*
+
        * Close dialogs/menu.
+
        */
 
       setIsDeleteModalOpen(false);
@@ -164,7 +243,9 @@ export default function BoardList({
       setIsMenuOpen(false);
 
       /*
+
        * Refresh lists.
+
        */
 
       queryClient.invalidateQueries({
@@ -172,8 +253,11 @@ export default function BoardList({
       });
 
       /*
+
        * Refresh cards because deleting a list
+
        * also affects its cards.
+
        */
 
       queryClient.invalidateQueries({
@@ -183,15 +267,20 @@ export default function BoardList({
   });
 
   /*
+
    * ============================================================
+
    * UPDATE LIST NAME
+
    * ============================================================
+
    */
 
   const updateListMutation = useMutation({
     mutationFn: async (newListName: string) => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/boardList/${list.id}`,
+
         {
           method: "PATCH",
 
@@ -201,6 +290,7 @@ export default function BoardList({
 
           body: JSON.stringify({
             listId: list.id,
+
             listName: newListName,
           }),
         },
@@ -217,7 +307,9 @@ export default function BoardList({
 
     onSuccess: () => {
       /*
+
        * Close rename modal and menu.
+
        */
 
       setIsRenameModalOpen(false);
@@ -225,7 +317,9 @@ export default function BoardList({
       setIsMenuOpen(false);
 
       /*
+
        * Refresh lists.
+
        */
 
       queryClient.invalidateQueries({
@@ -235,9 +329,13 @@ export default function BoardList({
   });
 
   /*
+
    * ============================================================
+
    * RENAME HANDLERS
+
    * ============================================================
+
    */
 
   const handleRenameClick = () => {
@@ -250,7 +348,9 @@ export default function BoardList({
 
   const handleCloseRenameModal = () => {
     /*
+
      * Do not close while request is running.
+
      */
 
     if (updateListMutation.isPending) {
@@ -266,7 +366,9 @@ export default function BoardList({
     const trimmedName = listName.trim();
 
     /*
+
      * Empty list name is not allowed.
+
      */
 
     if (!trimmedName) {
@@ -274,7 +376,9 @@ export default function BoardList({
     }
 
     /*
+
      * Nothing changed.
+
      */
 
     if (trimmedName === list.listName) {
@@ -287,9 +391,13 @@ export default function BoardList({
   };
 
   /*
+
    * ============================================================
+
    * DELETE HANDLERS
+
    * ============================================================
+
    */
 
   const handleDeleteClick = () => {
@@ -304,7 +412,9 @@ export default function BoardList({
 
   const handleCloseDeleteModal = () => {
     /*
+
      * Do not close while deleting.
+
      */
 
     if (deleteListMutation.isPending) {
@@ -315,16 +425,22 @@ export default function BoardList({
   };
 
   /*
+
    * ============================================================
+
    * RENDER
+
    * ============================================================
+
    */
 
   return (
     <>
       {/* ======================================================
+
           LIST
-      ======================================================= */}
+
+      \======================================================= */}
 
       <div
         className="flex min-h-full w-full shrink-0 flex-col rounded-xl border"
@@ -335,13 +451,16 @@ export default function BoardList({
         }}
       >
         {/* ====================================================
+
             LIST HEADER
-        ===================================================== */}
+
+        \===================================================== */}
 
         <div
           className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b px-3 py-3"
           style={{
             backgroundColor: "var(--color-column-bg)",
+
             borderColor: "var(--color-border)",
           }}
         >
@@ -370,8 +489,10 @@ export default function BoardList({
           </div>
 
           {/* ==================================================
+
               LIST MENU
-          =================================================== */}
+
+          \=================================================== */}
 
           <div className="relative shrink-0">
             <button
@@ -403,17 +524,27 @@ export default function BoardList({
                 }}
               >
                 {/* ==================================================
+
                     ADD CARD
-                =================================================== */}
+
+                \=================================================== */}
 
                 {/*
+
                  * Card creation belongs to the Card component.
+
                  *
+
                  * We don't implement any card state,
+
                  * mutation or modal here.
+
                  *
+
                  * The Card component should expose its own
+
                  * create-card trigger.
+
                  */}
 
                 <CreateCard
@@ -431,8 +562,10 @@ export default function BoardList({
                 />
 
                 {/* ==================================================
+
                     RENAME LIST
-                =================================================== */}
+
+                \=================================================== */}
 
                 <button
                   type="button"
@@ -447,8 +580,10 @@ export default function BoardList({
                 </button>
 
                 {/* ==================================================
+
                     COPY LIST
-                =================================================== */}
+
+                \=================================================== */}
 
                 <button
                   type="button"
@@ -471,8 +606,10 @@ export default function BoardList({
                 />
 
                 {/* ==================================================
+
                     ARCHIVE LIST
-                =================================================== */}
+
+                \=================================================== */}
 
                 <button
                   type="button"
@@ -486,8 +623,10 @@ export default function BoardList({
                 </button>
 
                 {/* ==================================================
+
                     DELETE LIST
-                =================================================== */}
+
+                \=================================================== */}
 
                 <button
                   type="button"
@@ -507,8 +646,10 @@ export default function BoardList({
         </div>
 
         {/* ====================================================
+
             CARDS
-        ===================================================== */}
+
+        \===================================================== */}
 
         <div
           ref={setCardsDropRef}
@@ -520,8 +661,10 @@ export default function BoardList({
           }}
         >
           {/* ==================================================
+
               LOADING
-          =================================================== */}
+
+          \=================================================== */}
 
           {isCardsLoading ? (
             <>
@@ -541,8 +684,10 @@ export default function BoardList({
             </>
           ) : isCardsError ? (
             /* ==================================================
+
                ERROR
-            =================================================== */
+
+            \=================================================== */
 
             <div
               className="rounded-lg border p-3 text-xs"
@@ -558,17 +703,23 @@ export default function BoardList({
             </div>
           ) : cards.length > 0 ? (
             /* ==================================================
+
                CARD LIST
-            =================================================== */
+
+            \=================================================== */
 
             <SortableContext
               items={[...cards]
+
                 .sort((a, b) => a.position - b.position)
+
                 .map((card) => card.id)}
               strategy={verticalListSortingStrategy}
             >
               {[...cards]
+
                 .sort((a, b) => a.position - b.position)
+
                 .map((card) => (
                   <SortableCard key={card.id} card={card}>
                     <CreateCard
@@ -586,8 +737,10 @@ export default function BoardList({
             </SortableContext>
           ) : (
             /* ==================================================
+
                EMPTY
-            =================================================== */
+
+            \=================================================== */
 
             <div
               className="px-2 py-5 text-center text-xs"
@@ -601,14 +754,21 @@ export default function BoardList({
         </div>
 
         {/* ====================================================
+
             ADD CARD BUTTON
-        ===================================================== */}
+
+        \===================================================== */}
 
         {/*
+
          * The complete Add Card functionality belongs
+
          * to Card component.
+
          *
+
          * BoardList only asks Card to render its trigger.
+
          */}
 
         <CreateCard
@@ -624,8 +784,10 @@ export default function BoardList({
       </div>
 
       {/* ======================================================
+
           RENAME LIST MODAL
-      ======================================================= */}
+
+      \======================================================= */}
 
       {isRenameModalOpen && (
         <div
@@ -801,8 +963,10 @@ export default function BoardList({
       )}
 
       {/* ======================================================
+
           DELETE LIST MODAL
-      ======================================================= */}
+
+      \======================================================= */}
 
       {isDeleteModalOpen && (
         <div
@@ -884,9 +1048,7 @@ export default function BoardList({
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  &quot;
-                  {list.listName}
-                  &quot;
+                  "{list.listName}"
                 </span>
                 ? This action cannot be undone.
               </p>

@@ -51,7 +51,7 @@ export default function AcceptInvitationPage() {
         throw new Error(data.message || "Failed to accept invitation.");
       }
 
-      router.push("/dashboard");
+      router.push(`/dashboard/workspace/${workspaceId}`);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",
