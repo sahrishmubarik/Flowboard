@@ -33,15 +33,20 @@ import {
   Eraser,
 } from "lucide-react";
 import { useEffect } from "react";
+import type { ReactNode } from "react";
 
 type CardDescriptionEditorProps = {
   value: string;
   onChange: (value: string) => void;
+  toolbarAction?: ReactNode;
+  footer?: ReactNode;
 };
 
 export default function CardDescriptionEditor({
   value,
   onChange,
+  toolbarAction,
+  footer,
 }: CardDescriptionEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -333,6 +338,13 @@ export default function CardDescriptionEditor({
         >
           <Eraser size={15} />
         </EditorButton>
+
+        {toolbarAction && (
+          <>
+            <ToolbarDivider />
+            {toolbarAction}
+          </>
+        )}
       </div>
 
       {/* Editor */}
@@ -343,6 +355,15 @@ export default function CardDescriptionEditor({
           className="card-description-editor prose max-w-none p-4 focus:outline-none"
         />
       </div>
+
+      {footer && (
+        <div
+          className="border-t p-3"
+          style={{ borderColor: "var(--color-border)" }}
+        >
+          {footer}
+        </div>
+      )}
     </div>
   );
 }
