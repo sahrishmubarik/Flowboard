@@ -9,6 +9,7 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  decimal,
 } from "drizzle-orm/pg-core";
 
 import { board, boardList, sprint } from "./boardSchema";
@@ -22,7 +23,12 @@ export const cardPriorityEnum = pgEnum("card_priority", [
   "major",
   "minor",
 ]);
-
+export const cardTaskTypeEnum = pgEnum("card_type", [
+  "bug",
+  "feature",
+  "task",
+  "tbd",
+]);
 export const card = pgTable(
   "card",
   {
@@ -60,7 +66,7 @@ export const card = pgTable(
     description: text("description"),
 
     priority: cardPriorityEnum("priority").default("normal").notNull(),
-
+    taskType: cardTaskTypeEnum("type").default("task").notNull(),
     // Card ordering inside its current board list
     position: integer("position").notNull(),
 
@@ -70,7 +76,10 @@ export const card = pgTable(
       .references(() => users.id, {
         onDelete: "restrict",
       }),
-
+    /* assigned user to task  */
+    assignedTo: uuid("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
     startDate: timestamp("start_date", {
       withTimezone: true,
     }),
@@ -100,6 +109,8 @@ export const card = pgTable(
     deletedAt: timestamp("deleted_at", {
       withTimezone: true,
     }),
+    estimateTime: decimal("estimate_time"),
+    spentTime: decimal("spent_time"),
   },
 
   (table) => [
@@ -122,4 +133,48 @@ export const card = pgTable(
       table.cardNumber,
     ),
   ],
+);
+
+export const cardAttachment = pgTable(
+  "card_attachment",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    // Which card owns this attachment?
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => card.id, {
+        onDelete: "cascade",
+      }),
+
+    // Original filename shown in the UI
+    fileName: varchar("file_name", {
+      length: 255,
+    }).notNull(),
+
+    // URL returned by Vercel Blob
+    fileUrl: text("file_url").notNull(),
+
+    // Needed to identify and delete the Blob later
+    blobPathname: text("blob_pathname").notNull(),
+
+    contentType: varchar("content_type", {
+      length: 255,
+    }).notNull(),
+
+    size: integer("size").notNull(),
+
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("card_attachment_card_id_idx").on(table.cardId)],
 );

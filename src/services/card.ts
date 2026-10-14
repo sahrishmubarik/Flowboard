@@ -1,3 +1,12 @@
+// import { getCurrentUser } from "@/lib/middleware/auth";
+// import { AppError } from "@/lib/errors/AppError";
+
+// import { BoardRepo } from "@/repositories/boardRepo";
+// import { SprintRepo } from "@/repositories/sprintRepo";
+// import { BoardListRepo } from "@/repositories/boardListRepo";
+// import { CardRepo } from "@/repositories/cardRepo";
+// import { NextResponse } from "next/server";
+
 import { getCurrentUser } from "@/lib/middleware/auth";
 import { AppError } from "@/lib/errors/AppError";
 
@@ -5,7 +14,13 @@ import { BoardRepo } from "@/repositories/boardRepo";
 import { SprintRepo } from "@/repositories/sprintRepo";
 import { BoardListRepo } from "@/repositories/boardListRepo";
 import { CardRepo } from "@/repositories/cardRepo";
+
+import { updateCardDetailSchema } from "@/lib/validations/cardDetails";
 import { NextResponse } from "next/server";
+
+// Keep your existing createCard(), getBoardCard(),
+// getBoardCardDetail(), and moveBoardCard() functions here.
+
 export async function createCard(
   boardId: string,
   title: string,
@@ -13,8 +28,10 @@ export async function createCard(
   startDate: string,
   dueDate: string,
   priority: string,
+  type: string,
   sprintId: string,
   listId: string,
+  assigneeId: string,
 ) {
   const user = await getCurrentUser();
   if (!user) {
@@ -44,8 +61,10 @@ export async function createCard(
     startDate,
     dueDate,
     priority,
+    type,
     sprintId,
     listId,
+    assigneeId,
     user_id,
   );
   return NextResponse.json(
@@ -169,4 +188,152 @@ export async function moveBoardCard(
     },
     { status: 200 },
   );
+}
+/* Update card details */
+export async function updateCardDetail(
+  boardId: string,
+  cardId: string,
+  userId: string,
+  body: unknown,
+) {
+  // 1. Validate request data.
+  const parsed = updateCardDetailSchema.safeParse(body);
+
+  if (!parsed.success) {
+    throw new AppError(
+      `Invalid card update data: ${parsed.error.message}`,
+      400,
+    );
+  }
+
+  const input = parsed.data;
+
+  // 2. Authenticate the current user.
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user", 401);
+  }
+
+  if (userId && userId !== user.userId) {
+    throw new AppError("Unauthorized user", 401);
+  }
+
+  // 3. Verify that the board exists.
+  const boardDetails = await BoardRepo.getBoardById(boardId);
+
+  if (boardDetails.length === 0) {
+    throw new AppError("Board not found", 404);
+  }
+
+  // 4. Verify that the card belongs to this board.
+
+  const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
+
+  if (cardDetails.length === 0) {
+    throw new AppError("Card not found in this board", 404);
+  }
+
+  // 5. Perform the requested update.
+  switch (input.action) {
+    case "taskType": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        taskType: input.type,
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card type updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+
+    case "priority": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        priority: input.priority,
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card priority updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+
+    case "sprint": {
+      // null means remove the card's sprint assignment.
+      if (input.sprintId !== null) {
+        const sprintDetails = await SprintRepo.getSprintById(input.sprintId);
+
+        if (sprintDetails.length === 0) {
+          throw new AppError("Sprint not found", 404);
+        }
+
+        // TODO: Verify that this sprint belongs to boardId.
+        // Use the actual sprint-to-board relationship in your schema.
+      }
+
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        sprintId: input.sprintId,
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card sprint updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+
+    case "estimateTime": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        estimateTime:
+          input.estimateTime === null ? null : String(input.estimateTime),
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card estimated time updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+
+    case "spentTime": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        spentTime: input.spentTime === null ? null : String(input.spentTime),
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card spent time updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+
+    case "assignedTo": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        assignedTo: input.assignedTo === null ? null : String(input.assignedTo),
+      });
+
+      return NextResponse.json(
+        {
+          message: "Card spent time updated successfully",
+          card: updatedCard,
+        },
+        { status: 200 },
+      );
+    }
+    default: {
+      throw new AppError("Unsupported card update action", 400);
+    }
+  }
 }
