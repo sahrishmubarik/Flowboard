@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
-import { getBoardCardDetail, moveBoardCard } from "@/services/card";
-import { AppError } from "@/lib/errors/AppError";
+import {
+  getBoardCardDetail,
+  moveBoardCard,
+  updateCardDetail,
+} from "@/services/card";
 
+import { AppError } from "@/lib/errors/AppError";
+import { NextResponse } from "next/server";
 type RouteParams = {
   params: Promise<{
     workspaceId: string;
@@ -87,6 +91,49 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { message: "Invalid JSON request body" },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Internal server error. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request, { params }: RouteParams) {
+  try {
+    const { boardId, cardId } = await params;
+
+    if (!boardId || !cardId) {
+      return NextResponse.json(
+        { message: "boardId and cardId are required" },
+        { status: 400 },
+      );
+    }
+
+    const body: unknown = await request.json();
+
+    // All actions are validated and handled by the service.
+    return await updateCardDetail(
+      boardId,
+      cardId,
+      "", // The service obtains the authenticated user itself.
+      body,
+    );
+  } catch (error) {
+    console.error("Update_Card_Error:", error);
+
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
+    }
     if (error instanceof SyntaxError) {
       return NextResponse.json(
         { message: "Invalid JSON request body" },
