@@ -8,8 +8,10 @@ type cardBody = {
   startDate: string;
   dueDate: string;
   priority: string;
+  type: string;
   sprintId: string;
   listId: string;
+  assigneeId: string;
 };
 
 export async function POST(
@@ -26,9 +28,14 @@ export async function POST(
       startDate,
       dueDate,
       priority,
+      type,
       sprintId,
       listId,
+      assigneeId,
     } = body;
+    console.log(type);
+    console.log(priority);
+    console.log(title);
     return await createCard(
       boardId,
       title,
@@ -36,8 +43,10 @@ export async function POST(
       startDate,
       dueDate,
       priority,
+      type,
       sprintId,
       listId,
+      assigneeId,
     );
   } catch (error) {
     console.error("CREATE_CARD_ERROR:", error);
