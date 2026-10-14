@@ -14,7 +14,7 @@ export async function createBoardList(boardId: string, listName: string) {
   const user_id = user.userId;
   console.log("See the list name that pass to endpoint");
   console.log(listName);
-  await requireBoardRole(user_id, boardId, ["owner", "admin"]);
+  await requireBoardRole(user_id, boardId, ["owner", "admin", "manager"]);
   const createdBy = user_id;
   const NewList = await BoardListRepo.create(boardId, listName, createdBy);
   return NextResponse.json(
