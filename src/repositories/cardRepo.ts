@@ -1,9 +1,17 @@
 import { db } from "@/db";
 import { sprint } from "@/db/boardSchema";
 import { card } from "@/db/cardSchema";
+import { users } from "@/db/authSchema";
 
 import { eq, and, max, asc, isNull } from "drizzle-orm";
 
+type CardDetailUpdate = {
+  taskType?: "bug" | "feature" | "task" | "tbd";
+  priority?: "normal" | "show stopper" | "critical" | "major" | "minor";
+  sprintId?: string | null;
+  estimateTime?: string | null;
+  spentTime?: string | null;
+};
 export const CardRepo = {
   async createCard(
     boardId: string,
@@ -12,8 +20,10 @@ export const CardRepo = {
     startDate: string,
     dueDate: string,
     priority: string,
+    type: string,
     sprintId: string,
     listId: string,
+    assigneeId: string,
     user_id: string,
   ) {
     /*
@@ -78,6 +88,8 @@ export const CardRepo = {
           | "major"
           | "minor",
 
+        taskType: type as "bug" | "feature" | "task" | "tbd",
+
         position: nextPosition,
 
         reporterId: user_id,
@@ -85,6 +97,7 @@ export const CardRepo = {
         startDate: startDate ? new Date(startDate) : null,
 
         dueDate: dueDate ? new Date(dueDate) : null,
+        assignedTo: assigneeId,
       })
       .returning();
 
@@ -119,7 +132,7 @@ export const CardRepo = {
         reporterId: card.reporterId,
 
         completedAt: card.completedAt,
-
+        assignedTo: card.assignedTo,
         isArchived: card.isArchived,
 
         createdAt: card.createdAt,
@@ -142,17 +155,21 @@ export const CardRepo = {
         title: card.title,
         description: card.description,
         priority: card.priority,
+        type: card.taskType,
         startDate: card.startDate,
         dueDate: card.dueDate,
         completedAt: card.completedAt,
         boardListId: card.boardListId,
         sprintId: card.sprintId,
+        assignedTo: card.assignedTo,
 
-        // Get the sprint name from the sprint table
+        // Get the sprint and assignee details from the related tables
         sprintName: sprint.sprintName,
+        assigneeName: users.name,
       })
       .from(card)
       .leftJoin(sprint, eq(card.sprintId, sprint.id))
+      .leftJoin(users, eq(card.assignedTo, users.id))
       .where(and(eq(card.boardId, boardId), eq(card.id, cardId)));
 
     return boardCardDetails;
@@ -333,5 +350,25 @@ export const CardRepo = {
 
       return updatedCard ?? null;
     });
+  },
+
+  async updateCardFields(
+    boardId: string,
+    cardId: string,
+    updates: CardDetailUpdate,
+  ) {
+    const [updatedCard] = await db
+      .update(card)
+      .set(updates)
+      .where(
+        and(
+          eq(card.id, cardId),
+          eq(card.boardId, boardId),
+          isNull(card.deletedAt),
+        ),
+      )
+      .returning();
+
+    return updatedCard ?? null;
   },
 };
