@@ -1,0 +1,1 @@
+ALTER TABLE "card" ALTER COLUMN "assigned_to" DROP NOT NULL;
