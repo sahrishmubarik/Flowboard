@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { useRouter } from "next/navigation";
 
 import { ChevronDown, Plus, X } from "lucide-react";
@@ -12,10 +13,17 @@ import BoardList from "./BoardList";
 import CreateListCard from "./CreateListCard";
 
 /* dray and drop  */
+
 import {
   DndContext,
   PointerSensor,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
+  DragOverlay,
+  type CollisionDetection,
+  type DragStartEvent,
+  type DragOverEvent,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -28,16 +36,6 @@ import {
 } from "@dnd-kit/sortable";
 
 import SortableBoardList from "./SortableBoardList";
-
-/*
-
- * ============================================================
-
- * TYPES
-
- * ============================================================
-
- */
 
 type BoardListType = {
   id: string;
@@ -135,11 +133,19 @@ type CardResponse = {
 
 /*
 
+
+
  * ============================================================
+
+
 
  * BOARD LISTS API
 
+
+
  * ============================================================
+
+
 
  */
 
@@ -167,15 +173,24 @@ export default function BoardCanvas({
   boardId,
 }: BoardCanvasProps) {
   const queryClient = useQueryClient();
+
   const router = useRouter();
 
   /*
 
+
+
    * ==========================================================
+
+
 
    * GENERAL UI STATE
 
+
+
    * ==========================================================
+
+
 
    */
 
@@ -183,11 +198,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ==========================================================
+
+
 
    * SPRINT STATE
 
+
+
    * ==========================================================
+
+
 
    */
 
@@ -201,11 +224,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ==========================================================
+
+
 
    * CREATE SPRINT FORM
 
+
+
    * ==========================================================
+
+
 
    */
 
@@ -219,11 +250,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * GET BOARD LISTS
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -320,11 +359,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * GET SPRINTS
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -360,11 +407,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * ACTIVE SPRINT
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -372,19 +427,35 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * GET CARDS
 
+
+
    *
+
+
 
    * BoardCanvas only FETCHES cards.
 
+
+
    *
+
+
 
    * Card creation belongs to BoardList.
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -410,13 +481,23 @@ export default function BoardCanvas({
 
       /*
 
+
+
        * IMPORTANT:
+
+
 
        * GET request uses query parameter.
 
+
+
        *
 
+
+
        * Do NOT send sprintId inside GET request body.
+
+
 
        */
 
@@ -440,31 +521,52 @@ export default function BoardCanvas({
 
   const cards = cardData?.cards ?? [];
 
+  // Preview ordering lives only while a card is being dragged.
+  const [previewCards, setPreviewCards] = useState<Card[] | null>(null);
+  const previewCardsRef = useRef<Card[] | null>(null);
+  const initialCardsRef = useRef<Card[]>([]);
+  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const displayedCards = previewCards ?? cards;
+  const activeCard = activeCardId
+    ? (initialCardsRef.current.find((card) => card.id === activeCardId) ?? null)
+    : null;
+
   const cardQueryKey = [
     "board-cards",
+
     workspaceId,
+
     boardId,
+
     activeSprint?.id ?? null,
   ];
 
   const moveCardMutation = useMutation({
     mutationFn: async ({
       cardId,
+
       destinationListId,
+
       position,
     }: {
       cardId: string;
+
       destinationListId: string;
+
       position: number;
     }) => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
+
         {
           method: "PATCH",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
+            action: "moveCard",
             destinationListId,
             position,
           }),
@@ -488,16 +590,25 @@ export default function BoardCanvas({
 
     onError: (error) => {
       console.error("MOVE_CARD_ERROR:", error);
+      queryClient.invalidateQueries({ queryKey: cardQueryKey });
     },
   });
 
   /*
 
+
+
    * ============================================================
+
+
 
    * CREATE SPRINT MUTATION
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -545,11 +656,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * CREATE SPRINT HANDLER
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -583,11 +702,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * ACTIVATE SPRINT MUTATION
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -637,11 +764,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * ACTIVATE SPRINT HANDLER
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -655,11 +790,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * LOADING
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -680,11 +823,19 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * ERROR
 
+
+
    * ============================================================
+
+
 
    */
 
@@ -716,133 +867,169 @@ export default function BoardCanvas({
 
   /*
 
+
+
    * ============================================================
+
+
 
    * SORT LISTS
 
+
+
    * ============================================================
+
+
 
    */
 
   const sortedLists = [...lists].sort((a, b) => a.position - b.position);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  // Keep list sorting separate from card collision detection.
+  const collisionDetection: CollisionDetection = (args) => {
+    const isCard = args.active.data.current?.type === "card";
+    const containers = args.droppableContainers.filter((container) => {
+      const type = container.data.current?.type;
+      return isCard ? type === "card" || type === "list" : !type;
+    });
+    const restrictedArgs = { ...args, droppableContainers: containers };
+    if (!isCard) return closestCenter(restrictedArgs);
 
-    if (!over || active.id === over.id) {
-      return;
+    const pointerHits = pointerWithin(restrictedArgs);
+    if (pointerHits.length) {
+      // Prefer a card over its containing list when both overlap the pointer.
+      const onCard = pointerHits.filter(
+        (collision) =>
+          containers.find((container) => container.id === collision.id)?.data
+            .current?.type === "card",
+      );
+      return onCard.length ? onCard : pointerHits;
     }
-
-    const activeType = active.data.current?.type;
-
-    // ------------------------------------------
-    // MOVE BOARD LIST
-    // ------------------------------------------
-
-    if (!activeType) {
-      const currentIds = sortedLists.map((list) => list.id);
-
-      const oldIndex = currentIds.indexOf(String(active.id));
-      const newIndex = currentIds.indexOf(String(over.id));
-
-      if (oldIndex === -1 || newIndex === -1) {
-        return;
-      }
-
-      reorderListsMutation.mutate(arrayMove(currentIds, oldIndex, newIndex));
-
-      return;
-    }
-
-    // ------------------------------------------
-    // MOVE CARD
-    // ------------------------------------------
-
-    if (activeType === "card") {
-      const activeCard = active.data.current?.card as Card | undefined;
-
-      if (!activeCard) {
-        return;
-      }
-
-      const overType = over.data.current?.type;
-
-      let destinationListId: string;
-      let destinationCardId: string | null = null;
-
-      if (overType === "list") {
-        destinationListId = String(over.data.current?.listId);
-      } else {
-        const overCard = over.data.current?.card as Card | undefined;
-
-        if (!overCard) {
-          return;
-        }
-
-        destinationListId = overCard.boardListId;
-        destinationCardId = overCard.id;
-      }
-
-      const destinationCards = cards
-        .filter(
-          (card) =>
-            card.boardListId === destinationListId &&
-            card.id !== activeCard.id &&
-            !card.isArchived &&
-            !card.deletedAt,
-        )
-        .sort((a, b) => a.position - b.position);
-
-      let targetIndex = destinationCards.length;
-
-      if (destinationCardId) {
-        const overIndex = destinationCards.findIndex(
-          (card) => card.id === destinationCardId,
-        );
-
-        if (overIndex !== -1) {
-          targetIndex = overIndex;
-        }
-      }
-
-      // Position is 1-based in the database.
-      const position = targetIndex + 1;
-
-      if (
-        activeCard.boardListId === destinationListId &&
-        destinationCardId === null
-      ) {
-        return;
-      }
-
-      moveCardMutation.mutate({
-        cardId: activeCard.id,
-        destinationListId,
-        position,
-      });
-    }
+    return rectIntersection(restrictedArgs);
   };
 
-  /*
-  
-   * ============================================================
-  
-   * MAIN COMPONENT
-  
-   * ============================================================
-  
-   */
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    if (active.data.current?.type !== "card") return;
+    const original = cards.map((card) => ({ ...card }));
+    initialCardsRef.current = original;
+    previewCardsRef.current = original;
+    setPreviewCards(original);
+    setActiveCardId(String(active.id));
+  };
 
-  /*
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
+    if (active.data.current?.type !== "card" || !over || active.id === over.id)
+      return;
+    const current = previewCardsRef.current;
+    if (!current) return;
 
-   * ============================================================
+    const draggedId = String(active.id);
+    const source = current.find((card) => card.id === draggedId);
+    if (!source) return;
 
-   * RENDER
+    const overType = over.data.current?.type;
+    const hovered = current.find((card) => card.id === String(over.id));
+    const destinationId =
+      overType === "list"
+        ? (over.data.current?.listId as string | undefined)
+        : hovered?.boardListId;
+    if (!destinationId) return;
 
-   * ============================================================
+    const destinationCards = current
+      .filter(
+        (card) => card.boardListId === destinationId && card.id !== draggedId,
+      )
+      .sort((a, b) => a.position - b.position);
 
-   */
+    let index = destinationCards.length;
+    if (overType === "card" && hovered && hovered.id !== draggedId) {
+      index = destinationCards.findIndex((card) => card.id === hovered.id);
+      if (index < 0) index = destinationCards.length;
+      // Place after the hovered card when moving downward in the same column.
+      if (source.boardListId === destinationId) {
+        const ordered = current
+          .filter((card) => card.boardListId === destinationId)
+          .sort((a, b) => a.position - b.position);
+        const from = ordered.findIndex((card) => card.id === draggedId);
+        const to = ordered.findIndex((card) => card.id === hovered.id);
+        if (from < to) index += 1;
+      }
+    }
 
+    const reordered = [...destinationCards];
+    reordered.splice(index, 0, { ...source, boardListId: destinationId });
+
+    // The other source column must be renumbered too.
+    const sourceRemaining = current
+      .filter(
+        (card) =>
+          card.boardListId === source.boardListId && card.id !== draggedId,
+      )
+      .sort((a, b) => a.position - b.position);
+    const updated = new Map<string, Card>();
+    for (const card of current) updated.set(card.id, card);
+    sourceRemaining.forEach((card, i) =>
+      updated.set(card.id, { ...card, position: i + 1 }),
+    );
+    reordered.forEach((card, i) =>
+      updated.set(card.id, { ...card, position: i + 1 }),
+    );
+    const next = current.map((card) => updated.get(card.id)!);
+
+    // Avoid unnecessary renders when hovering over the same insertion point.
+    if (
+      current.every(
+        (card, i) =>
+          card.boardListId === next[i].boardListId &&
+          card.position === next[i].position,
+      )
+    )
+      return;
+    previewCardsRef.current = next;
+    setPreviewCards(next);
+  };
+
+  const resetDrag = () => {
+    previewCardsRef.current = null;
+    setPreviewCards(null);
+    setActiveCardId(null);
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.data.current?.type !== "card") {
+      resetDrag();
+      if (!over || active.id === over.id) return;
+      const ids = sortedLists.map((list) => list.id);
+      const from = ids.indexOf(String(active.id));
+      const to = ids.indexOf(String(over.id));
+      if (from !== -1 && to !== -1 && from !== to) {
+        reorderListsMutation.mutate(arrayMove(ids, from, to));
+      }
+      return;
+    }
+
+    const original = initialCardsRef.current;
+    const finalCards = previewCardsRef.current;
+    const before = original.find((card) => card.id === String(active.id));
+    const after = finalCards?.find((card) => card.id === String(active.id));
+    resetDrag();
+    if (!over || !before || !after) return;
+    if (
+      before.boardListId === after.boardListId &&
+      before.position === after.position
+    )
+      return;
+
+    // Show the result immediately; the API is called just once after drop.
+    queryClient.setQueryData<CardResponse>(cardQueryKey, (old) =>
+      old ? { ...old, cards: finalCards! } : old,
+    );
+    moveCardMutation.mutate({
+      cardId: after.id,
+      destinationListId: after.boardListId,
+      position: after.position,
+    });
+  };
   const handleCardClick = (cardId: string) => {
     router.push(
       `/dashboard/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
@@ -868,9 +1055,13 @@ export default function BoardCanvas({
       >
         {/* ==================================================
 
+
+
             SPRINT SELECTOR
 
-            \================================================== */}
+
+
+            \\================================================== */}
 
         <div className="relative shrink-0">
           <button
@@ -899,9 +1090,13 @@ export default function BoardCanvas({
 
           {/* =================================================
 
+
+
               SPRINT MENU
 
-              \================================================= */}
+
+
+              \\================================================= */}
 
           {isSprintMenuOpen && (
             <div
@@ -1032,9 +1227,13 @@ export default function BoardCanvas({
 
       {/* ======================================================
 
+
+
           BOARD
 
-          \====================================================== */}
+
+
+          \\====================================================== */}
 
       <section
         className="min-h-0 flex-1 overflow-hidden "
@@ -1045,7 +1244,10 @@ export default function BoardCanvas({
       >
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={collisionDetection}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragCancel={resetDrag}
           onDragEnd={handleDragEnd}
         >
           <div className="flex h-full min-h-0 items-start gap-0 overflow-auto pl-6 pr-6 pb-12">
@@ -1054,7 +1256,7 @@ export default function BoardCanvas({
               strategy={horizontalListSortingStrategy}
             >
               {sortedLists.map((list) => {
-                const listCards = cards.filter(
+                const listCards = displayedCards.filter(
                   (card) =>
                     card.boardListId === list.id &&
                     !card.isArchived &&
@@ -1082,14 +1284,37 @@ export default function BoardCanvas({
 
             <CreateListCard workspaceId={workspaceId} boardId={boardId} />
           </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeCard ? (
+              <div
+                className="w-[280px] rounded-xl border p-3 shadow-2xl"
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
+                  borderColor: "var(--color-primary)",
+                  color: "var(--color-text-primary)",
+                  cursor: "grabbing",
+                }}
+              >
+                <div className="mb-1 text-xs opacity-60">
+                  #{activeCard.cardNumber}
+                </div>
+                <div className="text-sm font-semibold">{activeCard.title}</div>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </section>
 
       {/* ======================================================
 
+
+
           CREATE SPRINT MODAL
 
-          \====================================================== */}
+
+
+          \\====================================================== */}
 
       {isSprintCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -1320,9 +1545,13 @@ export default function BoardCanvas({
 
       {/* ======================================================
 
+
+
           ACTIVATE SPRINT MODAL
 
-          \====================================================== */}
+
+
+          \\====================================================== */}
 
       {isActivateSprintOpen && selectedSprint && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
@@ -1429,11 +1658,19 @@ export default function BoardCanvas({
 
 /*
 
+
+
  * ============================================================
+
+
 
  * DATE HELPERS
 
+
+
  * ============================================================
+
+
 
  */
 
