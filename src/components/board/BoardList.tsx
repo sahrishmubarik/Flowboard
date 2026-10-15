@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -41,42 +41,27 @@ type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
 type CardType = {
   id: string;
-
   boardId: string;
-
   boardListId: string;
-
   sprintId: string | null;
-
   sprintName?: string | null;
-
   cardNumber: number;
-
   title: string;
-
   description: string | null;
-
   priority: CardPriority;
 
+  type: "bug" | "feature" | "task" | "tbd"; // Add this
+
   position: number;
-
   reporterId: string;
-
   startDate: string | null;
-
   dueDate: string | null;
-
   completedAt: string | null;
-
   isArchived: boolean;
-
   createdAt: string;
-
   updatedAt: string;
-
   deletedAt: string | null;
 };
-
 type BoardListProps = {
   list: BoardListType;
 
@@ -141,8 +126,9 @@ export default function BoardList({
    * ============================================================
 
    */
+  const [openedAtSignal, setOpenedAtSignal] = useState<number | null>(null);
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMenuOpen = openedAtSignal === closeMenuSignal;
 
   /*
 
@@ -190,9 +176,9 @@ export default function BoardList({
 
    */
 
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [closeMenuSignal]);
+  // useEffect(() => {
+  //   setOpenedAtSignal(null);
+  // }, [closeMenuSignal]);
 
   /*
 
@@ -239,8 +225,7 @@ export default function BoardList({
        */
 
       setIsDeleteModalOpen(false);
-
-      setIsMenuOpen(false);
+      setOpenedAtSignal(null);
 
       /*
 
@@ -314,7 +299,7 @@ export default function BoardList({
 
       setIsRenameModalOpen(false);
 
-      setIsMenuOpen(false);
+      setOpenedAtSignal(null);
 
       /*
 
@@ -339,7 +324,7 @@ export default function BoardList({
    */
 
   const handleRenameClick = () => {
-    setIsMenuOpen(false);
+    setOpenedAtSignal(null);
 
     setListName(list.listName);
 
@@ -401,8 +386,7 @@ export default function BoardList({
    */
 
   const handleDeleteClick = () => {
-    setIsMenuOpen(false);
-
+    setOpenedAtSignal(null);
     setIsDeleteModalOpen(true);
   };
 
@@ -499,8 +483,9 @@ export default function BoardList({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-
-                setIsMenuOpen((previous) => !previous);
+                setOpenedAtSignal((previous) =>
+                  previous === closeMenuSignal ? null : closeMenuSignal,
+                );
               }}
               className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
               style={{
@@ -548,7 +533,6 @@ export default function BoardList({
                  */}
 
                 <CreateCard
-                  mode="create"
                   workspaceId={workspaceId}
                   boardId={boardId}
                   listId={list.id}
@@ -556,9 +540,8 @@ export default function BoardList({
                   sprintName={activeSprintName}
                   activeSprintId={activeSprintId}
                   onCreateClick={() => {
-                    setIsMenuOpen(false);
+                    setOpenedAtSignal(null);
                   }}
-                  trigger="menu"
                 />
 
                 {/* ==================================================
@@ -772,14 +755,12 @@ export default function BoardList({
          */}
 
         <CreateCard
-          mode="create"
           workspaceId={workspaceId}
           boardId={boardId}
           listId={list.id}
           listName={list.listName}
           activeSprintId={activeSprintId}
           sprintName={activeSprintName}
-          trigger="button"
         />
       </div>
 
@@ -1041,14 +1022,14 @@ export default function BoardList({
                   color: "var(--color-text-secondary)",
                 }}
               >
-                Are you sure you want to delete{" "}
+                Are you sure you want to delete
                 <span
                   className="font-semibold"
                   style={{
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  "{list.listName}"
+                  &quot;{list.listName}&quot;?
                 </span>
                 ? This action cannot be undone.
               </p>
