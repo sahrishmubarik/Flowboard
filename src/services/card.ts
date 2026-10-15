@@ -319,10 +319,10 @@ export async function updateCardDetail(
       );
     }
 
-    // case "assignedTo": {
-    //   const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-    //     assignedTo: input.assignedTo === null ? null : String(input.assignedTo),
-    //   });
+    case "spentTime": {
+      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
+        spentTime: input.spentTime === null ? null : String(input.spentTime),
+      });
 
       return NextResponse.json(
         {
@@ -332,6 +332,9 @@ export async function updateCardDetail(
         { status: 200 },
       );
     }
+
+    // TODO: Implement assignedTo when card assignment is supported.
+
     default: {
       throw new AppError("Unsupported card update action", 400);
     }

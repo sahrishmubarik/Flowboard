@@ -105,7 +105,7 @@ type Card = {
   description: string | null;
 
   priority: CardPriority;
-
+  type: "bug" | "feature" | "task" | "tbd";
   position: number;
 
   reporterId: string;
@@ -525,11 +525,11 @@ export default function BoardCanvas({
   const [previewCards, setPreviewCards] = useState<Card[] | null>(null);
   const previewCardsRef = useRef<Card[] | null>(null);
   const initialCardsRef = useRef<Card[]>([]);
-  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+  // const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [activeCard, setActiveCard] = useState<Card | null>(null);
+
   const displayedCards = previewCards ?? cards;
-  const activeCard = activeCardId
-    ? (initialCardsRef.current.find((card) => card.id === activeCardId) ?? null)
-    : null;
 
   const cardQueryKey = [
     "board-cards",
@@ -908,15 +908,28 @@ export default function BoardCanvas({
     return rectIntersection(restrictedArgs);
   };
 
+  // const handleDragStart = ({ active }: DragStartEvent) => {
+  //   if (active.data.current?.type !== "card") return;
+  //   const original = cards.map((card) => ({ ...card }));
+  //   initialCardsRef.current = original;
+  //   previewCardsRef.current = original;
+  //   setPreviewCards(original);
+  //   setActiveCardId(String(active.id));
+  // };
   const handleDragStart = ({ active }: DragStartEvent) => {
     if (active.data.current?.type !== "card") return;
+
     const original = cards.map((card) => ({ ...card }));
+    const draggedCardId = String(active.id);
+
     initialCardsRef.current = original;
     previewCardsRef.current = original;
-    setPreviewCards(original);
-    setActiveCardId(String(active.id));
-  };
 
+    setPreviewCards(original);
+    setActiveCard(original.find((card) => card.id === draggedCardId) ?? null);
+
+    setActiveCard(original.find((card) => card.id === draggedCardId) ?? null);
+  };
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (active.data.current?.type !== "card" || !over || active.id === over.id)
       return;
@@ -991,8 +1004,8 @@ export default function BoardCanvas({
 
   const resetDrag = () => {
     previewCardsRef.current = null;
+    setActiveCard(null);
     setPreviewCards(null);
-    setActiveCardId(null);
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {

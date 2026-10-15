@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
@@ -41,6 +41,11 @@ type CardDescriptionEditorProps = {
   toolbarAction?: ReactNode;
   footer?: ReactNode;
 };
+type MarkdownStorage = {
+  markdown: {
+    getMarkdown: () => string;
+  };
+};
 
 export default function CardDescriptionEditor({
   value,
@@ -48,6 +53,10 @@ export default function CardDescriptionEditor({
   toolbarAction,
   footer,
 }: CardDescriptionEditorProps) {
+  const getMarkdown = (editor: Editor): string => {
+    const storage = editor.storage as typeof editor.storage & MarkdownStorage;
+    return storage.markdown.getMarkdown();
+  };
   const editor = useEditor({
     immediatelyRender: false,
 
@@ -90,7 +99,7 @@ export default function CardDescriptionEditor({
     content: value,
 
     onUpdate: ({ editor }) => {
-      onChange(editor.storage.markdown.getMarkdown());
+      onChange(getMarkdown(editor));
     },
   });
 
@@ -101,11 +110,12 @@ export default function CardDescriptionEditor({
     // and does not match the editor's current internal state
     const currentContent = value.includes("<")
       ? editor.getHTML()
-      : editor.storage.markdown.getMarkdown();
-
+      : getMarkdown(editor);
     if (value !== currentContent && value !== "") {
       // The second argument 'false' prevents cursor jumping
-      editor.commands.setContent(value, false);
+      editor.commands.setContent(value, {
+        emitUpdate: false,
+      });
     }
   }, [value, editor]);
 

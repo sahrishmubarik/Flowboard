@@ -91,6 +91,19 @@ const taskTypes: { value: TaskType; label: string }[] = [
   { value: "bug", label: "Bug" },
   { value: "tbd", label: "TBD" },
 ];
+type BoardMemberApiResponse = {
+  id?: string;
+  userId?: string;
+  name?: string;
+  fullName?: string;
+  email?: string;
+  user?: {
+    id?: string;
+    name?: string;
+    fullName?: string;
+    email?: string;
+  };
+};
 
 // Keep in sync with the backend's file-size limit.
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
@@ -170,7 +183,23 @@ function formatDateLabel(date: string) {
   });
 }
 
-function getCreatedCardId(data: any): string | undefined {
+// function getCreatedCardId(data: any): string | undefined {
+//   return data?.card?.id ?? data?.data?.card?.id ?? data?.data?.id ?? data?.id;
+// }
+type CreateCardResponse = {
+  id?: string;
+  card?: {
+    id?: string;
+  };
+  data?: {
+    id?: string;
+    card?: {
+      id?: string;
+    };
+  };
+};
+
+function getCreatedCardId(data: CreateCardResponse): string | undefined {
   return data?.card?.id ?? data?.data?.card?.id ?? data?.data?.id ?? data?.id;
 }
 
@@ -386,7 +415,7 @@ export default function CreateCard({
 
         setBoardMembers(
           members
-            .map((member: any) => ({
+            .map((member: BoardMemberApiResponse) => ({
               userId: member.userId ?? member.user?.id ?? member.id,
               name:
                 member.user?.name ??
