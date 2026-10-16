@@ -6,10 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import CreateCard from "@/components/card/CreateCard";
 
-import {
-  ChevronDown,
-  Star,
-} from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 
 type Workspace = {
   id: string;
@@ -109,8 +106,8 @@ export default function BoardHeader() {
     .sort((first, second) => first.position - second.position);
   const firstList = boardLists[0];
   const activeSprintId =
-    sprintQuery.data?.sprints?.find((sprint) => sprint.status === "ACTIVE")?.id ??
-    null;
+    sprintQuery.data?.sprints?.find((sprint) => sprint.status === "ACTIVE")
+      ?.id ?? null;
   const isBoardFavorited = favoriteBoardId === boardId;
 
   // =====================================================
@@ -352,7 +349,10 @@ export default function BoardHeader() {
                 }
                 aria-pressed={isBoardFavorited}
               >
-                <Star size={19} fill={isBoardFavorited ? "currentColor" : "none"} />
+                <Star
+                  size={19}
+                  fill={isBoardFavorited ? "currentColor" : "none"}
+                />
               </button>
             </div>
 
@@ -368,19 +368,33 @@ export default function BoardHeader() {
                   {visibleMembers.slice(0, 5).map((member, index) => (
                     <div
                       key={member.userId}
-                      title={`${member.name} (${member.role})`}
-                      className={`
+                      className={`group relative ${index > 0 ? "-ml-2" : ""}`}
+                    >
+                      <div
+                        role="img"
+                        tabIndex={0}
+                        aria-label={`${member.name} (${member.role})`}
+                        aria-describedby={`desktop-member-tooltip-${member.userId}`}
+                        className={`
                         flex h-8 w-8 items-center justify-center
                         rounded-full border-2
                         text-[11px] font-semibold text-white
-                        ${index > 0 ? "-ml-2" : ""}
                       `}
-                      style={{
-                        borderColor: "var(--color-card-bg)",
-                        backgroundColor: getAvatarColor(index),
-                      }}
-                    >
-                      {getInitials(member.name)}
+                        style={{
+                          borderColor: "var(--color-card-bg)",
+                          backgroundColor: getAvatarColor(index),
+                          cursor: "pointer",
+                        }}
+                      >
+                        {getInitials(member.name)}
+                      </div>
+                      <span
+                        id={`desktop-member-tooltip-${member.userId}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-(--color-text-secondary) bg-(--color-tag-neutral-bg) px-2.5 py-1.5 text-xs font-medium text-(--color-tag-neutral-text) opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      >
+                        {member.name} ({member.role})
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -396,7 +410,7 @@ export default function BoardHeader() {
                   listName={firstList.listName}
                   activeSprintId={activeSprintId}
                   triggerLabel="New card"
-                  triggerClassName="flex h-9 items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                  triggerClassName="cursor-pointer flex h-9 items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                   triggerDisabled={
                     listQuery.isLoading ||
                     sprintQuery.isLoading ||
@@ -432,7 +446,10 @@ export default function BoardHeader() {
                 }
                 aria-pressed={isBoardFavorited}
               >
-                <Star size={18} fill={isBoardFavorited ? "currentColor" : "none"} />
+                <Star
+                  size={18}
+                  fill={isBoardFavorited ? "currentColor" : "none"}
+                />
               </button>
 
               {/* Members */}
@@ -442,20 +459,33 @@ export default function BoardHeader() {
                   {visibleMembers.slice(0, 4).map((member, index) => (
                     <div
                       key={member.userId}
-                      title={`${member.name} (${member.role})`}
-                      className={`
+                      className={`group relative ${index > 0 ? "-ml-2" : ""}`}
+                    >
+                      <div
+                        role="img"
+                        tabIndex={0}
+                        aria-label={`${member.name} (${member.role})`}
+                        aria-describedby={`mobile-member-tooltip-${member.userId}`}
+                        className={`
                         flex h-7 w-7 items-center justify-center
                         rounded-full border-2
                         text-[9px] font-semibold text-white
                         sm:h-8 sm:w-8 sm:text-[10px]
-                        ${index > 0 ? "-ml-2" : ""}
                       `}
-                      style={{
-                        borderColor: "var(--color-card-bg)",
-                        backgroundColor: getAvatarColor(index),
-                      }}
-                    >
-                      {getInitials(member.name)}
+                        style={{
+                          borderColor: "var(--color-card-bg)",
+                          backgroundColor: getAvatarColor(index),
+                        }}
+                      >
+                        {getInitials(member.name)}
+                      </div>
+                      <span
+                        id={`mobile-member-tooltip-${member.userId}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-(--color-text-secondary) bg-(--color-tag-neutral-bg) px-2.5 py-1.5 text-xs font-medium text-(--color-tag-neutral-text) opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      >
+                        {member.name} ({member.role})
+                      </span>
                     </div>
                   ))}
 
@@ -477,7 +507,7 @@ export default function BoardHeader() {
 
             {/* RIGHT */}
 
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 ">
               {/* New Card */}
 
               {firstList && (
@@ -488,7 +518,7 @@ export default function BoardHeader() {
                   listName={firstList.listName}
                   activeSprintId={activeSprintId}
                   triggerLabel=""
-                  triggerClassName="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-9"
+                  triggerClassName="cursor-pointer flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-9"
                   triggerAriaLabel="New card"
                   triggerDisabled={
                     listQuery.isLoading ||
