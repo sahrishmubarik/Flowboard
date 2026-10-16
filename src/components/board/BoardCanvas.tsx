@@ -94,7 +94,7 @@ type Card = {
 
   boardListId: string;
 
-  sprintId: string | null;
+  sprintId: string[];
 
   sprintName?: string | null;
 
@@ -107,7 +107,7 @@ type Card = {
   priority: CardPriority;
   type: "bug" | "feature" | "task" | "tbd";
   position: number;
-
+  assignedTo: string | null;
   reporterId: string;
 
   startDate: string | null;
@@ -131,23 +131,25 @@ type CardResponse = {
   cards: Card[];
 };
 
-/*
+type BoardMember = {
+  userId: string;
+  name: string;
+  email: string;
+  role: "owner" | "admin" | "manager" | "member";
+};
 
+type BoardMemberResponse = {
+  message: string;
+  data: BoardMember[];
+};
+const UNASSIGNED = "__unassigned__";
+// The board-members endpoint returns data: [{ userId, name, email, role }].
+// Use the user ID: cards.assignedTo references users.id, not boardMembers.id.
+const memberKey = (member: BoardMember) => member.userId;
+const memberName = (member: BoardMember) =>
+  member.name?.trim() || member.email || "Board member";
 
-
- * ============================================================
-
-
-
- * BOARD LISTS API
-
-
-
- * ============================================================
-
-
-
- */
+//BOARD LISTS API
 
 async function fetchBoardLists(
   workspaceId: string,
@@ -176,43 +178,7 @@ export default function BoardCanvas({
 
   const router = useRouter();
 
-  /*
-
-
-
-   * ==========================================================
-
-
-
-   * GENERAL UI STATE
-
-
-
-   * ==========================================================
-
-
-
-   */
-
   const [closeMenuSignal, setCloseMenuSignal] = useState(0);
-
-  /*
-
-
-
-   * ==========================================================
-
-
-
-   * SPRINT STATE
-
-
-
-   * ==========================================================
-
-
-
-   */
 
   const [isSprintMenuOpen, setIsSprintMenuOpen] = useState(false);
 
@@ -222,24 +188,6 @@ export default function BoardCanvas({
 
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
 
-  /*
-
-
-
-   * ==========================================================
-
-
-
-   * CREATE SPRINT FORM
-
-
-
-   * ==========================================================
-
-
-
-   */
-
   const [sprintName, setSprintName] = useState("");
 
   const [sprintGoal, setSprintGoal] = useState("");
@@ -248,24 +196,7 @@ export default function BoardCanvas({
 
   const [endDate, setEndDate] = useState("");
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * GET BOARD LISTS
-
-
-
-   * ============================================================
-
-
-
-   */
-
+  // * GET BOARD LISTS
   const {
     data: lists = [],
 
@@ -357,24 +288,7 @@ export default function BoardCanvas({
     },
   });
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * GET SPRINTS
-
-
-
-   * ============================================================
-
-
-
-   */
-
+  // GET SPRINT
   const {
     data: sprintData,
 
@@ -405,60 +319,11 @@ export default function BoardCanvas({
 
   const sprints = sprintData?.sprints ?? [];
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * ACTIVE SPRINT
-
-
-
-   * ============================================================
-
-
-
-   */
-
   const activeSprint = sprints.find((sprint) => sprint.status === "ACTIVE");
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * GET CARDS
-
-
-
-   *
-
-
-
-   * BoardCanvas only FETCHES cards.
-
-
-
-   *
-
-
-
-   * Card creation belongs to BoardList.
-
-
-
-   * ============================================================
-
-
-
-   */
-
+  /* GET CARDS
+BoardCanvas only FETCHES cards.
+Card creation belongs to BoardList.*/
   const {
     data: cardData,
 
@@ -479,28 +344,6 @@ export default function BoardCanvas({
         };
       }
 
-      /*
-
-
-
-       * IMPORTANT:
-
-
-
-       * GET request uses query parameter.
-
-
-
-       *
-
-
-
-       * Do NOT send sprintId inside GET request body.
-
-
-
-       */
-
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/card?sprintId=${encodeURIComponent(
           activeSprint.id,
@@ -519,6 +362,32 @@ export default function BoardCanvas({
     enabled: Boolean(workspaceId && boardId && activeSprint?.id),
   });
 
+  /* Get board member  */
+
+  const {
+    data: boardMemberData,
+    isLoading: isMembersLoading,
+    isError: isMembersError,
+    error: membersError,
+  } = useQuery<BoardMemberResponse>({
+    queryKey: ["board-members-all", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/boardMembers?all=true`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch board members");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId && boardId),
+  });
+
+  const members = boardMemberData?.data ?? [];
   const cards = cardData?.cards ?? [];
 
   // Preview ordering lives only while a card is being dragged.
@@ -548,12 +417,12 @@ export default function BoardCanvas({
       destinationListId,
 
       position,
+      assignedTo,
     }: {
       cardId: string;
-
       destinationListId: string;
-
       position: number;
+      assignedTo: string | null;
     }) => {
       const response = await fetch(
         `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
@@ -569,6 +438,7 @@ export default function BoardCanvas({
             action: "moveCard",
             destinationListId,
             position,
+            assignedTo,
           }),
         },
       );
@@ -593,24 +463,6 @@ export default function BoardCanvas({
       queryClient.invalidateQueries({ queryKey: cardQueryKey });
     },
   });
-
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * CREATE SPRINT MUTATION
-
-
-
-   * ============================================================
-
-
-
-   */
 
   const createSprintMutation = useMutation({
     mutationFn: async (payload: CreateSprintPayload) => {
@@ -654,24 +506,6 @@ export default function BoardCanvas({
     },
   });
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * CREATE SPRINT HANDLER
-
-
-
-   * ============================================================
-
-
-
-   */
-
   const handleCreateSprint = (payload: CreateSprintPayload) => {
     if (!payload.sprintName.trim()) {
       return;
@@ -699,24 +533,6 @@ export default function BoardCanvas({
       endDate: payload.endDate,
     });
   };
-
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * ACTIVATE SPRINT MUTATION
-
-
-
-   * ============================================================
-
-
-
-   */
 
   const activateSprintMutation = useMutation({
     mutationFn: async (sprintId: string) => {
@@ -762,24 +578,6 @@ export default function BoardCanvas({
     },
   });
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * ACTIVATE SPRINT HANDLER
-
-
-
-   * ============================================================
-
-
-
-   */
-
   const handleActivateSprint = (sprintId: string) => {
     if (!sprintId) {
       return;
@@ -787,24 +585,6 @@ export default function BoardCanvas({
 
     activateSprintMutation.mutate(sprintId);
   };
-
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * LOADING
-
-
-
-   * ============================================================
-
-
-
-   */
 
   if (isListsLoading || isSprintsLoading) {
     return (
@@ -820,24 +600,6 @@ export default function BoardCanvas({
       </section>
     );
   }
-
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * ERROR
-
-
-
-   * ============================================================
-
-
-
-   */
 
   if (isListsError || isSprintsError) {
     return (
@@ -865,136 +627,115 @@ export default function BoardCanvas({
     );
   }
 
-  /*
-
-
-
-   * ============================================================
-
-
-
-   * SORT LISTS
-
-
-
-   * ============================================================
-
-
-
-   */
-
   const sortedLists = [...lists].sort((a, b) => a.position - b.position);
 
-  // Keep list sorting separate from card collision detection.
+  // Card collisions are limited to member/list cells and cards. List headers
+  // remain independently draggable, with no duplicate sortable IDs.
   const collisionDetection: CollisionDetection = (args) => {
     const isCard = args.active.data.current?.type === "card";
     const containers = args.droppableContainers.filter((container) => {
       const type = container.data.current?.type;
-      return isCard ? type === "card" || type === "list" : !type;
+      return isCard ? type === "card" || type === "cell" : !type;
     });
-    const restrictedArgs = { ...args, droppableContainers: containers };
-    if (!isCard) return closestCenter(restrictedArgs);
-
-    const pointerHits = pointerWithin(restrictedArgs);
-    if (pointerHits.length) {
-      // Prefer a card over its containing list when both overlap the pointer.
-      const onCard = pointerHits.filter(
-        (collision) =>
-          containers.find((container) => container.id === collision.id)?.data
-            .current?.type === "card",
+    const restricted = { ...args, droppableContainers: containers };
+    if (!isCard) return closestCenter(restricted);
+    const hits = pointerWithin(restricted);
+    if (hits.length) {
+      const cards = hits.filter(
+        (hit) =>
+          containers.find((item) => item.id === hit.id)?.data.current?.type ===
+          "card",
       );
-      return onCard.length ? onCard : pointerHits;
+      return cards.length ? cards : hits;
     }
-    return rectIntersection(restrictedArgs);
+    return rectIntersection(restricted);
   };
 
-  // const handleDragStart = ({ active }: DragStartEvent) => {
-  //   if (active.data.current?.type !== "card") return;
-  //   const original = cards.map((card) => ({ ...card }));
-  //   initialCardsRef.current = original;
-  //   previewCardsRef.current = original;
-  //   setPreviewCards(original);
-  //   setActiveCardId(String(active.id));
-  // };
   const handleDragStart = ({ active }: DragStartEvent) => {
     if (active.data.current?.type !== "card") return;
-
     const original = cards.map((card) => ({ ...card }));
-    const draggedCardId = String(active.id);
-
     initialCardsRef.current = original;
     previewCardsRef.current = original;
-
     setPreviewCards(original);
-    setActiveCard(original.find((card) => card.id === draggedCardId) ?? null);
-
-    setActiveCard(original.find((card) => card.id === draggedCardId) ?? null);
+    setActiveCard(
+      original.find((card) => card.id === String(active.id)) ?? null,
+    );
   };
+
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (active.data.current?.type !== "card" || !over || active.id === over.id)
       return;
     const current = previewCardsRef.current;
     if (!current) return;
-
-    const draggedId = String(active.id);
-    const source = current.find((card) => card.id === draggedId);
+    const source = current.find((card) => card.id === String(active.id));
     if (!source) return;
 
-    const overType = over.data.current?.type;
     const hovered = current.find((card) => card.id === String(over.id));
-    const destinationId =
-      overType === "list"
-        ? (over.data.current?.listId as string | undefined)
-        : hovered?.boardListId;
-    if (!destinationId) return;
-
-    const destinationCards = current
+    const meta = over.data.current;
+    const destinationListId =
+      meta?.type === "cell" ? (meta.listId as string) : hovered?.boardListId;
+    const assignedTo =
+      meta?.type === "cell"
+        ? ((meta.memberId as string | null) ?? null)
+        : (hovered?.assignedTo ?? null);
+    if (!destinationListId) return;
+    // Sort and position are scoped to the pair (member, list).
+    const sameCell = (card: Card, listId: string, member: string | null) =>
+      card.boardListId === listId && (card.assignedTo ?? null) === member;
+    const destination = current
       .filter(
-        (card) => card.boardListId === destinationId && card.id !== draggedId,
+        (card) =>
+          card.id !== source.id &&
+          sameCell(card, destinationListId, assignedTo),
       )
       .sort((a, b) => a.position - b.position);
-
-    let index = destinationCards.length;
-    if (overType === "card" && hovered && hovered.id !== draggedId) {
-      index = destinationCards.findIndex((card) => card.id === hovered.id);
-      if (index < 0) index = destinationCards.length;
-      // Place after the hovered card when moving downward in the same column.
-      if (source.boardListId === destinationId) {
-        const ordered = current
-          .filter((card) => card.boardListId === destinationId)
-          .sort((a, b) => a.position - b.position);
-        const from = ordered.findIndex((card) => card.id === draggedId);
-        const to = ordered.findIndex((card) => card.id === hovered.id);
-        if (from < to) index += 1;
+    let insertAt = destination.length;
+    if (meta?.type === "card" && hovered) {
+      const found = destination.findIndex((card) => card.id === hovered.id);
+      if (found >= 0) {
+        insertAt = found;
+        if (sameCell(source, destinationListId, assignedTo)) {
+          const originalOrder = current
+            .filter((card) => sameCell(card, destinationListId, assignedTo))
+            .sort((a, b) => a.position - b.position);
+          if (
+            originalOrder.findIndex((c) => c.id === source.id) >
+            originalOrder.findIndex((c) => c.id === hovered.id)
+          ) {
+            // moving upward: insert before target
+          } else {
+            insertAt = Math.min(found + 1, destination.length);
+          }
+        }
       }
     }
-
-    const reordered = [...destinationCards];
-    reordered.splice(index, 0, { ...source, boardListId: destinationId });
-
-    // The other source column must be renumbered too.
+    const reordered = [...destination];
+    reordered.splice(insertAt, 0, {
+      ...source,
+      boardListId: destinationListId,
+      assignedTo,
+    });
     const sourceRemaining = current
       .filter(
         (card) =>
-          card.boardListId === source.boardListId && card.id !== draggedId,
+          card.id !== source.id &&
+          sameCell(card, source.boardListId, source.assignedTo ?? null),
       )
       .sort((a, b) => a.position - b.position);
-    const updated = new Map<string, Card>();
-    for (const card of current) updated.set(card.id, card);
-    sourceRemaining.forEach((card, i) =>
-      updated.set(card.id, { ...card, position: i + 1 }),
+    const updated = new Map(current.map((card) => [card.id, card]));
+    sourceRemaining.forEach((card, index) =>
+      updated.set(card.id, { ...card, position: index + 1 }),
     );
-    reordered.forEach((card, i) =>
-      updated.set(card.id, { ...card, position: i + 1 }),
+    reordered.forEach((card, index) =>
+      updated.set(card.id, { ...card, position: index + 1 }),
     );
     const next = current.map((card) => updated.get(card.id)!);
-
-    // Avoid unnecessary renders when hovering over the same insertion point.
     if (
       current.every(
-        (card, i) =>
-          card.boardListId === next[i].boardListId &&
-          card.position === next[i].position,
+        (card, index) =>
+          card.boardListId === next[index].boardListId &&
+          (card.assignedTo ?? null) === (next[index].assignedTo ?? null) &&
+          card.position === next[index].position,
       )
     )
       return;
@@ -1015,34 +756,35 @@ export default function BoardCanvas({
       const ids = sortedLists.map((list) => list.id);
       const from = ids.indexOf(String(active.id));
       const to = ids.indexOf(String(over.id));
-      if (from !== -1 && to !== -1 && from !== to) {
+      if (from >= 0 && to >= 0 && from !== to) {
         reorderListsMutation.mutate(arrayMove(ids, from, to));
       }
       return;
     }
-
-    const original = initialCardsRef.current;
     const finalCards = previewCardsRef.current;
-    const before = original.find((card) => card.id === String(active.id));
+    const before = initialCardsRef.current.find(
+      (card) => card.id === String(active.id),
+    );
     const after = finalCards?.find((card) => card.id === String(active.id));
     resetDrag();
-    if (!over || !before || !after) return;
+    if (!over || !before || !after || !finalCards) return;
     if (
       before.boardListId === after.boardListId &&
+      (before.assignedTo ?? null) === (after.assignedTo ?? null) &&
       before.position === after.position
     )
       return;
-
-    // Show the result immediately; the API is called just once after drop.
     queryClient.setQueryData<CardResponse>(cardQueryKey, (old) =>
-      old ? { ...old, cards: finalCards! } : old,
+      old ? { ...old, cards: finalCards } : old,
     );
     moveCardMutation.mutate({
       cardId: after.id,
       destinationListId: after.boardListId,
+      assignedTo: after.assignedTo ?? null,
       position: after.position,
     });
   };
+
   const handleCardClick = (cardId: string) => {
     router.push(
       `/dashboard/workspace/${workspaceId}/board/${boardId}/card/${cardId}`,
@@ -1251,7 +993,7 @@ export default function BoardCanvas({
       <section
         className="min-h-0 flex-1 overflow-hidden "
         style={{
-          backgroundColor: "var(--color-border)",
+          backgroundColor: "var(--color-column-bg)",
         }}
         onClick={() => setCloseMenuSignal((previous) => previous + 1)}
       >
@@ -1263,39 +1005,182 @@ export default function BoardCanvas({
           onDragCancel={resetDrag}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex h-full min-h-0 items-start gap-0 overflow-auto pl-6 pr-6 pb-12">
-            <SortableContext
-              items={sortedLists.map((list) => list.id)}
-              strategy={horizontalListSortingStrategy}
-            >
-              {sortedLists.map((list) => {
-                const listCards = displayedCards.filter(
+          <div className="h-full overflow-auto">
+            <div className="min-w-max">
+              {/* Status headers. Each list has one sortable ID only. */}
+              <div
+                className="sticky top-0 z-30 flex"
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
+                  borderBottom: "1px solid var(--color-border)",
+                }}
+              >
+                <div
+                  className="sticky left-0 z-40 w-52 shrink-0 border-r px-3 py-4 text-sm font-semibold"
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  Assignee / Status
+                </div>
+                <SortableContext
+                  items={sortedLists.map((list) => list.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {sortedLists.map((list) => (
+                    // Keep the sortable wrapper and its child the exact same
+                    // width as every status cell in the member rows below.
+                    <div
+                      key={list.id}
+                      className="w-[290px] min-w-[290px] max-w-[290px] shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full"
+                    >
+                      <SortableBoardList id={list.id}>
+                        <div
+                          className="box-border flex h-full w-full min-w-0 items-center border-r px-3 py-4 text-sm font-semibold"
+                          style={{
+                            backgroundColor: "var(--color-card-bg)",
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-text-primary)",
+                          }}
+                        >
+                          <span className="truncate">{list.listName}</span>
+                          <span className="ml-2 shrink-0 text-xs font-normal opacity-60">
+                            {
+                              displayedCards.filter(
+                                (card) =>
+                                  card.boardListId === list.id &&
+                                  !card.isArchived &&
+                                  !card.deletedAt,
+                              ).length
+                            }
+                          </span>
+                        </div>
+                      </SortableBoardList>
+                    </div>
+                  ))}
+                </SortableContext>
+                <div
+                  className="w-[290px] shrink-0 border-r"
+                  style={{ borderColor: "var(--color-border)" }}
+                >
+                  <CreateListCard workspaceId={workspaceId} boardId={boardId} />
+                </div>
+              </div>
+              {/* All active board members, even those with zero tickets.
+                  Show a fallback row when an assigned user is no longer active
+                  or the member query is temporarily incomplete, so cards
+                  never silently disappear from the board. */}
+              {[
+                ...members
+                  .filter((member) => Boolean(memberKey(member)))
+                  .map((member) => ({
+                    id: memberKey(member),
+                    name: memberName(member),
+                  })),
+                ...Array.from(
+                  new Set(
+                    displayedCards
+                      .filter((card) => !card.isArchived && !card.deletedAt)
+                      .map((card) => card.assignedTo)
+                      .filter((id): id is string => Boolean(id)),
+                  ),
+                )
+                  .filter((id) => !members.some((m) => m.userId === id))
+                  .map((id) => ({
+                    id,
+                    name: `Unknown member (${id.slice(0, 8)})`,
+                  })),
+                { id: UNASSIGNED, name: "Unassigned" },
+              ].map((member) => {
+                const memberId = member.id === UNASSIGNED ? null : member.id;
+                const memberCards = displayedCards.filter(
                   (card) =>
-                    card.boardListId === list.id &&
+                    (card.assignedTo ?? null) === memberId &&
                     !card.isArchived &&
                     !card.deletedAt,
                 );
-
                 return (
-                  <SortableBoardList key={list.id} id={list.id}>
-                    <BoardList
-                      list={list}
-                      workspaceId={workspaceId}
-                      boardId={boardId}
-                      closeMenuSignal={closeMenuSignal}
-                      cards={listCards}
-                      activeSprintId={activeSprint?.id ?? null}
-                      activeSprintName={activeSprint?.name ?? null}
-                      isCardsLoading={isCardsLoading}
-                      isCardsError={isCardsError}
-                      onCardClick={handleCardClick}
-                    />
-                  </SortableBoardList>
+                  <div
+                    key={member.id}
+                    className="flex min-h-[164px] items-stretch border-b"
+                    style={{ borderColor: "var(--color-border)" }}
+                  >
+                    <div
+                      className="sticky left-0 z-20 flex w-52 shrink-0 flex-col gap-2 border-r p-3"
+                      style={{
+                        backgroundColor: "var(--color-card-bg)",
+                        borderColor: "var(--color-border)",
+                      }}
+                    >
+                      <div
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold"
+                        style={{
+                          backgroundColor:
+                            "var(--color-primary-soft, var(--color-border))",
+                          color: "var(--color-text-primary)",
+                        }}
+                      >
+                        {member.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div
+                        className="max-w-full break-words text-sm font-semibold"
+                        style={{ color: "var(--color-text-primary)" }}
+                      >
+                        {member.name}
+                      </div>
+                      <div
+                        className="text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        {memberCards.length} tickets
+                      </div>
+                    </div>
+                    {sortedLists.map((list) => {
+                      const cellCards = memberCards.filter(
+                        (card) => card.boardListId === list.id,
+                      );
+                      return (
+                        <div
+                          key={`${member.id}-${list.id}`}
+                          className="w-[290px] shrink-0 border-r"
+                          style={{ borderColor: "var(--color-border)" }}
+                        >
+                          <BoardList
+                            list={list}
+                            workspaceId={workspaceId}
+                            boardId={boardId}
+                            closeMenuSignal={closeMenuSignal}
+                            cards={cellCards}
+                            activeSprintId={activeSprint?.id ?? null}
+                            activeSprintName={activeSprint?.name ?? null}
+                            isCardsLoading={isCardsLoading}
+                            isCardsError={isCardsError}
+                            onCardClick={handleCardClick}
+                            memberId={memberId}
+                            hideHeader
+                            hideAddCard={false}
+                            seamless
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
               })}
-            </SortableContext>
-
-            <CreateListCard workspaceId={workspaceId} boardId={boardId} />
+              {isMembersLoading && (
+                <p className="p-4 text-sm">Loading board members…</p>
+              )}
+              {isMembersError && (
+                <p className="p-4 text-sm text-red-500" role="alert">
+                  Failed to load board members:{" "}
+                  {membersError instanceof Error
+                    ? membersError.message
+                    : "Unknown error"}
+                </p>
+              )}
+            </div>
           </div>
 
           <DragOverlay dropAnimation={null}>

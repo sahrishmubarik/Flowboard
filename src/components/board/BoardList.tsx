@@ -43,7 +43,7 @@ type CardType = {
   id: string;
   boardId: string;
   boardListId: string;
-  sprintId: string | null;
+  sprintId: string[];
   sprintName?: string | null;
   cardNumber: number;
   title: string;
@@ -53,6 +53,7 @@ type CardType = {
   type: "bug" | "feature" | "task" | "tbd"; // Add this
 
   position: number;
+  assignedTo: string | null;
   reporterId: string;
   startDate: string | null;
   dueDate: string | null;
@@ -82,6 +83,10 @@ type BoardListProps = {
   isCardsError?: boolean;
 
   onCardClick?: (cardId: string) => void;
+  memberId?: string | null;
+  hideHeader?: boolean;
+  hideAddCard?: boolean;
+  seamless?: boolean;
 };
 
 /*
@@ -114,6 +119,10 @@ export default function BoardList({
   isCardsError = false,
 
   onCardClick,
+  memberId = null,
+  hideHeader = false,
+  hideAddCard = false,
+  seamless = false,
 }: BoardListProps) {
   const queryClient = useQueryClient();
 
@@ -143,12 +152,12 @@ export default function BoardList({
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
   const { setNodeRef: setCardsDropRef, isOver } = useDroppable({
-    id: `list-${list.id}`,
+    id: `cell-${memberId ?? "unassigned"}-${list.id}`,
 
     data: {
-      type: "list",
-
+      type: "cell",
       listId: list.id,
+      memberId,
     },
   });
 
@@ -427,7 +436,7 @@ export default function BoardList({
       \======================================================= */}
 
       <div
-        className="flex min-h-full w-full shrink-0 flex-col rounded-xl border"
+        className={`flex min-h-full w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
         style={{
           backgroundColor: "var(--color-column-bg)",
 
@@ -440,81 +449,82 @@ export default function BoardList({
 
         \===================================================== */}
 
-        <div
-          className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b px-3 py-3"
-          style={{
-            backgroundColor: "var(--color-column-bg)",
+        {!hideHeader && (
+          <div
+            className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b px-6 py-3"
+            style={{
+              backgroundColor: "var(--color-column-bg)",
 
-            borderColor: "var(--color-border)",
-          }}
-        >
-          {/* List name + card count */}
+              borderColor: "var(--color-border)",
+            }}
+          >
+            {/* List name + card count */}
 
-          <div className="flex min-w-0 items-center gap-2">
-            <h3
-              className="truncate text-sm font-semibold"
-              style={{
-                color: "var(--color-text-primary)",
-              }}
-            >
-              {list.listName}
-            </h3>
+            <div className="flex min-w-0 items-center gap-3">
+              <h3
+                className="truncate text-sm font-semibold"
+                style={{
+                  color: "var(--color-text-primary)",
+                }}
+              >
+                {list.listName}
+              </h3>
 
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-              style={{
-                backgroundColor: "var(--color-card-bg)",
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
 
-                color: "var(--color-text-muted)",
-              }}
-            >
-              {cards.length}
-            </span>
-          </div>
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {cards.length}
+              </span>
+            </div>
 
-          {/* ==================================================
+            {/* ==================================================
 
               LIST MENU
 
           \=================================================== */}
 
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setOpenedAtSignal((previous) =>
-                  previous === closeMenuSignal ? null : closeMenuSignal,
-                );
-              }}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-              aria-label="List options"
-            >
-              <MoreHorizontal size={17} />
-            </button>
-
-            {isMenuOpen && (
-              <div
+            <div className="relative shrink-0">
+              <button
+                type="button"
                 onClick={(event) => {
                   event.stopPropagation();
+                  setOpenedAtSignal((previous) =>
+                    previous === closeMenuSignal ? null : closeMenuSignal,
+                  );
                 }}
-                className="absolute right-0 top-8 z-40 w-48 rounded-lg border p-1.5 shadow-lg"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5"
                 style={{
-                  backgroundColor: "var(--color-card-bg)",
-
-                  borderColor: "var(--color-border)",
+                  color: "var(--color-text-muted)",
                 }}
+                aria-label="List options"
               >
-                {/* ==================================================
+                <MoreHorizontal size={17} />
+              </button>
+
+              {isMenuOpen && (
+                <div
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                  className="absolute right-0 top-8 z-40 w-48 rounded-lg border p-1.5 shadow-lg"
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
+
+                    borderColor: "var(--color-border)",
+                  }}
+                >
+                  {/* ==================================================
 
                     ADD CARD
 
                 \=================================================== */}
 
-                {/*
+                  {/*
 
                  * Card creation belongs to the Card component.
 
@@ -532,101 +542,102 @@ export default function BoardList({
 
                  */}
 
-                <CreateCard
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  listId={list.id}
-                  listName={list.listName}
-                  sprintName={activeSprintName}
-                  activeSprintId={activeSprintId}
-                  onCreateClick={() => {
-                    setOpenedAtSignal(null);
-                  }}
-                />
+                  <CreateCard
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    listId={list.id}
+                    listName={list.listName}
+                    sprintName={activeSprintName}
+                    activeSprintId={activeSprintId}
+                    onCreateClick={() => {
+                      setOpenedAtSignal(null);
+                    }}
+                  />
 
-                {/* ==================================================
+                  {/* ==================================================
 
                     RENAME LIST
 
                 \=================================================== */}
 
-                <button
-                  type="button"
-                  onClick={handleRenameClick}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  <Pencil size={15} />
-                  Rename list
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleRenameClick}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{
+                      color: "var(--color-text-primary)",
+                    }}
+                  >
+                    <Pencil size={15} />
+                    Rename list
+                  </button>
 
-                {/* ==================================================
+                  {/* ==================================================
 
                     COPY LIST
 
                 \=================================================== */}
 
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  <Copy size={15} />
-                  Copy list
-                </button>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{
+                      color: "var(--color-text-primary)",
+                    }}
+                  >
+                    <Copy size={15} />
+                    Copy list
+                  </button>
 
-                {/* Divider */}
+                  {/* Divider */}
 
-                <div
-                  className="my-1 border-t"
-                  style={{
-                    borderColor: "var(--color-border)",
-                  }}
-                />
+                  <div
+                    className="my-1 border-t"
+                    style={{
+                      borderColor: "var(--color-border)",
+                    }}
+                  />
 
-                {/* ==================================================
+                  {/* ==================================================
 
                     ARCHIVE LIST
 
                 \=================================================== */}
 
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  <Archive size={15} />
-                  Archive list
-                </button>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    <Archive size={15} />
+                    Archive list
+                  </button>
 
-                {/* ==================================================
+                  {/* ==================================================
 
                     DELETE LIST
 
                 \=================================================== */}
 
-                <button
-                  type="button"
-                  onClick={handleDeleteClick}
-                  disabled={deleteListMutation.isPending}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{
-                    color: "var(--color-tag-red-text)",
-                  }}
-                >
-                  <Trash2 size={15} />
-                  Delete list
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleDeleteClick}
+                    disabled={deleteListMutation.isPending}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      color: "var(--color-tag-red-text)",
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    Delete list
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ====================================================
 
@@ -754,14 +765,16 @@ export default function BoardList({
 
          */}
 
-        <CreateCard
-          workspaceId={workspaceId}
-          boardId={boardId}
-          listId={list.id}
-          listName={list.listName}
-          activeSprintId={activeSprintId}
-          sprintName={activeSprintName}
-        />
+        {!hideAddCard && (
+          <CreateCard
+            workspaceId={workspaceId}
+            boardId={boardId}
+            listId={list.id}
+            listName={list.listName}
+            activeSprintId={activeSprintId}
+            sprintName={activeSprintName}
+          />
+        )}
       </div>
 
       {/* ======================================================
