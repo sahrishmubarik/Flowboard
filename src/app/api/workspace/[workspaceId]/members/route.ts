@@ -6,6 +6,49 @@ import {
   deactivateUserFromOrganization,
 } from "@/services/workspaceMember";
 
+// export async function GET(
+//   request: Request,
+//   { params }: { params: Promise<{ workspaceId: string }> },
+// ) {
+//   try {
+//     const { workspaceId } = await params;
+
+//     const { searchParams } = new URL(request.url);
+//     const page = Number(searchParams.get("page") ?? "1");
+
+//     const limit = Number(searchParams.get("limit") ?? "5");
+
+//     const role = searchParams.get("role");
+
+//     if (role) {
+//       return await getWorkspaceMembersByRole(workspaceId, role, page, limit);
+//     }
+//     return await getWorkspaceMembers(workspaceId, page, limit);
+//   } catch (error) {
+//     console.error("GET_WORKSPACE_MEMBERS_ERROR:", error);
+
+//     if (error instanceof AppError) {
+//       return NextResponse.json(
+//         {
+//           message: error.message,
+//         },
+//         {
+//           status: error.statusCode,
+//         },
+//       );
+//     }
+
+//     return NextResponse.json(
+//       {
+//         message: "Internal server error. Please try again.",
+//       },
+//       {
+//         status: 500,
+//       },
+//     );
+//   }
+// }
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ workspaceId: string }> },
@@ -14,40 +57,43 @@ export async function GET(
     const { workspaceId } = await params;
 
     const { searchParams } = new URL(request.url);
+
     const page = Number(searchParams.get("page") ?? "1");
-
-    const limit = Number(searchParams.get("limit") ?? "5");
-
+    const limit = Number(searchParams.get("limit") ?? "10");
     const role = searchParams.get("role");
 
-    if (role) {
+    if (
+      !Number.isInteger(page) ||
+      page < 1 ||
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      throw new AppError("Invalid pagination parameters.", 400);
+    }
+
+    if (role && role !== "all") {
       return await getWorkspaceMembersByRole(workspaceId, role, page, limit);
     }
+
     return await getWorkspaceMembers(workspaceId, page, limit);
   } catch (error) {
     console.error("GET_WORKSPACE_MEMBERS_ERROR:", error);
 
     if (error instanceof AppError) {
       return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
+        { message: error.message },
+        { status: error.statusCode },
       );
     }
 
     return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      {
-        status: 500,
-      },
+      { message: "Internal server error. Please try again." },
+      { status: 500 },
     );
   }
 }
+
 type deActivatedUserBody = {
   userId: string;
 };
