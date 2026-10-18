@@ -237,38 +237,76 @@ export async function revokeInvitation(
   );
 }
 
+// export async function getInvitationStatus(
+//   workspaceId: string,
+//   page: number,
+//   limit: number,
+// ) {
+//   const user = await getCurrentUser();
+
+//   if (!user) {
+//     throw new AppError("Unauthorized user.", 401);
+//   }
+
+//   const user_id = user.userId;
+
+//   const workspaceData = await workspaceRepo.findById(workspaceId);
+
+//   if (!workspaceData) {
+//     throw new AppError("Workspace not found.", 404);
+//   }
+
+//   await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
+
+//   const result = await invitationRepo.getInvitationByWorkspaceId(
+//     workspaceId,
+//     page,
+//     limit,
+//   );
+//   console.log("INVITATION RESULT:", result);
+//   return Response.json(
+//     {
+//       message: "Invitation status fetched successfully",
+//       invitations: result.invitations,
+
+//       pagination: {
+//         page,
+//         limit,
+//         total: result.total,
+//         totalPages: Math.ceil(result.total / limit),
+//       },
+//     },
+//     {
+//       status: 200,
+//     },
+//   );
+// }
+
 export async function getInvitationStatus(
   workspaceId: string,
   page: number,
   limit: number,
+  status?: "PENDING" | "ACCEPTED" | "REVOKED",
 ) {
   const user = await getCurrentUser();
-
-  if (!user) {
-    throw new AppError("Unauthorized user.", 401);
-  }
-
-  const user_id = user.userId;
+  if (!user) throw new AppError("Unauthorized user.", 401);
 
   const workspaceData = await workspaceRepo.findById(workspaceId);
+  if (!workspaceData) throw new AppError("Workspace not found.", 404);
 
-  if (!workspaceData) {
-    throw new AppError("Workspace not found.", 404);
-  }
-
-  await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
+  await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
 
   const result = await invitationRepo.getInvitationByWorkspaceId(
     workspaceId,
     page,
     limit,
+    status,
   );
-  console.log("INVITATION RESULT:", result);
+
   return Response.json(
     {
       message: "Invitation status fetched successfully",
       invitations: result.invitations,
-
       pagination: {
         page,
         limit,
@@ -276,8 +314,6 @@ export async function getInvitationStatus(
         totalPages: Math.ceil(result.total / limit),
       },
     },
-    {
-      status: 200,
-    },
+    { status: 200 },
   );
 }
