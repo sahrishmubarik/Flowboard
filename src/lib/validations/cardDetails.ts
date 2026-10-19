@@ -24,10 +24,9 @@ export const updateCardDetailSchema = z.discriminatedUnion("action", [
     action: z.literal("priority"),
     priority: prioritySchema,
   }),
-
   z.object({
     action: z.literal("sprint"),
-    sprintId: uuidSchema.nullable(),
+    sprintId: z.array(z.string().uuid()).nullable().optional(),
   }),
 
   z.object({
@@ -44,6 +43,10 @@ export const updateCardDetailSchema = z.discriminatedUnion("action", [
     action: z.literal("moveCard"),
     destinationListId: uuidSchema,
     position: z.number().int().min(1),
+  }),
+  z.object({
+    action: z.literal("assignedTo"),
+    assignedTo: z.string().uuid().nullable(),
   }),
 ]);
 
