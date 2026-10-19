@@ -9,7 +9,7 @@ type cardBody = {
   dueDate: string;
   priority: string;
   type: string;
-  sprintId: string;
+  sprintId: string[];
   listId: string;
   assigneeId: string;
 };
