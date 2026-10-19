@@ -49,14 +49,12 @@ export const card = pgTable(
       }),
 
     // Nullable because card can stay in backlog / outside sprint
-    sprintId: uuid("sprint_id").references(() => sprint.id, {
-      onDelete: "set null",
-    }),
+    sprintId: uuid("sprint_id")
+      .array()
+      .references(() => sprint.id, {
+        onDelete: "set null",
+      }),
 
-    // Example:
-    // cardNumber = 21
-    // Board key = FLOW
-    // UI => FLOW-21
     cardNumber: integer("card_number").notNull(),
 
     title: varchar("title", {
@@ -178,3 +176,33 @@ export const cardAttachment = pgTable(
   },
   (table) => [index("card_attachment_card_id_idx").on(table.cardId)],
 );
+
+export const commit = pgTable("commit", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  // Card always belongs to one board
+  cardId: uuid("card_id")
+    .notNull()
+    .references(() => card.id, {
+      onDelete: "cascade",
+    }),
+
+  title: varchar("title", {
+    length: 255,
+  }).notNull(),
+
+  description: text("description"),
+
+  // User who created/reported the card
+  createdBy: uuid("created_By")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "restrict",
+    }),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
+});
