@@ -90,53 +90,53 @@ export const organizationMemberRepo = {
   //     members,total,
   //   };
   // },
-  async getByWorkspaceId(workspaceId: string, page: number, limit: number) {
-    const offset = (page - 1) * limit;
+  // async getByWorkspaceId(workspaceId: string, page: number, limit: number) {
+  //   const offset = (page - 1) * limit;
 
-    const members = await db
-      .select({
-        id: organizationMembers.id,
-        userId: organizationMembers.userId,
-        name: users.name,
-        email: users.email,
-        role: organizationMembers.role,
-        createdAt: organizationMembers.createdAt,
-      })
-      .from(organizationMembers)
-      .innerJoin(
-        users,
+  //   const members = await db
+  //     .select({
+  //       id: organizationMembers.id,
+  //       userId: organizationMembers.userId,
+  //       name: users.name,
+  //       email: users.email,
+  //       role: organizationMembers.role,
+  //       createdAt: organizationMembers.createdAt,
+  //     })
+  //     .from(organizationMembers)
+  //     .innerJoin(
+  //       users,
 
-        eq(organizationMembers.userId, users.id),
-      )
-      .where(
-        and(
-          eq(organizationMembers.organizationId, workspaceId),
-          eq(organizationMembers.status, "ACTIVE"),
-        ),
-      )
-      .limit(limit)
-      .offset(offset);
+  //       eq(organizationMembers.userId, users.id),
+  //     )
+  //     .where(
+  //       and(
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //         eq(organizationMembers.status, "ACTIVE"),
+  //       ),
+  //     )
+  //     .limit(limit)
+  //     .offset(offset);
 
-    const totalResult = await db
-      .select({
-        count: count(),
-      })
-      .from(organizationMembers)
-      .innerJoin(users, eq(organizationMembers.userId, users.id))
-      .where(
-        and(
-          eq(organizationMembers.organizationId, workspaceId),
-          eq(organizationMembers.status, "ACTIVE"),
-        ),
-      );
+  //   const totalResult = await db
+  //     .select({
+  //       count: count(),
+  //     })
+  //     .from(organizationMembers)
+  //     .innerJoin(users, eq(organizationMembers.userId, users.id))
+  //     .where(
+  //       and(
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //         eq(organizationMembers.status, "ACTIVE"),
+  //       ),
+  //     );
 
-    const total = Number(totalResult[0]?.count ?? 0);
+  //   const total = Number(totalResult[0]?.count ?? 0);
 
-    return {
-      members,
-      total,
-    };
-  },
+  //   return {
+  //     members,
+  //     total,
+  //   };
+  // },
 
   // async getByWorkspaceIdAndRole(
   //   workspaceId: string,
@@ -165,7 +165,57 @@ export const organizationMemberRepo = {
   //         eq(organizationMembers.role, role),
   //       ),
   //     );
-  // }
+  // // }
+  // async getByWorkspaceIdAndRole(
+  //   workspaceId: string,
+  //   role: WorkspaceMemberRole,
+  //   page: number,
+  //   limit: number,
+  // ) {
+  //   const offset = (page - 1) * limit;
+
+  //   const members = await db
+  //     .select({
+  //       id: organizationMembers.id,
+  //       userId: organizationMembers.userId,
+  //       name: users.name,
+  //       email: users.email,
+  //       role: organizationMembers.role,
+  //       createdAt: organizationMembers.createdAt,
+  //     })
+  //     .from(organizationMembers)
+  //     .innerJoin(users, eq(organizationMembers.userId, users.id))
+  //     .where(
+  //       and(
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //         eq(organizationMembers.role, role),
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //         eq(organizationMembers.status, "ACTIVE"),
+  //       ),
+  //     )
+  //     .limit(limit)
+  //     .offset(offset);
+
+  //   const totalResult = await db
+  //     .select({
+  //       count: count(),
+  //     })
+  //     .from(organizationMembers)
+  //     .where(
+  //       and(
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //         eq(organizationMembers.role, role),
+  //       ),
+  //     );
+
+  //   const total = Number(totalResult[0]?.count ?? 0);
+
+  //   return {
+  //     members,
+  //     total,
+  //   };
+  // },
+
   async getByWorkspaceIdAndRole(
     workspaceId: string,
     role: WorkspaceMemberRole,
@@ -173,6 +223,12 @@ export const organizationMemberRepo = {
     limit: number,
   ) {
     const offset = (page - 1) * limit;
+
+    const conditions = and(
+      eq(organizationMembers.organizationId, workspaceId),
+      eq(organizationMembers.role, role),
+      eq(organizationMembers.status, "ACTIVE"),
+    );
 
     const members = await db
       .select({
@@ -185,36 +241,59 @@ export const organizationMemberRepo = {
       })
       .from(organizationMembers)
       .innerJoin(users, eq(organizationMembers.userId, users.id))
-      .where(
-        and(
-          eq(organizationMembers.organizationId, workspaceId),
-          eq(organizationMembers.role, role),
-          eq(organizationMembers.organizationId, workspaceId),
-          eq(organizationMembers.status, "ACTIVE"),
-        ),
-      )
+      .where(conditions)
+      .orderBy(organizationMembers.createdAt, organizationMembers.id)
       .limit(limit)
       .offset(offset);
 
     const totalResult = await db
-      .select({
-        count: count(),
-      })
+      .select({ count: count() })
       .from(organizationMembers)
-      .where(
-        and(
-          eq(organizationMembers.organizationId, workspaceId),
-          eq(organizationMembers.role, role),
-        ),
-      );
-
-    const total = Number(totalResult[0]?.count ?? 0);
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .where(conditions);
 
     return {
       members,
-      total,
+      total: Number(totalResult[0]?.count ?? 0),
     };
   },
+
+  async getByWorkspaceId(workspaceId: string, page: number, limit: number) {
+    const offset = (page - 1) * limit;
+
+    const conditions = and(
+      eq(organizationMembers.organizationId, workspaceId),
+      eq(organizationMembers.status, "ACTIVE"),
+    );
+
+    const members = await db
+      .select({
+        id: organizationMembers.id,
+        userId: organizationMembers.userId,
+        name: users.name,
+        email: users.email,
+        role: organizationMembers.role,
+        createdAt: organizationMembers.createdAt,
+      })
+      .from(organizationMembers)
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .where(conditions)
+      .orderBy(organizationMembers.createdAt, organizationMembers.id)
+      .limit(limit)
+      .offset(offset);
+
+    const totalResult = await db
+      .select({ count: count() })
+      .from(organizationMembers)
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .where(conditions);
+
+    return {
+      members,
+      total: Number(totalResult[0]?.count ?? 0),
+    };
+  },
+
   /* update status from active to Deactivated then no more user to your organization */
   async updatedStatus(userId: string, workspaceId: string) {
     const DeactivatedStatus = await db

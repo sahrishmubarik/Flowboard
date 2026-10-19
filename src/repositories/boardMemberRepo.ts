@@ -111,4 +111,21 @@ export const boardMemberRepo = {
 
     return member;
   },
+  async getAllActiveBoardMember(boardId: string) {
+    return await db
+      .select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        role: boardMembers.role,
+      })
+      .from(boardMembers)
+      .innerJoin(users, eq(boardMembers.userId, users.id))
+      .where(
+        and(
+          eq(boardMembers.boardId, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
+  },
 };

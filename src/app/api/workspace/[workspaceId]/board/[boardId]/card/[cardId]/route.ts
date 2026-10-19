@@ -43,15 +43,6 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 }
 
-/*
- * Move a card to another position or board list.
- *
- * Request body:
- * {
- *   "destinationListId": "list-uuid",
- *   "position": 2
- * }
- */
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const { boardId, cardId } = await params;
@@ -118,13 +109,14 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const body: unknown = await request.json();
 
-    // All actions are validated and handled by the service.
-    return await updateCardDetail(
+    const result = await updateCardDetail(
       boardId,
       cardId,
       "", // The service obtains the authenticated user itself.
       body,
     );
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Update_Card_Error:", error);
 
@@ -134,6 +126,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         { status: error.statusCode },
       );
     }
+
     if (error instanceof SyntaxError) {
       return NextResponse.json(
         { message: "Invalid JSON request body" },

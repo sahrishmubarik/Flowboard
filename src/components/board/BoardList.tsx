@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Archive, Copy, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 
 import CreateCard from "@/components/card/CreateCard";
 
@@ -86,6 +86,7 @@ type BoardListProps = {
   memberId?: string | null;
   hideHeader?: boolean;
   hideAddCard?: boolean;
+  headerOnly?: boolean;
   seamless?: boolean;
 };
 
@@ -122,6 +123,7 @@ export default function BoardList({
   memberId = null,
   hideHeader = false,
   hideAddCard = false,
+  headerOnly = false,
   seamless = false,
 }: BoardListProps) {
   const queryClient = useQueryClient();
@@ -152,7 +154,10 @@ export default function BoardList({
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
 
   const { setNodeRef: setCardsDropRef, isOver } = useDroppable({
-    id: `cell-${memberId ?? "unassigned"}-${list.id}`,
+    id: headerOnly
+      ? `list-header-${list.id}`
+      : `cell-${memberId ?? "unassigned"}-${list.id}`,
+    disabled: headerOnly,
 
     data: {
       type: "cell",
@@ -436,7 +441,7 @@ export default function BoardList({
       \======================================================= */}
 
       <div
-        className={`flex min-h-full w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
+        className={`flex ${headerOnly ? "" : "min-h-full"} w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
         style={{
           backgroundColor: "var(--color-column-bg)",
 
@@ -506,42 +511,18 @@ export default function BoardList({
                 <MoreHorizontal size={17} />
               </button>
 
-              {isMenuOpen && (
-                <div
-                  onClick={(event) => {
-                    event.stopPropagation();
-                  }}
-                  className="absolute right-0 top-8 z-40 w-48 rounded-lg border p-1.5 shadow-lg"
-                  style={{
-                    backgroundColor: "var(--color-card-bg)",
+              <div
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+                className={`absolute right-0 top-8 z-40 w-48 rounded-lg border p-1.5 shadow-lg ${isMenuOpen ? "" : "hidden"}`}
+                style={{
+                  backgroundColor: "var(--color-card-bg)",
 
-                    borderColor: "var(--color-border)",
-                  }}
-                >
-                  {/* ==================================================
-
-                    ADD CARD
-
-                \=================================================== */}
-
-                  {/*
-
-                 * Card creation belongs to the Card component.
-
-                 *
-
-                 * We don't implement any card state,
-
-                 * mutation or modal here.
-
-                 *
-
-                 * The Card component should expose its own
-
-                 * create-card trigger.
-
-                 */}
-
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-text-primary)",
+                }}
+              >
                   <CreateCard
                     workspaceId={workspaceId}
                     boardId={boardId}
@@ -549,6 +530,7 @@ export default function BoardList({
                     listName={list.listName}
                     sprintName={activeSprintName}
                     activeSprintId={activeSprintId}
+                    triggerClassName="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
                     onCreateClick={() => {
                       setOpenedAtSignal(null);
                     }}
@@ -572,55 +554,6 @@ export default function BoardList({
                     Rename list
                   </button>
 
-                  {/* ==================================================
-
-                    COPY LIST
-
-                \=================================================== */}
-
-                  <button
-                    type="button"
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                    style={{
-                      color: "var(--color-text-primary)",
-                    }}
-                  >
-                    <Copy size={15} />
-                    Copy list
-                  </button>
-
-                  {/* Divider */}
-
-                  <div
-                    className="my-1 border-t"
-                    style={{
-                      borderColor: "var(--color-border)",
-                    }}
-                  />
-
-                  {/* ==================================================
-
-                    ARCHIVE LIST
-
-                \=================================================== */}
-
-                  <button
-                    type="button"
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                    style={{
-                      color: "var(--color-text-secondary)",
-                    }}
-                  >
-                    <Archive size={15} />
-                    Archive list
-                  </button>
-
-                  {/* ==================================================
-
-                    DELETE LIST
-
-                \=================================================== */}
-
                   <button
                     type="button"
                     onClick={handleDeleteClick}
@@ -633,147 +566,134 @@ export default function BoardList({
                     <Trash2 size={15} />
                     Delete list
                   </button>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ====================================================
+        {!headerOnly && (
+          <>
+            {!hideAddCard && (
+              <CreateCard
+                workspaceId={workspaceId}
+                boardId={boardId}
+                listId={list.id}
+                listName={list.listName}
+                activeSprintId={activeSprintId}
+                sprintName={activeSprintName}
+                triggerClassName="mx-2 mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                triggerIconSize={16}
+              />
+            )}
 
-            CARDS
+            {/* ====================================================
 
-        \===================================================== */}
+                CARDS
 
-        <div
-          ref={setCardsDropRef}
-          className="flex min-h-16 flex-col gap-2 p-2"
-          style={{
-            backgroundColor: isOver
-              ? "var(--color-primary-soft, var(--color-column-bg))"
-              : undefined,
-          }}
-        >
-          {/* ==================================================
+            \===================================================== */}
+
+            <div
+              ref={setCardsDropRef}
+              className="flex min-h-16 flex-1 flex-col gap-2 p-2"
+              style={{
+                backgroundColor: isOver
+                  ? "var(--color-primary-soft, var(--color-column-bg))"
+                  : undefined,
+              }}
+            >
+              {/* ==================================================
 
               LOADING
 
           \=================================================== */}
 
-          {isCardsLoading ? (
-            <>
-              <div
-                className="h-24 animate-pulse rounded-lg"
-                style={{
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-              />
+              {isCardsLoading ? (
+                <>
+                  <div
+                    className="h-24 animate-pulse rounded-lg"
+                    style={{
+                      backgroundColor: "var(--color-card-bg)",
+                    }}
+                  />
 
-              <div
-                className="h-24 animate-pulse rounded-lg"
-                style={{
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-              />
-            </>
-          ) : isCardsError ? (
-            /* ==================================================
+                  <div
+                    className="h-24 animate-pulse rounded-lg"
+                    style={{
+                      backgroundColor: "var(--color-card-bg)",
+                    }}
+                  />
+                </>
+              ) : isCardsError ? (
+                /* ==================================================
 
                ERROR
 
             \=================================================== */
 
-            <div
-              className="rounded-lg border p-3 text-xs"
-              style={{
-                backgroundColor: "var(--color-card-bg)",
+                <div
+                  className="rounded-lg border p-3 text-xs"
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
 
-                borderColor: "var(--color-border)",
+                    borderColor: "var(--color-border)",
 
-                color: "var(--color-tag-red-text)",
-              }}
-            >
-              Failed to load cards.
-            </div>
-          ) : cards.length > 0 ? (
-            /* ==================================================
+                    color: "var(--color-tag-red-text)",
+                  }}
+                >
+                  Failed to load cards.
+                </div>
+              ) : cards.length > 0 ? (
+                /* ==================================================
 
                CARD LIST
 
             \=================================================== */
 
-            <SortableContext
-              items={[...cards]
+                <SortableContext
+                  items={[...cards]
 
-                .sort((a, b) => a.position - b.position)
+                    .sort((a, b) => a.position - b.position)
 
-                .map((card) => card.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {[...cards]
+                    .map((card) => card.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {[...cards]
 
-                .sort((a, b) => a.position - b.position)
+                    .sort((a, b) => a.position - b.position)
 
-                .map((card) => (
-                  <SortableCard key={card.id} card={card}>
-                    <CreateCard
-                      card={card}
-                      workspaceId={workspaceId}
-                      boardId={boardId}
-                      listId={list.id}
-                      listName={list.listName}
-                      sprintName={card.sprintName ?? activeSprintName}
-                      activeSprintId={activeSprintId}
-                      onCardClick={onCardClick}
-                    />
-                  </SortableCard>
-                ))}
-            </SortableContext>
-          ) : (
-            /* ==================================================
+                    .map((card) => (
+                      <SortableCard key={card.id} card={card}>
+                        <CreateCard
+                          card={card}
+                          workspaceId={workspaceId}
+                          boardId={boardId}
+                          listId={list.id}
+                          listName={list.listName}
+                          sprintName={card.sprintName ?? activeSprintName}
+                          activeSprintId={activeSprintId}
+                          onCardClick={onCardClick}
+                        />
+                      </SortableCard>
+                    ))}
+                </SortableContext>
+              ) : (
+                /* ==================================================
 
                EMPTY
 
             \=================================================== */
 
-            <div
-              className="px-2 py-5 text-center text-xs"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              No cards yet
+                <div
+                  className="flex min-h-30 flex-1 items-center justify-center text-xs"
+                  style={{
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  No cards yet
+                </div>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* ====================================================
-
-            ADD CARD BUTTON
-
-        \===================================================== */}
-
-        {/*
-
-         * The complete Add Card functionality belongs
-
-         * to Card component.
-
-         *
-
-         * BoardList only asks Card to render its trigger.
-
-         */}
-
-        {!hideAddCard && (
-          <CreateCard
-            workspaceId={workspaceId}
-            boardId={boardId}
-            listId={list.id}
-            listName={list.listName}
-            activeSprintId={activeSprintId}
-            sprintName={activeSprintName}
-          />
+          </>
         )}
       </div>
 

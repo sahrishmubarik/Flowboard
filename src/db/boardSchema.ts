@@ -133,4 +133,7 @@ export const sprint = pgTable("sprint", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  carryUnresolvedTickets: boolean("carry_unresolved_tickets")
+    .notNull()
+    .default(false),
 });
