@@ -12,6 +12,9 @@ import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
 
+import { DayPicker, type DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import "react-day-picker/style.css";
 /* dray and drop  */
 
 import {
@@ -83,6 +86,7 @@ type CreateSprintPayload = {
   startDate: string;
 
   endDate: string;
+  carryUnresolvedTickets: boolean;
 };
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
@@ -196,6 +200,8 @@ export default function BoardCanvas({
 
   const [endDate, setEndDate] = useState("");
 
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [carryUnresolvedTickets, setCarryUnresolvedTickets] = useState(false);
   // * GET BOARD LISTS
   const {
     data: lists = [],
@@ -499,7 +505,8 @@ Card creation belongs to BoardList.*/
       setStartDate("");
 
       setEndDate("");
-
+      setCarryUnresolvedTickets(false);
+      setIsDatePickerOpen(false);
       queryClient.invalidateQueries({
         queryKey: ["sprints", workspaceId, boardId],
       });
@@ -531,6 +538,7 @@ Card creation belongs to BoardList.*/
       startDate: payload.startDate,
 
       endDate: payload.endDate,
+      carryUnresolvedTickets: payload.carryUnresolvedTickets,
     });
   };
 
@@ -1037,26 +1045,23 @@ Card creation belongs to BoardList.*/
                       className="w-[290px] min-w-[290px] max-w-[290px] shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full"
                     >
                       <SortableBoardList id={list.id}>
-                        <div
-                          className="box-border flex h-full w-full min-w-0 items-center border-r px-3 py-4 text-sm font-semibold"
-                          style={{
-                            backgroundColor: "var(--color-card-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
-                        >
-                          <span className="truncate">{list.listName}</span>
-                          <span className="ml-2 shrink-0 text-xs font-normal opacity-60">
-                            {
-                              displayedCards.filter(
-                                (card) =>
-                                  card.boardListId === list.id &&
-                                  !card.isArchived &&
-                                  !card.deletedAt,
-                              ).length
-                            }
-                          </span>
-                        </div>
+                        <BoardList
+                          list={list}
+                          workspaceId={workspaceId}
+                          boardId={boardId}
+                          closeMenuSignal={closeMenuSignal}
+                          cards={displayedCards.filter(
+                            (card) =>
+                              card.boardListId === list.id &&
+                              !card.isArchived &&
+                              !card.deletedAt,
+                          )}
+                          activeSprintId={activeSprint?.id ?? null}
+                          activeSprintName={activeSprint?.name ?? null}
+                          headerOnly
+                          hideAddCard
+                          seamless
+                        />
                       </SortableBoardList>
                     </div>
                   ))}
@@ -1320,56 +1325,116 @@ Card creation belongs to BoardList.*/
 
               {/* Dates */}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    className="mb-1.5 block text-sm font-medium"
+              {/* Sprint date range — one calendar for both dates */}
+              <div>
+                <label
+                  className="mb-1.5 block text-sm font-medium"
+                  style={{ color: "var(--color-text-primary)" }}
+                >
+                  Sprint dates
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen((open) => !open)}
+                  className="h-10 w-full rounded-lg border px-3 text-left text-sm"
+                  style={{
+                    backgroundColor: "var(--color-input-bg)",
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  {startDate && endDate
+                    ? `${format(new Date(`${startDate}T12:00:00`), "MMM d, yyyy")} – ${format(
+                        new Date(`${endDate}T12:00:00`),
+                        "MMM d, yyyy",
+                      )}`
+                    : startDate
+                      ? `${format(new Date(`${startDate}T12:00:00`), "MMM d, yyyy")} – Select end date`
+                      : "Select start and end dates"}
+                </button>
+
+                {isDatePickerOpen && (
+                  <div
+                    className="mt-2 rounded-lg border p-3"
                     style={{
+                      backgroundColor: "var(--color-card-bg)",
+                      borderColor: "var(--color-border)",
                       color: "var(--color-text-primary)",
                     }}
                   >
-                    Start date
-                  </label>
+                    <p
+                      className="mb-2 text-xs"
+                      style={{ color: "var(--color-text-secondary)" }}
+                    >
+                      {!startDate
+                        ? "Select the start date"
+                        : !endDate
+                          ? "Now select the end date"
+                          : "Select another range if needed"}
+                    </p>
 
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                    className="h-10 w-full rounded-lg border px-3 text-sm outline-none"
-                    style={{
-                      backgroundColor: "var(--color-input-bg)",
+                    <DayPicker
+                      mode="range"
+                      selected={{
+                        from: startDate
+                          ? new Date(`${startDate}T12:00:00`)
+                          : undefined,
+                        to: endDate
+                          ? new Date(`${endDate}T12:00:00`)
+                          : undefined,
+                      }}
+                      onSelect={(range: DateRange | undefined) => {
+                        if (!range?.from) {
+                          setStartDate("");
+                          setEndDate("");
+                          return;
+                        }
 
-                      borderColor: "var(--color-border)",
+                        setStartDate(format(range.from, "yyyy-MM-dd"));
 
-                      color: "var(--color-text-primary)",
-                    }}
-                  />
-                </div>
+                        setEndDate(
+                          range.to ? format(range.to, "yyyy-MM-dd") : "",
+                        );
+                      }}
+                      disabled={(date) =>
+                        Boolean(startDate && date < new Date(startDate))
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setIsDatePickerOpen(false)}
+                      disabled={!startDate || !endDate}
+                      className="mt-2 h-9 rounded-md px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        backgroundColor: "var(--color-primary)",
+                        color: "white",
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-start gap-3">
+                <input
+                  id="carryUnresolvedTickets"
+                  type="checkbox"
+                  checked={carryUnresolvedTickets}
+                  onChange={(event) =>
+                    setCarryUnresolvedTickets(event.target.checked)
+                  }
+                />
 
                 <div>
                   <label
-                    className="mb-1.5 block text-sm font-medium"
-                    style={{
-                      color: "var(--color-text-primary)",
-                    }}
+                    htmlFor="carryUnresolvedTickets"
+                    className="text-sm font-medium"
                   >
-                    End date
+                    Carry unresolved tickets forward
                   </label>
-
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || undefined}
-                    onChange={(event) => setEndDate(event.target.value)}
-                    className="h-10 w-full rounded-lg border px-3 text-sm outline-none"
-                    style={{
-                      backgroundColor: "var(--color-input-bg)",
-
-                      borderColor: "var(--color-border)",
-
-                      color: "var(--color-text-primary)",
-                    }}
-                  />
                 </div>
               </div>
             </div>
@@ -1425,6 +1490,7 @@ Card creation belongs to BoardList.*/
                     startDate,
 
                     endDate,
+                    carryUnresolvedTickets,
                   })
                 }
                 className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
