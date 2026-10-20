@@ -1,11 +1,11 @@
 "use client";
-
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 import InvitationStatusCard from "@/components/invitationStatusCard";
 import InviteMemberCard from "@/components/inviteMemberCard";
 import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
-
+import WorkspaceMember from "@/components/memberDetails";
 type PanelType = "members" | "invite" | "invitations" | "delete";
 
 const panels = [
@@ -45,7 +45,9 @@ const panels = [
 
 export default function MembersPage() {
   const [activePanel, setActivePanel] = useState<PanelType | null>(null);
+  const params = useParams<{ workspaceId: string }>();
 
+  const workspaceId = params.workspaceId;
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -117,74 +119,20 @@ export default function MembersPage() {
         </header>
 
         {/* INTRODUCTION */}
-        <section className="mb-7">
-          <h2
-            className="text-lg font-semibold text-[var(--color-text-primary)]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            People and administration
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">
-            Select a section to open its management panel. Your workspace
-            overview remains clean while each task gets its own dedicated space.
-          </p>
-        </section>
 
+        <div className="mt-4 mb-10">
+          <WorkspaceMember workspaceId={workspaceId} />
+        </div>
+        <div className="mt-4 mb-10">
+          <InviteMemberCard />
+        </div>
+        <div className="mt-4 mb-10">
+          <InvitationStatusCard workspaceId={workspaceId} />
+        </div>
+        <div className="mt-4 mb-10">
+          <DeleteWorkspaceCard />
+        </div>
         {/* CLICKABLE MANAGEMENT OPTIONS */}
-        <section
-          aria-label="Workspace management options"
-          className="divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]"
-        >
-          {panels.map((panel) => {
-            const isDanger = panel.id === "delete";
-
-            return (
-              <button
-                key={panel.id}
-                type="button"
-                onClick={() => setActivePanel(panel.id)}
-                className="group flex w-full items-center gap-4 py-4 text-left transition-colors hover:bg-[var(--color-card-bg)] sm:gap-5 sm:px-4"
-              >
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] border border-[var(--color-border)] text-xs font-semibold transition-colors ${
-                    isDanger
-                      ? "text-[var(--color-priority-high)]"
-                      : "text-[var(--color-primary)] group-hover:border-[var(--color-primary)]"
-                  }`}
-                >
-                  {panel.number}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={`block text-base font-semibold ${
-                      isDanger
-                        ? "text-[var(--color-priority-high)]"
-                        : "text-[var(--color-text-primary)]"
-                    }`}
-                  >
-                    {panel.title}
-                  </span>
-
-                  <span className="mt-1 block max-w-2xl text-sm leading-5 text-[var(--color-text-secondary)]">
-                    {panel.description}
-                  </span>
-                </span>
-
-                <span className="hidden shrink-0 text-sm font-medium text-[var(--color-text-secondary)] transition-colors group-hover:text-[var(--color-primary)] sm:block">
-                  {panel.action}
-                </span>
-
-                <span
-                  aria-hidden="true"
-                  className="shrink-0 text-xl text-[var(--color-text-muted)] transition-transform group-hover:translate-x-1 group-hover:text-[var(--color-primary)]"
-                >
-                  →
-                </span>
-              </button>
-            );
-          })}
-        </section>
 
         {/* FOOTER NOTE */}
         <p className="mt-6 text-xs leading-6 text-[var(--color-text-muted)]">
