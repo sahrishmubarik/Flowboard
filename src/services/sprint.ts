@@ -10,6 +10,7 @@ export async function createSprint(
   startDate: string,
   endDate: string,
   goal: string,
+  carryUnresolvedTickets: boolean,
 ) {
   const user = await getCurrentUser();
 
@@ -28,6 +29,7 @@ export async function createSprint(
     endDate,
     goal,
     userId,
+    carryUnresolvedTickets,
   );
 
   return NextResponse.json(
