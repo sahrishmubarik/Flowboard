@@ -140,3 +140,29 @@ export async function deleteMemberFormBoard(userId: string, boardId: string) {
     },
   );
 }
+
+/* get all board member without pagination  */
+export async function getAllActiveBoardMembers(
+  workspaceId: string,
+  boardId: string,
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  // Check whether current user belongs to this board
+  const boardMember = await BoardRepo.getForUser(user.userId, boardId);
+
+  if (!boardMember) {
+    throw new AppError("You do not have access to this board", 403);
+  }
+
+  const result = await boardMemberRepo.getAllActiveBoardMember(boardId);
+
+  return Response.json({
+    message: "Board members fetched successfully",
+    data: result,
+  });
+}

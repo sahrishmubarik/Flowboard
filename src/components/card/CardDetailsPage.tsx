@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
-
+import CardCommits from "@/components/card/CardCommits";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
 type TaskType = "bug" | "feature" | "task" | "tbd";
@@ -202,10 +202,10 @@ export default function CardDetailsPage({
 
     isError: attachmentsError,
   } = useQuery<AttachmentsResponse>({
-    queryKey: ["card-attachments", workspaceId, boardId, cardId],
+    queryKey: ["card-attachments", workspaceId, boardId, cardId, "card"],
 
     queryFn: async () => {
-      const response = await fetch(`${baseUrl}/attachment`);
+      const response = await fetch(`${baseUrl}/attachment?scope=card`);
 
       const result = await response.json();
 
@@ -532,6 +532,13 @@ export default function CardDetailsPage({
                     </div>
                   )}
                 </section>
+
+                {/* commit section  */}
+                <CardCommits
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  cardId={cardId}
+                />
               </div>
             </article>
 

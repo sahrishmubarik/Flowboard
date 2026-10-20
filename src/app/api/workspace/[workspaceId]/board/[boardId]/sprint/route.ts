@@ -11,6 +11,7 @@ type sprintBody = {
   goal: string;
   startDate: string;
   endDate: string;
+  carryUnresolvedTickets: boolean;
 };
 
 export async function POST(
@@ -21,8 +22,16 @@ export async function POST(
     const { boardId } = await params;
     const body: sprintBody = await request.json();
 
-    const { sprintName, startDate, endDate, goal } = body;
-    return await createSprint(boardId, sprintName, startDate, endDate, goal);
+    const { sprintName, startDate, endDate, goal, carryUnresolvedTickets } =
+      body;
+    return await createSprint(
+      boardId,
+      sprintName,
+      startDate,
+      endDate,
+      goal,
+      carryUnresolvedTickets,
+    );
   } catch (error) {
     console.error("CREATE_SPRINT_ERROR:", error);
 
