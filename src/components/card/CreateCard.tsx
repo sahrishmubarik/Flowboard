@@ -1507,6 +1507,7 @@ import {
   X,
 } from "lucide-react";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
+import CardDescriptionViewer from "./CardDescriptionViewer";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -2019,7 +2020,7 @@ export default function CreateCard({
         >
           {card.title}
         </p>
-        {card.description && (
+        {/* {card.description && (
           <div
             className="mt-1 line-clamp-2 text-xs leading-4"
             style={{ color: "var(--color-text-muted)" }}
@@ -2037,6 +2038,13 @@ export default function CreateCard({
               .replace(/\s+/g, " ")
               .trim()}
           </div>
+        )} */}
+        {card.description && (
+          <CardDescriptionViewer
+            content={card.description}
+            variant="preview"
+            className="mt-1"
+          />
         )}
         {(card.startDate || card.dueDate) && (
           <div
