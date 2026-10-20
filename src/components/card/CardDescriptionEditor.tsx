@@ -61,7 +61,10 @@ export default function CardDescriptionEditor({
     immediatelyRender: false,
 
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        link: false,
+        underline: false,
+      }),
       Markdown.configure({
         html: true, // Allows parsing of existing HTML tags safely
         linkify: true, // Auto-converts text URLs to links

@@ -7,7 +7,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 
 import CreateCard from "@/components/card/CreateCard";
-
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -523,49 +522,49 @@ export default function BoardList({
                   color: "var(--color-text-primary)",
                 }}
               >
-                  <CreateCard
-                    workspaceId={workspaceId}
-                    boardId={boardId}
-                    listId={list.id}
-                    listName={list.listName}
-                    sprintName={activeSprintName}
-                    activeSprintId={activeSprintId}
-                    triggerClassName="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                    onCreateClick={() => {
-                      setOpenedAtSignal(null);
-                    }}
-                  />
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={list.id}
+                  listName={list.listName}
+                  sprintName={activeSprintName}
+                  activeSprintId={activeSprintId}
+                  triggerClassName="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                  onCreateClick={() => {
+                    setOpenedAtSignal(null);
+                  }}
+                />
 
-                  {/* ==================================================
+                {/* ==================================================
 
                     RENAME LIST
 
                 \=================================================== */}
 
-                  <button
-                    type="button"
-                    onClick={handleRenameClick}
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                    style={{
-                      color: "var(--color-text-primary)",
-                    }}
-                  >
-                    <Pencil size={15} />
-                    Rename list
-                  </button>
+                <button
+                  type="button"
+                  onClick={handleRenameClick}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  <Pencil size={15} />
+                  Rename list
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={handleDeleteClick}
-                    disabled={deleteListMutation.isPending}
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    style={{
-                      color: "var(--color-tag-red-text)",
-                    }}
-                  >
-                    <Trash2 size={15} />
-                    Delete list
-                  </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteClick}
+                  disabled={deleteListMutation.isPending}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{
+                    color: "var(--color-tag-red-text)",
+                  }}
+                >
+                  <Trash2 size={15} />
+                  Delete list
+                </button>
               </div>
             </div>
           </div>
