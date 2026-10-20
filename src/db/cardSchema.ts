@@ -145,6 +145,10 @@ export const cardAttachment = pgTable(
         onDelete: "cascade",
       }),
 
+    commitId: uuid("commit_id").references(() => commit.id, {
+      onDelete: "cascade",
+    }),
+
     // Original filename shown in the UI
     fileName: varchar("file_name", {
       length: 255,
@@ -176,33 +180,31 @@ export const cardAttachment = pgTable(
   },
   (table) => [index("card_attachment_card_id_idx").on(table.cardId)],
 );
+export const commit = pgTable(
+  "commit",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
 
-export const commit = pgTable("commit", {
-  id: uuid("id").defaultRandom().primaryKey(),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => card.id, {
+        onDelete: "cascade",
+      }),
 
-  // Card always belongs to one board
-  cardId: uuid("card_id")
-    .notNull()
-    .references(() => card.id, {
-      onDelete: "cascade",
-    }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
 
-  title: varchar("title", {
-    length: 255,
-  }).notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
 
-  description: text("description"),
-
-  // User who created/reported the card
-  createdBy: uuid("created_By")
-    .notNull()
-    .references(() => users.id, {
-      onDelete: "restrict",
-    }),
-
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-  })
-    .defaultNow()
-    .notNull(),
-});
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("commit_card_id_idx").on(table.cardId)],
+);

@@ -1,0 +1,1 @@
+ALTER TABLE "sprint" ADD COLUMN "carry_unresolved_tickets" boolean DEFAULT false NOT NULL;
