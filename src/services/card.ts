@@ -399,3 +399,33 @@ export async function updateCardDetail(
     }
   }
 }
+
+export async function deleteCardById(boardId: string, cardId: string) {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const boardDetails = await BoardRepo.getBoardById(boardId);
+
+  if (boardDetails.length === 0) {
+    throw new AppError("Board not found", 404);
+  }
+
+  // 4. Verify that the card belongs to this board.
+
+  const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
+
+  if (cardDetails.length === 0) {
+    throw new AppError("Card not found in this board", 404);
+  }
+  const deletedCard = await CardRepo.DeleteCard(boardId, cardId);
+  if (deletedCard.length === 0) {
+    throw new AppError("Card not found in this board", 404);
+  }
+
+  return {
+    message: "Card deleted successfully",
+    card: deletedCard[0],
+  };
+}
