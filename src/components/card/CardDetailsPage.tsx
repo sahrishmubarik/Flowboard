@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,8 @@ import {
   Sparkles,
   Target,
   ExternalLink,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
@@ -134,7 +137,11 @@ export default function CardDetailsPage({
   const baseUrl = `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}`;
 
   const boardUrl = `/dashboard/workspace/${workspaceId}/board/${boardId}`;
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const [isCardMenuOpen, setIsCardMenuOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const cardMenuRef = useRef<HTMLDivElement>(null);
   const [editingTime, setEditingTime] = useState<
     "estimateTime" | "spentTime" | null
   >(null);
@@ -288,6 +295,40 @@ export default function CardDetailsPage({
     updateMutation.mutate(payload);
   };
 
+  useEffect(() => {
+    if (!isCardMenuOpen) return;
+
+    const closeMenuOnOutsideClick = (event: MouseEvent) => {
+      if (!cardMenuRef.current?.contains(event.target as Node)) {
+        setIsCardMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenuOnOutsideClick);
+    return () =>
+      document.removeEventListener("mousedown", closeMenuOnOutsideClick);
+  }, [isCardMenuOpen]);
+
+  const deleteCardMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(baseUrl, { method: "DELETE" });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Failed to delete card.");
+      }
+
+      return result;
+    },
+    onSuccess: async () => {
+      setIsDeleteDialogOpen(false);
+      await queryClient.invalidateQueries({
+        queryKey: ["board-cards", workspaceId, boardId],
+      });
+      router.push(boardUrl);
+    },
+  });
+
   const card = data?.card;
 
   const attachments = attachmentData?.attachments ?? [];
@@ -332,138 +373,142 @@ export default function CardDetailsPage({
             </p>
           </div>
         ) : card ? (
-          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_285px] xl:gap-6">
-            {/* One uninterrupted content panel, like the YouTrack reference. */}
+          <>
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_285px] xl:gap-6">
+              {/* One uninterrupted content panel, like the YouTrack reference. */}
 
-            <article
-              className="min-w-0 overflow-hidden rounded-xl border"
-              style={surface}
-            >
-              <div className="p-5 sm:p-7 lg:p-8">
-                <div
-                  className="mb-4 flex flex-wrap items-center gap-2 text-xs"
-                  style={muted}
-                >
-                  <span
-                    className="inline-flex items-center gap-1.5 font-semibold"
-                    style={secondary}
+              <article
+                className="min-w-0 overflow-hidden rounded-xl border"
+                style={surface}
+              >
+                <div className="p-5 sm:p-7 lg:p-8">
+                  <div
+                    className="mb-4 flex flex-wrap items-center gap-2 text-xs"
+                    style={muted}
                   >
-                    <Target size={14} /> CARD-{card.cardNumber}
-                  </span>
-
-                  {card.completedAt && (
                     <span
-                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium"
-                      style={{
-                        backgroundColor: "var(--color-tag-green-bg)",
-
-                        color: "var(--color-tag-green-text)",
-                      }}
+                      className="inline-flex items-center gap-1.5 font-semibold"
+                      style={secondary}
                     >
-                      <CheckCircle2 size={13} /> Completed
+                      <Target size={14} /> CARD-{card.cardNumber}
                     </span>
-                  )}
-                </div>
 
-                <h1
-                  className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl"
-                  style={primary}
-                >
-                  {card.title}
-                </h1>
+                    {card.completedAt && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium"
+                        style={{
+                          backgroundColor: "var(--color-tag-green-bg)",
 
-                <section aria-labelledby="description-heading" className="mt-8">
-                  <h2
-                    id="description-heading"
-                    className="mb-3 flex items-center gap-2 text-sm font-semibold"
-                    style={primary}
-                  >
-                    <FileText size={16} style={secondary} /> Description
-                  </h2>
-
-                  {card.description?.trim() ? (
-                    <div className="min-w-0 break-words" style={primary}>
-                      <CardDescriptionViewer
-                        content={card.description}
-                        className="text-sm leading-7"
-                      />
-                    </div>
-                  ) : (
-                    <p
-                      className="rounded-lg border border-dashed px-4 py-6 text-sm"
-                      style={{ borderColor: "var(--color-border)", ...muted }}
-                    >
-                      No description has been added yet.
-                    </p>
-                  )}
-                </section>
-
-                <section
-                  aria-labelledby="attachments-heading"
-                  className="mt-8 border-t pt-6"
-                  style={{ borderColor: "var(--color-border)" }}
-                >
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <h2
-                      id="attachments-heading"
-                      className="flex items-center gap-2 text-sm font-semibold"
-                      style={primary}
-                    >
-                      <Paperclip size={16} style={secondary} /> Attachments
-                      {!attachmentsLoading && !attachmentsError && (
-                        <span className="text-xs font-normal" style={muted}>
-                          ({attachments.length})
-                        </span>
-                      )}
-                    </h2>
+                          color: "var(--color-tag-green-text)",
+                        }}
+                      >
+                        <CheckCircle2 size={13} /> Completed
+                      </span>
+                    )}
                   </div>
 
-                  {attachmentsLoading ? (
-                    <p className="text-sm" style={secondary}>
-                      Loading attachments...
-                    </p>
-                  ) : attachmentsError ? (
-                    <p
-                      className="text-sm"
-                      style={{ color: "var(--color-tag-red-text)" }}
+                  <h1
+                    className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl"
+                    style={primary}
+                  >
+                    {card.title}
+                  </h1>
+
+                  <section
+                    aria-labelledby="description-heading"
+                    className="mt-8"
+                  >
+                    <h2
+                      id="description-heading"
+                      className="mb-3 flex items-center gap-2 text-sm font-semibold"
+                      style={primary}
                     >
-                      Attachments could not be loaded. Please try again.
-                    </p>
-                  ) : attachments.length === 0 ? (
-                    <div
-                      className="rounded-lg border border-dashed p-5 text-sm"
-                      style={{ borderColor: "var(--color-border)", ...muted }}
-                    >
-                      No attachments yet.
+                      <FileText size={16} style={secondary} /> Description
+                    </h2>
+
+                    {card.description?.trim() ? (
+                      <div className="min-w-0 break-words" style={primary}>
+                        <CardDescriptionViewer
+                          content={card.description}
+                          className="text-sm leading-7"
+                        />
+                      </div>
+                    ) : (
+                      <p
+                        className="rounded-lg border border-dashed px-4 py-6 text-sm"
+                        style={{ borderColor: "var(--color-border)", ...muted }}
+                      >
+                        No description has been added yet.
+                      </p>
+                    )}
+                  </section>
+
+                  <section
+                    aria-labelledby="attachments-heading"
+                    className="mt-8 border-t pt-6"
+                    style={{ borderColor: "var(--color-border)" }}
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h2
+                        id="attachments-heading"
+                        className="flex items-center gap-2 text-sm font-semibold"
+                        style={primary}
+                      >
+                        <Paperclip size={16} style={secondary} /> Attachments
+                        {!attachmentsLoading && !attachmentsError && (
+                          <span className="text-xs font-normal" style={muted}>
+                            ({attachments.length})
+                          </span>
+                        )}
+                      </h2>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {attachments.map((attachment) => {
-                        const isImage =
-                          attachment.contentType?.startsWith("image/") ||
-                          /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i.test(
-                            attachment.fileName,
-                          );
 
-                        return (
-                          <a
-                            key={attachment.id}
-                            href={attachment.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`Open attachment ${attachment.fileName}`}
-                            className="group min-w-0 overflow-hidden rounded-lg border transition hover:shadow-sm"
-                            style={{
-                              borderColor: "var(--color-border)",
+                    {attachmentsLoading ? (
+                      <p className="text-sm" style={secondary}>
+                        Loading attachments...
+                      </p>
+                    ) : attachmentsError ? (
+                      <p
+                        className="text-sm"
+                        style={{ color: "var(--color-tag-red-text)" }}
+                      >
+                        Attachments could not be loaded. Please try again.
+                      </p>
+                    ) : attachments.length === 0 ? (
+                      <div
+                        className="rounded-lg border border-dashed p-5 text-sm"
+                        style={{ borderColor: "var(--color-border)", ...muted }}
+                      >
+                        No attachments yet.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {attachments.map((attachment) => {
+                          const isImage =
+                            attachment.contentType?.startsWith("image/") ||
+                            /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i.test(
+                              attachment.fileName,
+                            );
 
-                              backgroundColor: "var(--color-column-bg)",
-                            }}
-                          >
-                            <div
-                              className="flex h-32 items-center justify-center overflow-hidden border-b"
-                              style={{ borderColor: "var(--color-border)" }}
+                          return (
+                            <a
+                              key={attachment.id}
+                              href={attachment.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Open attachment ${attachment.fileName}`}
+                              className="group min-w-0 overflow-hidden rounded-lg border transition hover:shadow-sm"
+                              style={{
+                                borderColor: "var(--color-border)",
+
+                                backgroundColor: "var(--color-column-bg)",
+                              }}
                             >
-                              {/* {isImage ? (
+                              <div
+                                className="flex h-32 items-center justify-center overflow-hidden border-b"
+                                style={{ borderColor: "var(--color-border)" }}
+                              >
+                                {/* {isImage ? (
                                 // Remote attachment URLs already come from your existing API.
 
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -477,554 +522,524 @@ export default function CardDetailsPage({
                               ) : (
                                 <FileText size={30} style={secondary} />
                               )} */}
-                              {isImage ? (
-                                <Image
-                                  src={attachment.fileUrl}
-                                  alt={attachment.fileName}
-                                  width={200}
-                                  height={128}
-                                  unoptimized
-                                  className="h-full w-full object-contain"
-                                />
-                              ) : (
-                                <FileText size={30} style={secondary} />
-                              )}
-                            </div>
-
-                            <div className="flex min-w-0 items-center gap-2 p-3">
-                              {isImage ? (
-                                <ImageIcon
-                                  size={16}
-                                  className="shrink-0"
-                                  style={secondary}
-                                />
-                              ) : (
-                                <FileText
-                                  size={16}
-                                  className="shrink-0"
-                                  style={secondary}
-                                />
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <p
-                                  className="truncate text-sm font-medium"
-                                  title={attachment.fileName}
-                                  style={primary}
-                                >
-                                  {attachment.fileName}
-                                </p>
-
-                                <p className="mt-0.5 text-xs" style={muted}>
-                                  {formatFileSize(attachment.size)}
-                                </p>
+                                {isImage ? (
+                                  <Image
+                                    src={attachment.fileUrl}
+                                    alt={attachment.fileName}
+                                    width={200}
+                                    height={128}
+                                    unoptimized
+                                    className="h-full w-full object-contain"
+                                  />
+                                ) : (
+                                  <FileText size={30} style={secondary} />
+                                )}
                               </div>
 
-                              <ExternalLink
-                                size={14}
-                                className="shrink-0 opacity-60 group-hover:opacity-100"
-                                style={secondary}
-                              />
-                            </div>
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
+                              <div className="flex min-w-0 items-center gap-2 p-3">
+                                {isImage ? (
+                                  <ImageIcon
+                                    size={16}
+                                    className="shrink-0"
+                                    style={secondary}
+                                  />
+                                ) : (
+                                  <FileText
+                                    size={16}
+                                    className="shrink-0"
+                                    style={secondary}
+                                  />
+                                )}
 
-                {/* commit section  */}
-                <CardCommits
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  cardId={cardId}
-                />
-              </div>
-            </article>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="truncate text-sm font-medium"
+                                    title={attachment.fileName}
+                                    style={primary}
+                                  >
+                                    {attachment.fileName}
+                                  </p>
 
-            {/* Inline editing: only the clicked property becomes a control. */}
-            <aside
-              className="min-w-0 rounded-xl border p-5 lg:sticky lg:top-4"
-              style={surface}
-              aria-label="Card properties"
-            >
-              <h2 className="mb-3 text-sm font-semibold" style={primary}>
-                Details
-              </h2>
-              {saveError && (
-                <p
-                  role="alert"
-                  className="mb-3 text-xs"
-                  style={{ color: "var(--color-tag-red-text)" }}
-                >
-                  {saveError}
-                </p>
-              )}
-              {saveSuccess && (
-                <p
-                  role="status"
-                  className="mb-3 text-xs"
-                  style={{ color: "var(--color-tag-green-text)" }}
-                >
-                  {saveSuccess}
-                </p>
-              )}
-              <dl className="space-y-3">
-                <Property label="Type" icon={<TaskTypeIcon type={card.type} />}>
-                  {editingField === "type" ? (
-                    <select
-                      autoFocus
-                      aria-label="Change type"
-                      disabled={updateMutation.isPending}
-                      value={card.type}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(e) =>
-                        update({
-                          action: "taskType",
-                          type: e.target.value as TaskType,
-                        })
-                      }
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      style={inputStyle}
+                                  <p className="mt-0.5 text-xs" style={muted}>
+                                    {formatFileSize(attachment.size)}
+                                  </p>
+                                </div>
+
+                                <ExternalLink
+                                  size={14}
+                                  className="shrink-0 opacity-60 group-hover:opacity-100"
+                                  style={secondary}
+                                />
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* commit section  */}
+                  <CardCommits
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    cardId={cardId}
+                  />
+                </div>
+              </article>
+
+              {/* Inline editing: only the clicked property becomes a control. */}
+              <aside
+                className="min-w-0 rounded-xl border p-5 lg:sticky lg:top-4"
+                style={surface}
+                aria-label="Card properties"
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-semibold" style={primary}>
+                    Details
+                  </h2>
+                  <div className="relative" ref={cardMenuRef}>
+                    <button
+                      type="button"
+                      aria-label="Card options"
+                      aria-haspopup="menu"
+                      aria-expanded={isCardMenuOpen}
+                      onClick={() => setIsCardMenuOpen((open) => !open)}
+                      className="rounded-md p-1.5 transition hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-1 dark:hover:bg-white/5"
+                      style={secondary}
                     >
-                      {(["task", "bug", "feature", "tbd"] as TaskType[]).map(
-                        (type) => (
-                          <option
-                            key={type}
-                            value={type}
-                            style={{
-                              backgroundColor: "var(--color-card-bg)",
-                              color: "var(--color-text-primary)",
-                            }}
-                          >
-                            {formatLabel(type)}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  ) : (
-                    <InlineValue
-                      onClick={() => setEditingField("type")}
-                      disabled={updateMutation.isPending}
-                    >
-                      {formatLabel(card.type)}
-                    </InlineValue>
-                  )}
-                </Property>
-                <Property label="Priority" icon={<CircleDot size={15} />}>
-                  {editingField === "priority" ? (
-                    <select
-                      autoFocus
-                      aria-label="Change priority"
-                      disabled={updateMutation.isPending}
-                      value={card.priority}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(e) =>
-                        update({
-                          action: "priority",
-                          priority: e.target.value as CardPriority,
-                        })
-                      }
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      style={inputStyle}
-                    >
-                      {(
-                        [
-                          "normal",
-                          "show stopper",
-                          "critical",
-                          "major",
-                          "minor",
-                        ] as CardPriority[]
-                      ).map((value) => (
-                        <option
-                          key={value}
-                          value={value}
-                          style={{
-                            backgroundColor: "var(--color-card-bg)",
-                            color: "var(--color-text-primary)",
-                          }}
-                        >
-                          {formatLabel(value)}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <InlineValue
-                      onClick={() => setEditingField("priority")}
-                      disabled={updateMutation.isPending}
-                    >
-                      {formatLabel(card.priority)}
-                    </InlineValue>
-                  )}
-                </Property>
-                <Property label="Assignee" icon={<Target size={15} />}>
-                  {editingField === "assignee" ? (
-                    <select
-                      autoFocus
-                      aria-label="Change assignee"
-                      disabled={
-                        !assigneeEditorEnabled || updateMutation.isPending
-                      }
-                      value={card.assignedTo ?? ""}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(e) =>
-                        update({
-                          action: "assignedTo",
-                          assignedTo: e.target.value || null,
-                        })
-                      }
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      style={inputStyle}
-                    >
-                      <option
-                        value=""
+                      <MoreHorizontal size={18} />
+                    </button>
+                    {isCardMenuOpen && (
+                      <div
+                        role="menu"
+                        aria-label="Card options"
+                        className="absolute right-0 top-full z-20 mt-1 min-w-40 rounded-lg border p-1 shadow-lg"
                         style={{
                           backgroundColor: "var(--color-card-bg)",
-                          color: "var(--color-text-primary)",
+                          borderColor: "var(--color-border)",
                         }}
                       >
-                        Unassigned
-                      </option>
-                      {card.assignedTo &&
-                        !members.some((m) => m.userId === card.assignedTo) && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsCardMenuOpen(false);
+                            deleteCardMutation.reset();
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+                          style={{ color: "var(--color-tag-red-text)" }}
+                        >
+                          <Trash2 size={15} />
+                          Delete Card
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {saveError && (
+                  <p
+                    role="alert"
+                    className="mb-3 text-xs"
+                    style={{ color: "var(--color-tag-red-text)" }}
+                  >
+                    {saveError}
+                  </p>
+                )}
+                {saveSuccess && (
+                  <p
+                    role="status"
+                    className="mb-3 text-xs"
+                    style={{ color: "var(--color-tag-green-text)" }}
+                  >
+                    {saveSuccess}
+                  </p>
+                )}
+                <dl className="space-y-3">
+                  <Property
+                    label="Type"
+                    icon={<TaskTypeIcon type={card.type} />}
+                  >
+                    {editingField === "type" ? (
+                      <select
+                        autoFocus
+                        aria-label="Change type"
+                        disabled={updateMutation.isPending}
+                        value={card.type}
+                        onBlur={() => setEditingField(null)}
+                        onChange={(e) =>
+                          update({
+                            action: "taskType",
+                            type: e.target.value as TaskType,
+                          })
+                        }
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        style={inputStyle}
+                      >
+                        {(["task", "bug", "feature", "tbd"] as TaskType[]).map(
+                          (type) => (
+                            <option
+                              key={type}
+                              value={type}
+                              style={{
+                                backgroundColor: "var(--color-card-bg)",
+                                color: "var(--color-text-primary)",
+                              }}
+                            >
+                              {formatLabel(type)}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    ) : (
+                      <InlineValue
+                        onClick={() => setEditingField("type")}
+                        disabled={updateMutation.isPending}
+                      >
+                        {formatLabel(card.type)}
+                      </InlineValue>
+                    )}
+                  </Property>
+                  <Property label="Priority" icon={<CircleDot size={15} />}>
+                    {editingField === "priority" ? (
+                      <select
+                        autoFocus
+                        aria-label="Change priority"
+                        disabled={updateMutation.isPending}
+                        value={card.priority}
+                        onBlur={() => setEditingField(null)}
+                        onChange={(e) =>
+                          update({
+                            action: "priority",
+                            priority: e.target.value as CardPriority,
+                          })
+                        }
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        style={inputStyle}
+                      >
+                        {(
+                          [
+                            "normal",
+                            "show stopper",
+                            "critical",
+                            "major",
+                            "minor",
+                          ] as CardPriority[]
+                        ).map((value) => (
                           <option
-                            value={card.assignedTo}
+                            key={value}
+                            value={value}
                             style={{
                               backgroundColor: "var(--color-card-bg)",
                               color: "var(--color-text-primary)",
                             }}
                           >
-                            {card.assigneeName ?? card.assignedTo}
+                            {formatLabel(value)}
                           </option>
-                        )}
-                      {members.map((member) => (
-                        <option
-                          key={member.userId}
-                          value={member.userId}
-                          style={{
-                            backgroundColor: "var(--color-card-bg)",
-                            color: "var(--color-text-primary)",
-                          }}
-                        >
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <InlineValue
-                      onClick={() => setEditingField("assignee")}
-                      disabled={
-                        !assigneeEditorEnabled || updateMutation.isPending
-                      }
-                    >
-                      {members.find(
-                        (member) => member.userId === card.assignedTo,
-                      )?.name ??
-                        card.assigneeName ??
-                        card.assignedToName ??
-                        card.assignee ??
-                        card.assignedTo ??
-                        "Unassigned"}
-                    </InlineValue>
-                  )}
-                </Property>
-                {/* <Property label="Sprint" icon={<Layers3 size={15} />}>
-                  {editingField === "sprint" ? (
-                    // <select
-                    //   autoFocus
-                    //   aria-label="Change sprint"
-                    //   disabled={updateMutation.isPending}
-                    //   value={card.sprintId ?? ""}
-                    //   onBlur={() => setEditingField(null)}
-                    //   onChange={(e) =>
-                    //     update({
-                    //       action: "sprint",
-                    //       sprintId: e.target.value || null,
-                    //     })
-                    //   }
-                    //   className="w-full rounded-md border px-2 py-1.5 text-sm"
-                    //   style={inputStyle}
-                    // >
-                    //   <option
-                    //     value=""
-                    //     style={{
-                    //       backgroundColor: "var(--color-card-bg)",
-                    //       color: "var(--color-text-primary)",
-                    //     }}
-                    //   >
-                    //     No sprint
-                    //   </option>
-                    //   {card.sprintId &&
-                    //     !sprints.some((s) => s.id === card.sprintId) && (
-                    //       <option value={card.sprintId}>
-                    //         {card.sprintName ?? "Current sprint"}
-                    //       </option>
-                    //     )}
-                    //   {sprints.map((sprint) => (
-                    //     <option
-                    //       key={sprint.id}
-                    //       value={sprint.id}
-                    //       style={{
-                    //         backgroundColor: "var(--color-card-bg)",
-                    //         color: "var(--color-text-primary)",
-                    //       }}
-                    //     >
-                    //       {sprint.name}
-                    //     </option>
-                    //   ))}
-                    // </select>
-
-{card.sprintId && !Array.isArray(card.sprintId)
-  ? null
-  : null}
-<select
-  autoFocus
-  aria-label="Change sprint"
-  multiple
-  disabled={updateMutation.isPending}
-  value={card.sprintId ?? []}
-  onBlur={() => setEditingField(null)}
-  onChange={(e) => {
-    const sprintIds = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value,
-    ).filter(Boolean);
-
-    update({
-      action: "sprint",
-      sprintId: sprintIds,
-    });
-  }}
-  className="w-full rounded-md border px-2 py-1.5 text-sm"
-  style={inputStyle}
->
-  {sprints.map((sprint) => (
-    <option
-      key={sprint.id}
-      value={sprint.id}
-      style={{
-        backgroundColor: "var(--color-card-bg)",
-        color: "var(--color-text-primary)",
-      }}
-    >
-      {sprint.name}
-    </option>
-  ))}
-</select>
-
-                  ) : (
-                    <InlineValue
-                      onClick={() => setEditingField("sprint")}
-                      disabled={updateMutation.isPending}
-                    >
-                      {sprints.find((sprint) => sprint.id === card.sprintId)
-                        ?.name ??
-                        card.sprintName ??
-                        "No sprint"}
-                    </InlineValue>
-                  )}
-                </Property> */}
-
-                {/* {(["estimateTime", "spentTime"] as const).map((field) => (
-                  <Property
-                    key={field}
-                    label={field === "estimateTime" ? "Estimate" : "Time spent"}
-                    icon={<Clock3 size={15} />}
-                  >
-                    {editingTime === field ? (
-                      <input
-                        autoFocus
-                        aria-label={
-                          field === "estimateTime"
-                            ? "Estimated time"
-                            : "Spent time"
-                        }
-                        className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
-                        style={inputStyle}
-                        value={timeDraft}
-                        onChange={(e) => setTimeDraft(e.target.value)}
-                        placeholder="e.g. 120"
+                        ))}
+                      </select>
+                    ) : (
+                      <InlineValue
+                        onClick={() => setEditingField("priority")}
                         disabled={updateMutation.isPending}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") {
-                            cancelTimeBlurRef.current = true;
-                            setEditingTime(null);
-                          }
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            e.currentTarget.blur(); // onBlur saves once
-                          }
-                        }}
-                        onBlur={() => {
-                          if (cancelTimeBlurRef.current) {
-                            cancelTimeBlurRef.current = false;
-                            return;
-                          }
-                          if (updateMutation.isPending) return;
-                          const value = timeDraft.trim();
-                          if (value && !/^\d+(?:\.\d+)?$/.test(value)) {
-                            setSaveError("Enter a valid non-negative number.");
-                            return;
-                          }
-                          if (value === String(card[field] ?? "").trim()) {
-                            setEditingTime(null);
-                            return;
-                          }
+                      >
+                        {formatLabel(card.priority)}
+                      </InlineValue>
+                    )}
+                  </Property>
+                  <Property label="Assignee" icon={<Target size={15} />}>
+                    {editingField === "assignee" ? (
+                      <select
+                        autoFocus
+                        aria-label="Change assignee"
+                        disabled={
+                          !assigneeEditorEnabled || updateMutation.isPending
+                        }
+                        value={card.assignedTo ?? ""}
+                        onBlur={() => setEditingField(null)}
+                        onChange={(e) =>
                           update({
-                            action: field,
-                            [field]: value || null,
-                          } as EditableAction);
-                        }}
-                      />
-                    ) : (
-                      <InlineValue
-                        disabled={updateMutation.isPending}
-                        onClick={() => {
-                          setEditingField(null);
-                          cancelTimeBlurRef.current = false;
-                          setEditingTime(field);
-                          setTimeDraft(String(card[field] ?? ""));
-                        }}
-                      >
-                        {card[field] ?? "Not set"}
-                      </InlineValue>
-                    )}
-                  </Property>
-                ))} */}
-                {(["estimateTime", "spentTime"] as const).map((field) => (
-                  <Property
-                    key={field}
-                    label={field === "estimateTime" ? "Estimate" : "Time spent"}
-                    icon={<Clock3 size={15} />}
-                  >
-                    {editingTime === field ? (
-                      <input
-                        autoFocus
-                        type="number"
-                        min="0"
-                        step="any"
-                        aria-label={
-                          field === "estimateTime"
-                            ? "Estimated time"
-                            : "Spent time"
+                            action: "assignedTo",
+                            assignedTo: e.target.value || null,
+                          })
                         }
-                        className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
                         style={inputStyle}
-                        value={timeDraft}
-                        onChange={(e) => setTimeDraft(e.target.value)}
-                        placeholder="e.g. 120"
-                        disabled={updateMutation.isPending}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") {
-                            cancelTimeBlurRef.current = true;
-                            setEditingTime(null);
-                          }
-
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        onBlur={(e) => {
-                          if (cancelTimeBlurRef.current) {
-                            cancelTimeBlurRef.current = false;
-                            return;
-                          }
-
-                          if (updateMutation.isPending) return;
-
-                          // Automatically save as a number.
-                          handleSaveTime(field, e.currentTarget.value);
-                        }}
-                      />
-                    ) : (
-                      <InlineValue
-                        disabled={updateMutation.isPending}
-                        onClick={() => {
-                          setEditingField(null);
-                          cancelTimeBlurRef.current = false;
-                          setEditingTime(field);
-                          setTimeDraft(String(card[field] ?? ""));
-                        }}
                       >
-                        {card[field] !== null &&
-                        card[field] !== undefined &&
-                        card[field] !== ""
-                          ? `${card[field]} ${Number(card[field]) === 1 ? "hour" : "hours"}`
-                          : "Not set"}
-                      </InlineValue>
-                    )}
-                  </Property>
-                ))}
-                <Property label="Start date" icon={<CalendarDays size={15} />}>
-                  {card.startDate ? formatCardDate(card.startDate) : "—"}
-                </Property>
-                <Property label="Due date" icon={<Clock3 size={15} />}>
-                  {card.dueDate ? formatCardDate(card.dueDate) : "—"}
-                </Property>
-                {card.completedAt && (
-                  <Property label="Completed" icon={<CheckCircle2 size={15} />}>
-                    {formatCardDate(card.completedAt)}
-                  </Property>
-                )}
-                <Property label="Sprint" icon={<Layers3 size={15} />}>
-                  {editingField === "sprint" ? (
-                    <select
-                      autoFocus
-                      aria-label="Change sprint"
-                      multiple
-                      disabled={updateMutation.isPending}
-                      value={card.sprintId ?? []}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(e) => {
-                        const sprintIds = Array.from(
-                          e.target.selectedOptions,
-                          (option) => option.value,
-                        );
-
-                        update({
-                          action: "sprint",
-                          sprintId: sprintIds,
-                        });
-                      }}
-                      className="w-full rounded-md border px-2 py-1.5 text-sm"
-                      style={inputStyle}
-                    >
-                      {sprints.map((sprint) => (
                         <option
-                          key={sprint.id}
-                          value={sprint.id}
+                          value=""
                           style={{
                             backgroundColor: "var(--color-card-bg)",
                             color: "var(--color-text-primary)",
                           }}
                         >
-                          {sprint.name}
+                          Unassigned
                         </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <InlineValue
-                      onClick={() => setEditingField("sprint")}
-                      disabled={updateMutation.isPending}
+                        {card.assignedTo &&
+                          !members.some(
+                            (m) => m.userId === card.assignedTo,
+                          ) && (
+                            <option
+                              value={card.assignedTo}
+                              style={{
+                                backgroundColor: "var(--color-card-bg)",
+                                color: "var(--color-text-primary)",
+                              }}
+                            >
+                              {card.assigneeName ?? card.assignedTo}
+                            </option>
+                          )}
+                        {members.map((member) => (
+                          <option
+                            key={member.userId}
+                            value={member.userId}
+                            style={{
+                              backgroundColor: "var(--color-card-bg)",
+                              color: "var(--color-text-primary)",
+                            }}
+                          >
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <InlineValue
+                        onClick={() => setEditingField("assignee")}
+                        disabled={
+                          !assigneeEditorEnabled || updateMutation.isPending
+                        }
+                      >
+                        {members.find(
+                          (member) => member.userId === card.assignedTo,
+                        )?.name ??
+                          card.assigneeName ??
+                          card.assignedToName ??
+                          card.assignee ??
+                          card.assignedTo ??
+                          "Unassigned"}
+                      </InlineValue>
+                    )}
+                  </Property>
+
+                  {(["estimateTime", "spentTime"] as const).map((field) => (
+                    <Property
+                      key={field}
+                      label={
+                        field === "estimateTime" ? "Estimate" : "Time spent"
+                      }
+                      icon={<Clock3 size={15} />}
                     >
-                      {(card.sprintId ?? [])
-                        .map(
-                          (sprintId) =>
-                            sprints.find((sprint) => sprint.id === sprintId)
-                              ?.name,
-                        )
-                        .filter((name): name is string => Boolean(name))
-                        .join(", ") ||
-                        card.sprintName ||
-                        "No sprint"}
-                    </InlineValue>
+                      {editingTime === field ? (
+                        <input
+                          autoFocus
+                          type="number"
+                          min="0"
+                          step="any"
+                          aria-label={
+                            field === "estimateTime"
+                              ? "Estimated time"
+                              : "Spent time"
+                          }
+                          className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
+                          style={inputStyle}
+                          value={timeDraft}
+                          onChange={(e) => setTimeDraft(e.target.value)}
+                          placeholder="e.g. 120"
+                          disabled={updateMutation.isPending}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              cancelTimeBlurRef.current = true;
+                              setEditingTime(null);
+                            }
+
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (cancelTimeBlurRef.current) {
+                              cancelTimeBlurRef.current = false;
+                              return;
+                            }
+
+                            if (updateMutation.isPending) return;
+
+                            // Automatically save as a number.
+                            handleSaveTime(field, e.currentTarget.value);
+                          }}
+                        />
+                      ) : (
+                        <InlineValue
+                          disabled={updateMutation.isPending}
+                          onClick={() => {
+                            setEditingField(null);
+                            cancelTimeBlurRef.current = false;
+                            setEditingTime(field);
+                            setTimeDraft(String(card[field] ?? ""));
+                          }}
+                        >
+                          {card[field] !== null &&
+                          card[field] !== undefined &&
+                          card[field] !== ""
+                            ? `${card[field]} ${Number(card[field]) === 1 ? "hour" : "hours"}`
+                            : "Not set"}
+                        </InlineValue>
+                      )}
+                    </Property>
+                  ))}
+                  <Property
+                    label="Start date"
+                    icon={<CalendarDays size={15} />}
+                  >
+                    {card.startDate ? formatCardDate(card.startDate) : "—"}
+                  </Property>
+                  <Property label="Due date" icon={<Clock3 size={15} />}>
+                    {card.dueDate ? formatCardDate(card.dueDate) : "—"}
+                  </Property>
+                  {card.completedAt && (
+                    <Property
+                      label="Completed"
+                      icon={<CheckCircle2 size={15} />}
+                    >
+                      {formatCardDate(card.completedAt)}
+                    </Property>
                   )}
-                </Property>
-              </dl>
-            </aside>
-          </div>
+                  <Property label="Sprint" icon={<Layers3 size={15} />}>
+                    {editingField === "sprint" ? (
+                      <select
+                        autoFocus
+                        aria-label="Change sprint"
+                        multiple
+                        disabled={updateMutation.isPending}
+                        value={card.sprintId ?? []}
+                        onBlur={() => setEditingField(null)}
+                        onChange={(e) => {
+                          const sprintIds = Array.from(
+                            e.target.selectedOptions,
+                            (option) => option.value,
+                          );
+
+                          update({
+                            action: "sprint",
+                            sprintId: sprintIds,
+                          });
+                        }}
+                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        style={inputStyle}
+                      >
+                        {sprints.map((sprint) => (
+                          <option
+                            key={sprint.id}
+                            value={sprint.id}
+                            style={{
+                              backgroundColor: "var(--color-card-bg)",
+                              color: "var(--color-text-primary)",
+                            }}
+                          >
+                            {sprint.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <InlineValue
+                        onClick={() => setEditingField("sprint")}
+                        disabled={updateMutation.isPending}
+                      >
+                        {(card.sprintId ?? [])
+                          .map(
+                            (sprintId) =>
+                              sprints.find((sprint) => sprint.id === sprintId)
+                                ?.name,
+                          )
+                          .filter((name): name is string => Boolean(name))
+                          .join(", ") ||
+                          card.sprintName ||
+                          "No sprint"}
+                      </InlineValue>
+                    )}
+                  </Property>
+                </dl>
+              </aside>
+            </div>
+            {isDeleteDialogOpen && (
+              <div
+                className="fixed inset-0 z-100 flex items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-card-title"
+              >
+                <button
+                  type="button"
+                  aria-label="Close delete confirmation"
+                  disabled={deleteCardMutation.isPending}
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  className="absolute inset-0 cursor-default bg-black/40 disabled:cursor-not-allowed"
+                />
+                <div
+                  className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+                  style={{
+                    backgroundColor: "var(--color-card-bg)",
+                    borderColor: "var(--color-border)",
+                  }}
+                >
+                  <div className="pr-8">
+                    <h2
+                      id="delete-card-title"
+                      className="text-lg font-semibold"
+                      style={primary}
+                    >
+                      Delete card?
+                    </h2>
+                    <p className="mt-2 text-sm leading-6" style={secondary}>
+                      Are you sure you want to delete this card
+                      <span className="font-semibold" style={primary}>
+                        {" "}
+                        &quot;{card.title}&quot;
+                      </span>
+                      ? This action cannot be undone.
+                    </p>
+                  </div>
+                  {deleteCardMutation.isError && (
+                    <p
+                      role="alert"
+                      className="mt-3 text-sm"
+                      style={{ color: "var(--color-tag-red-text)" }}
+                    >
+                      {deleteCardMutation.error instanceof Error
+                        ? deleteCardMutation.error.message
+                        : "Unable to delete this card."}
+                    </p>
+                  )}
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsDeleteDialogOpen(false)}
+                      disabled={deleteCardMutation.isPending}
+                      className="rounded-xl border px-4 py-2.5 text-sm font-medium transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-text-primary)",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteCardMutation.mutate()}
+                      disabled={deleteCardMutation.isPending}
+                      className="rounded-xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ backgroundColor: "var(--color-tag-red-text)" }}
+                    >
+                      {deleteCardMutation.isPending
+                        ? "Deleting..."
+                        : "Delete Card"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : null}
       </div>
     </main>
