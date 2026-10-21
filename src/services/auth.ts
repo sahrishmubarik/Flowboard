@@ -7,7 +7,7 @@ import {
   resetPasswordTokens,
 } from "@/db/authSchema";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import bcrypt from "bcryptjs";
 
@@ -215,6 +215,7 @@ export async function loginUser(body: LoginBody) {
     {
       userId: user.id,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     },
     process.env.JWT_SECRET!,
     {
@@ -396,15 +397,45 @@ export async function changePassword(body: changePasswordBody) {
   );
 }
 
+// export async function logoutSession() {
+
+//   const cookieStore = await cookies();
+
+//   cookieStore.delete("token");
+
+//   return Response.json({
+//     message: "Logged out successfully",
+//   });
+// }
+
 export async function logoutSession() {
+  const user = await getCurrentUser();
+
   const cookieStore = await cookies();
 
+  // Clear the browser cookie regardless of session validity.
   cookieStore.delete("token");
+
+  if (!user) {
+    return Response.json(
+      { message: "Unauthorized or already logged out" },
+      { status: 401 },
+    );
+  }
+
+  // Invalidate all JWTs issued with the previous tokenVersion.
+  await db
+    .update(users)
+    .set({
+      tokenVersion: sql`${users.tokenVersion} + 1`,
+    })
+    .where(eq(users.id, user.userId));
 
   return Response.json({
     message: "Logged out successfully",
   });
 }
+
 export async function getCurrentUserDetails() {
   const currentUser = await getCurrentUser();
 
