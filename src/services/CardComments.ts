@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/middleware/auth";
+import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { AppError } from "@/lib/errors/AppError";
 import { BoardRepo } from "@/repositories/boardRepo";
 
@@ -16,6 +17,13 @@ export async function createCardComment(
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
 
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -54,6 +62,13 @@ export async function getCardComments(boardId: string, cardId: string) {
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
   /* check board exist first */
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -84,6 +99,14 @@ export async function getCardCommentByCommitId(
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
   /* check board exist first */
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -121,6 +144,13 @@ export async function updateCardCommentByCommitId(
     throw new AppError("Unauthorized", 401);
   }
 
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (!boardDetails) {
@@ -135,6 +165,20 @@ export async function updateCardCommentByCommitId(
 
   if (!description?.trim()) {
     throw new AppError("Commit description is required", 400);
+  }
+
+  // Only the comment's author can edit it.
+  const [existingCommit] = await CommitRepo.getCardCommitDetail(
+    cardId,
+    commitId,
+  );
+
+  if (!existingCommit) {
+    throw new AppError("Comment not found", 404);
+  }
+
+  if (existingCommit.createdBy !== user.userId) {
+    throw new AppError("You can only edit your own comments.", 403);
   }
 
   const updatedCommit = await CommitRepo.updateCommitById(
@@ -159,6 +203,13 @@ export async function deleteCardCommentByCommitId(
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  const membership = await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
   /* check board exist first */
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -170,6 +221,24 @@ export async function deleteCardCommentByCommitId(
   if (cardDetails.length === 0) {
     throw new AppError("Card not found", 404);
   }
+
+  // Only the comment's author or a board owner/admin can delete it.
+  const [existingCommit] = await CommitRepo.getCardCommitDetail(
+    cardId,
+    commitId,
+  );
+
+  if (!existingCommit) {
+    throw new AppError("Comment not found", 404);
+  }
+
+  const isAuthor = existingCommit.createdBy === user.userId;
+  const isBoardAdmin = ["owner", "admin"].includes(membership.role);
+
+  if (!isAuthor && !isBoardAdmin) {
+    throw new AppError("You can only delete your own comments.", 403);
+  }
+
   // const deleteCardCommit = await CommitRepo.deleteCommitById(cardId, commitId);
   const deleteCardCommit = await CommitRepo.deleteCommitById(
     boardId,

@@ -336,6 +336,7 @@
 import { put, del } from "@vercel/blob";
 
 import { getCurrentUser } from "@/lib/middleware/auth";
+import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { AppError } from "@/lib/errors/AppError";
 import { CommitRepo } from "@/repositories/cardCommitRepo";
 import { BoardRepo } from "@/repositories/boardRepo";
@@ -381,6 +382,13 @@ async function validateCard(
   if (!user) {
     throw new AppError("Unauthorized user.", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
 
   const board = await BoardRepo.getBoardById(boardId);
   const boardData = Array.isArray(board) ? board[0] : board;
@@ -479,7 +487,7 @@ export async function removeCardAttachment(
   cardId: string,
   attachmentId: string,
 ) {
-  await validateCard(workspaceId, boardId, cardId);
+  const user = await validateCard(workspaceId, boardId, cardId);
 
   const attachment = await CardAttachmentRepo.getAttachmentById(
     cardId,
@@ -488,6 +496,21 @@ export async function removeCardAttachment(
 
   if (!attachment) {
     throw new AppError("Attachment not found.", 404);
+  }
+
+  // Only the uploader or a board owner/admin can delete an attachment.
+  const membership = await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
+  const isUploader = attachment.uploadedBy === user.userId;
+  const isBoardAdmin = ["owner", "admin"].includes(membership.role);
+
+  if (!isUploader && !isBoardAdmin) {
+    throw new AppError("You can only delete your own attachments.", 403);
   }
 
   await del(attachment.blobPathname);

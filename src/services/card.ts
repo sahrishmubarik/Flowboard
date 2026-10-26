@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/middleware/auth";
+import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { AppError } from "@/lib/errors/AppError";
 
 import { BoardRepo } from "@/repositories/boardRepo";
@@ -82,6 +83,14 @@ export async function createCard(
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
   const user_id = user.userId;
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -159,6 +168,13 @@ export async function getBoardCard(boardId: string, sprintId: string) {
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
   /* check board exist first */
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
@@ -193,6 +209,13 @@ export async function getBoardCardDetail(boardId: string, cardId: string) {
     throw new AppError("Unauthorized", 401);
   }
 
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
   const boardDetails = await BoardRepo.getBoardById(boardId);
   if (boardDetails.length === 0) {
     throw new Error("Board not found");
@@ -224,6 +247,13 @@ export async function moveBoardCard(
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
 
   // 1. Check that the board exists.
   const boardDetails = await BoardRepo.getBoardById(boardId);
@@ -296,6 +326,14 @@ export async function updateCardDetail(
   if (userId && userId !== user.userId) {
     throw new AppError("Unauthorized user", 401);
   }
+
+  // Only board members can update cards.
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
 
   // 3. Verify board.
   const boardDetails = await BoardRepo.getBoardById(boardId);
@@ -620,6 +658,8 @@ export async function deleteCardById(boardId: string, cardId: string) {
   if (!user) {
     throw new AppError("Unauthorized", 401);
   }
+
+  await requireBoardRole(user.userId, boardId, ["owner", "admin", "manager"]);
 
   const boardDetails = await BoardRepo.getBoardById(boardId);
 

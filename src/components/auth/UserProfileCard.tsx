@@ -38,6 +38,7 @@ export default function UserProfileCard({
   user,
   onLogout,
 }: UserProfileCardProps) {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -56,6 +57,7 @@ export default function UserProfileCard({
     resolver: zodResolver(changePasswordSchema),
     mode: "onBlur",
     defaultValues: {
+      currentPassword: "",
       password: "",
       confirmPassword: "",
     },
@@ -79,6 +81,7 @@ export default function UserProfileCard({
         },
         body: JSON.stringify({
           action: "change-password",
+          currentPassword: formData.currentPassword,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
         }),
@@ -148,7 +151,7 @@ export default function UserProfileCard({
 
                 <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
                   {changePasswordOpen
-                    ? "Update your password securely."
+                    ? "Enter your current password, then choose a new one."
                     : "Manage your Flowboard account."}
                 </p>
               </div>
@@ -287,6 +290,55 @@ export default function UserProfileCard({
               noValidate
               className="space-y-5 p-6"
             >
+              {/* Current password */}
+              <div>
+                <label
+                  htmlFor="change-current-password"
+                  className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
+                >
+                  Current password
+                </label>
+
+                <div className="relative">
+                  <input
+                    id="change-current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    {...register("currentPassword")}
+                    placeholder="Enter your current password"
+                    autoComplete="current-password"
+                    className={`w-full rounded-xl border bg-[var(--color-app-bg)] px-4 py-3 pr-11 text-sm text-[var(--color-text-primary)] outline-none transition-all placeholder:text-[var(--color-text-muted)] focus:bg-[var(--color-card-bg)] focus:ring-4 ${
+                      errors.currentPassword
+                        ? "border-[var(--color-priority-high)] focus:border-[var(--color-priority-high)] focus:ring-[var(--color-tag-red-bg)]"
+                        : "border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-[var(--color-primary-active-bg)]"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowCurrentPassword((previous) => !previous)
+                    }
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
+                    aria-label={
+                      showCurrentPassword
+                        ? "Hide current password"
+                        : "Show current password"
+                    }
+                  >
+                    <FontAwesomeIcon
+                      icon={showCurrentPassword ? faEyeSlash : faEye}
+                      className="h-4 w-4"
+                    />
+                  </button>
+                </div>
+
+                {errors.currentPassword && (
+                  <p className="mt-1.5 text-xs font-medium text-[var(--color-priority-high)]">
+                    {errors.currentPassword.message}
+                  </p>
+                )}
+              </div>
+
               {/* New password */}
               <div>
                 <label

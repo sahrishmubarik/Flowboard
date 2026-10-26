@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
+import { boardMemberRepo } from "@/repositories/boardMemberRepo";
 import {
   validateData,
   workspaceMemberRoleValidation,
@@ -258,6 +259,12 @@ export async function deactivateUserFromOrganization(
       throw new AppError("Active workspace member not found.", 404);
     }
 
+    const deactivatedBoards = await boardMemberRepo.deactivateAllInWorkspace(
+      userId,
+      workspaceId,
+      tx,
+    );
+
     await AuditLogService.record(
       {
         performedBy: user.userId,
@@ -269,6 +276,7 @@ export async function deactivateUserFromOrganization(
           targetUserId: member.userId,
           previousStatus: "ACTIVE",
           newStatus: member.status,
+          deactivatedBoardIds: deactivatedBoards.map((b) => b.boardId),
         },
       },
       tx,

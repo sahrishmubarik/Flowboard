@@ -377,7 +377,24 @@ export async function changePassword(body: changePasswordBody) {
     throw new AppError(validation.error, 400);
   }
 
-  const { password } = validation.data;
+  const { currentPassword, password } = validation.data;
+
+  // Verify the current password before allowing a change.
+  const account = await userRepo.findById(user.userId);
+
+  if (!account?.password) {
+    throw new AppError("Unable to change password for this account.", 400);
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(
+    currentPassword,
+    account.password,
+  );
+
+  if (!isCurrentPasswordValid) {
+    throw new AppError("Current password is incorrect.", 400);
+  }
+
   const hashedPassword = await passwordHashed(password);
   const user_id = user.userId;
 

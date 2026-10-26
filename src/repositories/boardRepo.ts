@@ -54,6 +54,7 @@ export const BoardRepo = {
         and(
           eq(board.organizationId, workspaceId),
           eq(boardMembers.userId, userId),
+          eq(boardMembers.status, "ACTIVE"),
         ),
       );
 
@@ -71,7 +72,13 @@ export const BoardRepo = {
       })
       .from(boardMembers)
       .innerJoin(board, eq(boardMembers.boardId, board.id))
-      .where(and(eq(boardMembers.userId, userId), eq(board.id, boardId)));
+      .where(
+        and(
+          eq(boardMembers.userId, userId),
+          eq(board.id, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
 
     return boardData;
   },
