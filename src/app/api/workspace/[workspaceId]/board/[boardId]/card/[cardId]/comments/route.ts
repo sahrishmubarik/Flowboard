@@ -3,7 +3,6 @@ import { createCardComment, getCardComments } from "@/services/CardComments";
 import { AppError } from "@/lib/errors/AppError";
 
 type commitBody = {
-  title: string;
   description: string;
 };
 
@@ -15,10 +14,9 @@ export async function POST(
     const { boardId, cardId } = await params;
     const body: commitBody = await request.json();
 
-    const { title, description } = body;
+    const { description } = body;
 
-    console.log(title);
-    return await createCardComment(boardId, cardId, title, description);
+    return await createCardComment(boardId, cardId, description);
   } catch (error) {
     console.error("CREATE_CARD_COMMIT_ERROR:", error);
 

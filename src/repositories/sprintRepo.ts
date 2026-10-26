@@ -2,6 +2,8 @@ import { db } from "@/db";
 import { sprint } from "@/db/boardSchema";
 import { card } from "@/db/cardSchema";
 import { eq, and, ne, isNull, sql } from "drizzle-orm";
+import { BoardRepo } from "@/repositories/boardRepo";
+import { AuditLogService } from "@/services/auditLogService";
 export const SprintRepo = {
   // async create(
   //   boardId: string,
@@ -62,6 +64,30 @@ export const SprintRepo = {
           carryUnresolvedTickets,
         })
         .returning();
+      const boardDetails = await BoardRepo.findById(boardId, tx);
+
+      if (!boardDetails) {
+        throw new Error("Board not found");
+      }
+
+      await AuditLogService.record(
+        {
+          performedBy: createdBy,
+          workspaceId: boardDetails.organizationId,
+          boardId,
+          entityType: "sprint",
+          entityId: newSprint.id,
+          action: "SPRINT_CREATED",
+          details: {
+            sprintName: newSprint.sprintName,
+            startDate: newSprint.startDate,
+            endDate: newSprint.endDate,
+            goal: newSprint.goal,
+            carryUnresolvedTickets: newSprint.carryUnresolvedTickets,
+          },
+        },
+        tx,
+      );
 
       // 2. Carry unresolved tickets into the new sprint.
       if (carryUnresolvedTickets) {
@@ -125,13 +151,15 @@ export const SprintRepo = {
     return sprints;
   },
 
-  async updateStatus(sprintId: string, boardId: string) {
+  async updateStatus(sprintId: string, boardId: string, performedBy: string) {
     return await db.transaction(async (tx) => {
       // 1. Verify the destination sprint belongs to this board.
       const [destinationSprint] = await tx
         .select({
           id: sprint.id,
           boardId: sprint.boardId,
+          name: sprint.sprintName,
+          status: sprint.status,
         })
         .from(sprint)
         .where(and(eq(sprint.id, sprintId), eq(sprint.boardId, boardId)))
@@ -145,6 +173,8 @@ export const SprintRepo = {
       const [outgoingSprint] = await tx
         .select({
           id: sprint.id,
+          sprintName: sprint.sprintName,
+          status: sprint.status,
           carryUnresolvedTickets: sprint.carryUnresolvedTickets,
         })
         .from(sprint)
@@ -241,6 +271,50 @@ export const SprintRepo = {
           carryUnresolvedTickets: sprint.carryUnresolvedTickets,
         });
 
+      const boardDetails = await BoardRepo.findById(boardId, tx);
+
+      if (!boardDetails) {
+        throw new Error("Board not found");
+      }
+
+      // Audit the outgoing sprint transition.
+      if (outgoingSprint) {
+        await AuditLogService.record(
+          {
+            performedBy, // Is value ko neeche correct karna hai.
+            workspaceId: boardDetails.organizationId,
+            boardId,
+            entityType: "sprint",
+            entityId: outgoingSprint.id,
+            action: "SPRINT_STATUS_UPDATED",
+            details: {
+              sprintName: outgoingSprint.sprintName,
+              previousStatus: "ACTIVE",
+              newStatus: "COMPLETED",
+            },
+          },
+          tx,
+        );
+      }
+
+      // Audit the selected sprint transition.
+      await AuditLogService.record(
+        {
+          performedBy, // Is value ko neeche correct karna hai.
+          workspaceId: boardDetails.organizationId,
+          boardId,
+
+          entityType: "sprint",
+          entityId: updatedSprint.id,
+          action: "SPRINT_STATUS_UPDATED",
+          details: {
+            sprintName: updatedSprint.name,
+            previousStatus: destinationSprint.status,
+            newStatus: "ACTIVE",
+          },
+        },
+        tx,
+      );
       return updatedSprint;
     });
   },
@@ -263,5 +337,125 @@ export const SprintRepo = {
       .where(eq(sprint.id, sprintId));
 
     return sprintDetails;
+  },
+
+  async updateDetails(
+    sprintId: string,
+    boardId: string,
+    performedBy: string,
+    input: {
+      sprintName: string;
+      goal: string;
+      startDate: string;
+      endDate: string;
+      carryUnresolvedTickets: boolean;
+    },
+  ) {
+    return db.transaction(async (tx) => {
+      const [previousSprint] = await tx
+        .select()
+        .from(sprint)
+        .where(and(eq(sprint.id, sprintId), eq(sprint.boardId, boardId)))
+        .limit(1);
+
+      if (!previousSprint) {
+        throw new Error("Sprint not found");
+      }
+
+      const [updatedSprint] = await tx
+        .update(sprint)
+        .set({
+          sprintName: input.sprintName,
+          goal: input.goal,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          carryUnresolvedTickets: input.carryUnresolvedTickets,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(sprint.id, sprintId), eq(sprint.boardId, boardId)))
+        .returning();
+
+      const boardDetails = await BoardRepo.findById(boardId, tx);
+
+      if (!boardDetails) {
+        throw new Error("Board not found");
+      }
+
+      await AuditLogService.record(
+        {
+          performedBy,
+          workspaceId: boardDetails.organizationId,
+          boardId,
+          entityType: "sprint",
+          entityId: sprintId,
+          action: "SPRINT_UPDATED",
+          details: {
+            previousValue: {
+              sprintName: previousSprint.sprintName,
+              goal: previousSprint.goal,
+              startDate: previousSprint.startDate,
+              endDate: previousSprint.endDate,
+              carryUnresolvedTickets: previousSprint.carryUnresolvedTickets,
+            },
+            newValue: {
+              sprintName: updatedSprint.sprintName,
+              goal: updatedSprint.goal,
+              startDate: updatedSprint.startDate,
+              endDate: updatedSprint.endDate,
+              carryUnresolvedTickets: updatedSprint.carryUnresolvedTickets,
+            },
+          },
+        },
+        tx,
+      );
+
+      return updatedSprint;
+    });
+  },
+
+  async deleteSprint(sprintId: string, boardId: string, performedBy: string) {
+    return db.transaction(async (tx) => {
+      const [existingSprint] = await tx
+        .select()
+        .from(sprint)
+        .where(and(eq(sprint.id, sprintId), eq(sprint.boardId, boardId)))
+        .limit(1);
+
+      if (!existingSprint) {
+        throw new Error("Sprint not found");
+      }
+
+      const boardDetails = await BoardRepo.findById(boardId, tx);
+
+      if (!boardDetails) {
+        throw new Error("Board not found");
+      }
+
+      await AuditLogService.record(
+        {
+          performedBy,
+          workspaceId: boardDetails.organizationId,
+          boardId,
+          entityType: "sprint",
+          entityId: sprintId,
+          action: "SPRINT_DELETED",
+          details: {
+            sprintName: existingSprint.sprintName,
+            goal: existingSprint.goal,
+            startDate: existingSprint.startDate,
+            endDate: existingSprint.endDate,
+            status: existingSprint.status,
+            carryUnresolvedTickets: existingSprint.carryUnresolvedTickets,
+          },
+        },
+        tx,
+      );
+
+      await tx
+        .delete(sprint)
+        .where(and(eq(sprint.id, sprintId), eq(sprint.boardId, boardId)));
+
+      return existingSprint;
+    });
   },
 };

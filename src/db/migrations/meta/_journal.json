@@ -225,6 +225,20 @@
       "when": 1792562876516,
       "tag": "20261021060756_open_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792568448285,
+      "tag": "20261021074048_big_victor_mancha",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792920975044,
+      "tag": "20261025093615_lonely_spot",
+      "breakpoints": true
     }
   ]
 }

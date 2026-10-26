@@ -191,8 +191,7 @@ export const commit = pgTable(
         onDelete: "cascade",
       }),
 
-    title: varchar("title", { length: 255 }).notNull(),
-    description: text("description"),
+    description: text("description").notNull(),
 
     createdBy: uuid("created_by")
       .notNull()

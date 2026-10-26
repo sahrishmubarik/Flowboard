@@ -48,6 +48,24 @@ export const updateCardDetailSchema = z.discriminatedUnion("action", [
     action: z.literal("assignedTo"),
     assignedTo: z.string().uuid().nullable(),
   }),
+  z.object({
+    action: z.literal("description"),
+    description: z.string(),
+  }),
+
+  z.object({
+    action: z.literal("title"),
+    title: z.string().trim().min(1).max(255),
+  }),
+  z.object({
+    action: z.literal("startDate"),
+    startDate: z.string().date().nullable().optional(),
+  }),
+
+  z.object({
+    action: z.literal("dueDate"),
+    dueDate: z.string().date().nullable().optional(),
+  }),
 ]);
 
 export type UpdateCardDetailInput = z.infer<typeof updateCardDetailSchema>;

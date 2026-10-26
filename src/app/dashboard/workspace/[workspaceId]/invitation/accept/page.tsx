@@ -36,7 +36,7 @@ export default function AcceptInvitationPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
       // User is not logged in
       if (response.status === 401) {
@@ -48,7 +48,9 @@ export default function AcceptInvitationPage() {
       }
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to accept invitation.");
+        throw new Error(
+          data?.message || "Failed to accept invitation. Please try again.",
+        );
       }
 
       router.push(`/dashboard/workspace/${workspaceId}`);

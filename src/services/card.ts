@@ -10,6 +10,61 @@ import { updateCardDetailSchema } from "@/lib/validations/cardDetails";
 import { NextResponse } from "next/server";
 
 import { boardMemberRepo } from "@/repositories/boardMemberRepo";
+import { db } from "@/db";
+import { AuditLogService } from "@/services/auditLogService";
+
+// async function updateCardFieldWithAudit(
+//   boardId: string,
+//   cardId: string,
+//   performedBy: string,
+//   workspaceId: string,
+//   field: "title" | "description" | "startDate" | "dueDate",
+//   action: string,
+//   message: string,
+//   previousValue: string | null,
+//   newValue: string | null,
+//   updates: Parameters<typeof CardRepo.updateCardFields>[2],
+// ) {
+//   return db.transaction(async (tx) => {
+//     const updatedCard = await CardRepo.updateCardFields(
+//       boardId,
+//       cardId,
+//       updates,
+//       tx,
+//     );
+
+//     if (!updatedCard) {
+//       throw new AppError("Card not found", 404);
+//     }
+
+//     if (previousValue !== newValue) {
+//       await AuditLogService.record(
+//         {
+//           performedBy,
+//           workspaceId,
+//           boardId,
+//           entityType: "card",
+//           entityId: cardId,
+//           action,
+//           details: {
+//             field,
+//             previousValue,
+//             newValue,
+//           },
+//         },
+//         tx,
+//       );
+//     }
+
+//     return NextResponse.json(
+//       {
+//         message,
+//         card: updatedCard,
+//       },
+//       { status: 200 },
+//     );
+//   });
+// }
 
 export async function createCard(
   boardId: string,
@@ -200,6 +255,7 @@ export async function moveBoardCard(
     cardId,
     destinationListId,
     position,
+    user.userId,
   );
 
   return NextResponse.json(
@@ -211,13 +267,14 @@ export async function moveBoardCard(
   );
 }
 /* Update card details */
+
 export async function updateCardDetail(
   boardId: string,
   cardId: string,
   userId: string,
   body: unknown,
 ) {
-  // 1. Validate request data.
+  // 1. Validate request body.
   const parsed = updateCardDetailSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -229,7 +286,7 @@ export async function updateCardDetail(
 
   const input = parsed.data;
 
-  // 2. Authenticate the current user.
+  // 2. Authenticate user.
   const user = await getCurrentUser();
 
   if (!user) {
@@ -240,123 +297,290 @@ export async function updateCardDetail(
     throw new AppError("Unauthorized user", 401);
   }
 
-  // 3. Verify that the board exists.
+  // 3. Verify board.
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
     throw new AppError("Board not found", 404);
   }
 
-  // 4. Verify that the card belongs to this board.
-
+  // 4. Verify card belongs to this board.
   const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
 
   if (cardDetails.length === 0) {
     throw new AppError("Card not found in this board", 404);
   }
 
-  // 5. Perform the requested update.
-  switch (input.action) {
-    case "taskType": {
-      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-        taskType: input.type,
-      });
+  const currentCard = cardDetails[0];
+  const workspaceId = boardDetails[0].organizationId;
 
-      return NextResponse.json(
-        {
-          message: "Card type updated successfully",
-          card: updatedCard,
-        },
-        { status: 200 },
+  // Reusable transaction for field updates + audit.
+  async function updateFieldWithAudit(
+    performedBy: string,
+    field: string,
+    action: string,
+    message: string,
+    previousValue: unknown,
+    newValue: unknown,
+    updates: Parameters<typeof CardRepo.updateCardFields>[2],
+  ) {
+    const updatedCard = await db.transaction(async (tx) => {
+      const updated = await CardRepo.updateCardFields(
+        boardId,
+        cardId,
+        updates,
+        tx,
+      );
+
+      if (!updated) {
+        throw new AppError("Card not found", 404);
+      }
+
+      if (JSON.stringify(previousValue) !== JSON.stringify(newValue)) {
+        await AuditLogService.record(
+          {
+            performedBy: performedBy,
+            workspaceId,
+            boardId,
+            entityType: "card",
+            entityId: cardId,
+            action,
+            details: {
+              field,
+              previousValue,
+              newValue,
+            },
+          },
+          tx,
+        );
+      }
+
+      return updated;
+    });
+
+    return NextResponse.json(
+      {
+        message,
+        card: updatedCard,
+      },
+      { status: 200 },
+    );
+  }
+  console.log("Received card update:", {
+    action: input.action,
+    body,
+  });
+
+  // 5. Perform requested update.
+  switch (input.action) {
+    case "title": {
+      return updateFieldWithAudit(
+        user.userId,
+        "title",
+        "CARD_TITLE_UPDATED",
+        "Card title updated successfully",
+        currentCard.title,
+        input.title,
+        { title: input.title },
+      );
+    }
+
+    case "description": {
+      return updateFieldWithAudit(
+        user.userId,
+        "description",
+        "CARD_DESCRIPTION_UPDATED",
+        "Card description updated successfully",
+        currentCard.description,
+        input.description,
+        { description: input.description },
+      );
+    }
+
+    case "startDate": {
+      const newDate = input.startDate ? new Date(input.startDate) : null;
+
+      if (newDate && Number.isNaN(newDate.getTime())) {
+        throw new AppError("Invalid start date", 400);
+      }
+
+      const oldDate = currentCard.startDate
+        ? new Date(currentCard.startDate)
+        : null;
+
+      const oldValue =
+        oldDate && !Number.isNaN(oldDate.getTime())
+          ? oldDate.toISOString()
+          : null;
+
+      const newValue = newDate?.toISOString() ?? null;
+
+      return updateFieldWithAudit(
+        user.userId,
+        "startDate",
+        "CARD_START_DATE_UPDATED",
+        "Card start date updated successfully",
+        oldValue,
+        newValue,
+        { startDate: newDate },
+      );
+    }
+
+    case "dueDate": {
+      const newDate = input.dueDate ? new Date(input.dueDate) : null;
+
+      if (newDate && Number.isNaN(newDate.getTime())) {
+        throw new AppError("Invalid due date", 400);
+      }
+
+      const oldDate = currentCard.dueDate
+        ? new Date(currentCard.dueDate)
+        : null;
+
+      const oldValue =
+        oldDate && !Number.isNaN(oldDate.getTime())
+          ? oldDate.toISOString()
+          : null;
+
+      const newValue = newDate?.toISOString() ?? null;
+
+      return updateFieldWithAudit(
+        user.userId,
+        "dueDate",
+
+        "CARD_DUE_DATE_UPDATED",
+        "Card due date updated successfully",
+        oldValue,
+        newValue,
+        { dueDate: newDate },
+      );
+    }
+
+    case "taskType": {
+      return updateFieldWithAudit(
+        user.userId,
+        "taskType",
+        "CARD_TASK_TYPE_UPDATED",
+        "Card type updated successfully",
+        currentCard.type,
+        input.type,
+        { taskType: input.type },
       );
     }
 
     case "priority": {
-      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-        priority: input.priority,
-      });
-
-      return NextResponse.json(
-        {
-          message: "Card priority updated successfully",
-          card: updatedCard,
-        },
-        { status: 200 },
+      return updateFieldWithAudit(
+        user.userId,
+        "priority",
+        "CARD_PRIORITY_UPDATED",
+        "Card priority updated successfully",
+        currentCard.priority,
+        input.priority,
+        { priority: input.priority },
       );
     }
 
     case "sprint": {
       const sprintIds = input.sprintId ?? [];
 
+      // Validate each sprint and ensure it belongs to this board.
       for (const sprintId of sprintIds) {
-        const sprint = await SprintRepo.getSprintById(sprintId);
+        const sprintDetails = await SprintRepo.getSprintById(sprintId);
 
-        if (!sprint) {
+        if (sprintDetails.length === 0) {
           throw new AppError("Sprint not found", 404);
         }
 
-        // Also verify that this sprint belongs to the card's board.
+        const belongsToBoard = sprintDetails.some(
+          (item) => item.boardId === boardId,
+        );
+
+        if (!belongsToBoard) {
+          throw new AppError("Sprint does not belong to this board", 400);
+        }
       }
 
-      const updatedCard = sprintIds.length
-        ? await CardRepo.updateCardSprint(boardId, cardId, sprintIds)
-        : await CardRepo.removeCardSprints(boardId, cardId);
+      const previousSprintIds: string[] = currentCard.sprintId ?? [];
 
-      if (!updatedCard) {
-        throw new AppError("Card not found", 404);
-      }
+      const updatedCard = await db.transaction(async (tx) => {
+        const updated = sprintIds.length
+          ? await CardRepo.updateCardSprint(boardId, cardId, sprintIds, tx)
+          : await CardRepo.removeCardSprints(boardId, cardId, tx);
 
-      return updatedCard;
-    }
-    case "estimateTime": {
-      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-        estimateTime:
-          input.estimateTime === null ? null : String(input.estimateTime),
+        if (!updated) {
+          throw new AppError("Card not found", 404);
+        }
+
+        const newSprintIds: string[] = updated.sprintId ?? [];
+
+        if (
+          JSON.stringify([...previousSprintIds].sort()) !==
+          JSON.stringify([...newSprintIds].sort())
+        ) {
+          await AuditLogService.record(
+            {
+              performedBy: user.userId,
+              workspaceId,
+              boardId,
+              entityType: "card",
+              entityId: cardId,
+              action: "CARD_SPRINT_UPDATED",
+              details: {
+                previousValue: previousSprintIds,
+                newValue: newSprintIds,
+              },
+            },
+            tx,
+          );
+        }
+
+        return updated;
       });
 
       return NextResponse.json(
         {
-          message: "Card estimated time updated successfully",
+          message: "Card sprint updated successfully",
           card: updatedCard,
         },
         { status: 200 },
+      );
+    }
+
+    case "estimateTime": {
+      const newValue =
+        input.estimateTime === null ? null : String(input.estimateTime);
+
+      return updateFieldWithAudit(
+        user.userId,
+        "estimateTime",
+        "CARD_ESTIMATE_TIME_UPDATED",
+        "Card estimated time updated successfully",
+        currentCard.estimateTime == null
+          ? null
+          : String(currentCard.estimateTime),
+        newValue,
+        { estimateTime: newValue },
       );
     }
 
     case "spentTime": {
-      const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-        spentTime: input.spentTime === null ? null : String(input.spentTime),
-      });
+      const newValue =
+        input.spentTime === null ? null : String(input.spentTime);
 
-      return NextResponse.json(
-        {
-          message: "Card spent time updated successfully",
-          card: updatedCard,
-        },
-        { status: 200 },
+      return updateFieldWithAudit(
+        user.userId,
+        "spentTime",
+        "CARD_SPENT_TIME_UPDATED",
+        "Card spent time updated successfully",
+        currentCard.spentTime == null ? null : String(currentCard.spentTime),
+        newValue,
+        { spentTime: newValue },
       );
     }
-
-    // case "spentTime": {
-    //   const updatedCard = await CardRepo.updateCardFields(boardId, cardId, {
-    //     spentTime: input.spentTime === null ? null : String(input.spentTime),
-    //   });
-
-    //   return NextResponse.json(
-    //     {
-    //       message: "Card spent time updated successfully",
-    //       card: updatedCard,
-    //     },
-    //     { status: 200 },
-    //   );
-    // }
-
-    // TODO: Implement assignedTo when card assignment is supported.
 
     case "assignedTo": {
       const assignedTo = input.assignedTo;
 
-      // Check that the selected user is an active board member.
       if (assignedTo !== null) {
         const members = await boardMemberRepo.getAllActiveBoardMember(boardId);
 
@@ -372,25 +596,16 @@ export async function updateCardDetail(
         }
       }
 
-      const updatedCard = await CardRepo.assignCardToMember(
-        boardId,
-        cardId,
+      return updateFieldWithAudit(
+        user.userId,
+        "assignedTo",
+        "CARD_ASSIGNEE_UPDATED",
+        assignedTo === null
+          ? "Card unassigned successfully"
+          : "Card assigned successfully",
+        currentCard.assignedTo ?? null,
         assignedTo,
-      );
-
-      if (!updatedCard) {
-        throw new AppError("Card not found", 404);
-      }
-
-      return NextResponse.json(
-        {
-          message:
-            assignedTo === null
-              ? "Card unassigned successfully"
-              : "Card assigned successfully",
-          card: updatedCard,
-        },
-        { status: 200 },
+        { assignedTo },
       );
     }
 
@@ -419,13 +634,17 @@ export async function deleteCardById(boardId: string, cardId: string) {
   if (cardDetails.length === 0) {
     throw new AppError("Card not found in this board", 404);
   }
-  const deletedCard = await CardRepo.DeleteCard(boardId, cardId);
-  if (deletedCard.length === 0) {
-    throw new AppError("Card not found in this board", 404);
+  const deletedCard = await CardRepo.DeleteCard(boardId, cardId, user.userId);
+
+  if (!deletedCard) {
+    throw new AppError("Card not found", 404);
   }
 
-  return {
-    message: "Card deleted successfully",
-    card: deletedCard[0],
-  };
+  return NextResponse.json(
+    {
+      message: "Card deleted successfully",
+      card: deletedCard,
+    },
+    { status: 200 },
+  );
 }

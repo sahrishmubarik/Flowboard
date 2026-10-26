@@ -4,12 +4,31 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
+import { useState } from "react";
 
 type CardDescriptionViewerProps = {
   content: string | null | undefined;
   className?: string;
   variant?: "full" | "preview";
+  onContentChange?: (content: string) => Promise<void>;
+  isSaving?: boolean;
 };
+
+function updateTaskCheckbox(
+  content: string,
+  checkboxIndex: number,
+  checked: boolean,
+): string {
+  let currentIndex = 0;
+
+  return content.replace(
+    /^([ \t]*(?:[-+*]|\d+[.)])[ \t]+\[)([ xX])(\])/gm,
+    (match, prefix: string, _currentValue: string, suffix: string) => {
+      if (currentIndex++ !== checkboxIndex) return match;
+      return `${prefix}${checked ? "x" : " "}${suffix}`;
+    },
+  );
+}
 // export default function CardDescriptionViewer({
 //   content,
 //   className = "",
@@ -136,8 +155,20 @@ export default function CardDescriptionViewer({
   content,
   className = "",
   variant = "full",
+  onContentChange,
+  isSaving = false,
 }: CardDescriptionViewerProps) {
-  const description = content?.trim();
+  const [optimisticContent, setOptimisticContent] = useState<{
+    source: string;
+    content: string;
+  } | null>(null);
+  const sourceContent = content ?? "";
+  const displayContent =
+    optimisticContent?.source === sourceContent
+      ? optimisticContent.content
+      : sourceContent;
+
+  const description = displayContent.trim();
 
   if (!description) {
     if (variant === "preview") return null;
@@ -149,10 +180,12 @@ export default function CardDescriptionViewer({
     );
   }
 
+  let taskCheckboxIndex = 0;
+
   return (
     <div
       className={`
-    min-w-0 break-words
+    card-description-viewer min-w-0 break-words
     text-[var(--color-text-secondary)]
     [&>*:first-child]:mt-0
     [&>*:last-child]:mb-0
@@ -255,16 +288,39 @@ export default function CardDescriptionViewer({
               {children}
             </td>
           ),
-          input: ({ type, checked, disabled }) =>
-            type === "checkbox" ? (
+          input: ({ type, checked }) => {
+            if (type !== "checkbox") return null;
+            const checkboxIndex = taskCheckboxIndex++;
+
+            return (
               <input
                 type="checkbox"
                 checked={checked}
-                disabled={disabled ?? true}
-                readOnly
+                disabled={!onContentChange || isSaving}
+                onChange={async (event) => {
+                  const previousContent = displayContent;
+                  const nextContent = updateTaskCheckbox(
+                    previousContent,
+                    checkboxIndex,
+                    event.currentTarget.checked,
+                  );
+
+                  if (nextContent === previousContent) return;
+
+                  setOptimisticContent({
+                    source: sourceContent,
+                    content: nextContent,
+                  });
+                  try {
+                    await onContentChange?.(nextContent);
+                  } catch {
+                    setOptimisticContent(null);
+                  }
+                }}
                 className="mr-2 accent-[var(--color-primary)]"
               />
-            ) : null,
+            );
+          },
           img: () => null,
         }}
       >
