@@ -19,8 +19,7 @@ import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 type CardCommit = {
   id: string;
   cardId: string;
-  title: string;
-  description: string | null;
+  description: string;
   createdBy: string;
   createdByName: string;
   createdAt: string;
@@ -45,8 +44,7 @@ type CardAttachment = {
 type CreatedCommit = {
   id: string;
   cardId?: string;
-  title?: string;
-  description?: string | null;
+  description?: string;
 };
 
 type CreateCommentResponse = {
@@ -127,7 +125,6 @@ export default function CardCommits({
   cardId,
 }: CardCommitsProps) {
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -273,7 +270,7 @@ export default function CardCommits({
       );
       if (!failed.length) {
         setShowForm(false);
-        setTitle("");
+
         setDescription("");
         setSelectedFiles([]);
       }
@@ -298,16 +295,11 @@ export default function CardCommits({
   });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: {
-      title: string;
-      description: string | null;
-      files: File[];
-    }) => {
+    mutationFn: async (payload: { description: string; files: File[] }) => {
       const response = await fetch(commitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: payload.title,
           description: payload.description,
         }),
       });
@@ -337,7 +329,7 @@ export default function CardCommits({
         );
         return;
       }
-      setTitle("");
+
       setDescription("");
       setSelectedFiles([]);
       setFileError("");
@@ -356,7 +348,7 @@ export default function CardCommits({
     if (createMutation.isPending || isRetrying) return;
     if (pendingUploads || createdWithoutId) return;
     setShowForm(false);
-    setTitle("");
+
     setDescription("");
     setSelectedFiles([]);
     setFileError("");
@@ -366,16 +358,18 @@ export default function CardCommits({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const trimmedDescription = description.trim();
     if (
-      !title.trim() ||
       createMutation.isPending ||
       pendingUploads ||
-      createdWithoutId
-    )
+      createdWithoutId ||
+      !trimmedDescription
+    ) {
       return;
+    }
+
     createMutation.mutate({
-      title: title.trim(),
-      description: description.trim() || null,
+      description: trimmedDescription,
       files: [...selectedFiles],
     });
   }
@@ -392,8 +386,7 @@ export default function CardCommits({
   return (
     <section
       aria-labelledby="card-comments-heading"
-      className="mt-8 min-w-0 border-t pt-6"
-      style={{ borderColor: "var(--color-border)" }}
+      className="mt-8 min-w-0 pt-6"
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -466,35 +459,12 @@ export default function CardCommits({
           }}
         >
           <div className="space-y-3 p-4">
-            <label
-              htmlFor={`comment-title-${cardId}`}
-              className="block text-xs font-semibold"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              Summary
-            </label>
-            <input
-              id={`comment-title-${cardId}`}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Add a short summary..."
-              maxLength={255}
-              autoFocus
-              required
-              disabled={createMutation.isPending}
-              className="w-full rounded-md border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              style={{
-                backgroundColor: "var(--color-input-bg)",
-                borderColor: "var(--color-border)",
-                color: "var(--color-text-primary)",
-              }}
-            />
             <div className="space-y-2">
               <label
                 className="block text-xs font-semibold"
                 style={{ color: "var(--color-text-secondary)" }}
               >
-                Details <span className="font-normal">(optional)</span>
+                Description
               </label>
               <div
                 className={
@@ -633,11 +603,11 @@ export default function CardCommits({
             <button
               type="submit"
               disabled={
-                !title.trim() ||
                 createMutation.isPending ||
                 isRetrying ||
                 Boolean(pendingUploads) ||
-                createdWithoutId
+                createdWithoutId ||
+                !description.trim()
               }
               className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               style={{ backgroundColor: "var(--color-primary)" }}
@@ -715,24 +685,20 @@ export default function CardCommits({
         <div className="space-y-2">
           {commits.map((item) => {
             const isExpanded = expandedCommits.has(item.id);
-            const hasDescription = Boolean(item.description?.trim());
+            const descriptionLines = item.description?.trim().split(/\r?\n/) ?? [];
+            const descriptionPreview = descriptionLines[0] ?? "";
+            const descriptionDetails = descriptionLines.slice(1).join("\n").trim();
             const author = item.createdByName?.trim() || "Unknown user";
             const commitAttachments = attachments.filter(
               (attachment) => attachment.commitId === item.id,
             );
 
-            const hasDetails = hasDescription || commitAttachments.length > 0;
+            const hasDetails =
+              Boolean(descriptionDetails) || commitAttachments.length > 0;
             const detailsId = `commit-details-${item.id}`;
 
             return (
-              <article
-                key={item.id}
-                className="min-w-0 rounded-lg border"
-                style={{
-                  borderColor: "var(--color-border)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-              >
+              <article key={item.id} className="min-w-0 rounded-lg">
                 {/* Compact Jira-style single-line summary */}
                 <div className="flex min-w-0 items-center gap-2.5 px-3 py-2.5">
                   <div
@@ -748,19 +714,21 @@ export default function CardCommits({
 
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <span
-                      className="max-w-[28%] shrink-0 truncate text-xs font-semibold sm:max-w-[22%]"
+                      className="shrink-0 truncate text-xs font-semibold"
                       title={author}
                       style={{ color: "var(--color-text-primary)" }}
                     >
                       {author}
                     </span>
-                    <span
-                      className="min-w-0 flex-1 truncate text-sm"
-                      title={item.title}
-                      style={{ color: "var(--color-text-secondary)" }}
-                    >
-                      {item.title}
-                    </span>
+                    {descriptionPreview && (
+                      <span
+                        className="min-w-0 flex-1 truncate text-sm"
+                        title={descriptionPreview}
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        {descriptionPreview}
+                      </span>
+                    )}
                   </div>
 
                   {commitAttachments.length > 0 && (
@@ -799,54 +767,16 @@ export default function CardCommits({
                   )}
                 </div>
 
-                {/* Both description and attachments stay hidden until expanded. */}
-                {/* {hasDetails && isExpanded && (
-                  <div
-                    className="border-t px-4 py-3"
-                    style={{ borderColor: "var(--color-border)" }}
-                  >
-                    {item.description && (
-                      <CardDescriptionViewer content={item.description} />
-                    )}
-
-                    {commitAttachments.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs font-semibold">
-                          Attachments ({commitAttachments.length})
-                        </p>
-
-                        {commitAttachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="flex items-center gap-2 rounded-md border p-2"
-                            style={{ borderColor: "var(--color-border)" }}
-                          >
-                            <Paperclip size={14} />
-
-                            <span className="truncate text-xs">
-                              {attachment.originalName ??
-                                attachment.fileName ??
-                                attachment.name ??
-                                "Attachment"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )} */}
                 {isExpanded && (
-                  <div className="space-y-3 border-t px-4 py-3">
-                    {item.description && (
-                      <CardDescriptionViewer content={item.description} />
+                  <div id={detailsId} className="space-y-2 px-3 pb-3">
+                    {descriptionDetails && (
+                      <CardDescriptionViewer content={descriptionDetails} />
                     )}
-
                     {commitAttachments.length > 0 && (
-                      <div className="space-y-2">
+                      <>
                         <p className="text-xs font-semibold">
                           Attachments ({commitAttachments.length})
                         </p>
-
                         {commitAttachments.map((attachment) => (
                           <a
                             key={attachment.id}
@@ -860,15 +790,13 @@ export default function CardCommits({
                             }}
                           >
                             <Paperclip size={14} />
-
                             <span className="min-w-0 flex-1 truncate">
                               {attachment.fileName}
                             </span>
-
                             <ExternalLink size={13} />
                           </a>
                         ))}
-                      </div>
+                      </>
                     )}
                   </div>
                 )}

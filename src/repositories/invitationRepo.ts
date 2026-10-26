@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { invitationSchema } from "@/db/workspaceSchema";
-import { eq, and, count, asc } from "drizzle-orm";
+import { eq, and, count, asc, gt } from "drizzle-orm";
 import type { DbTransaction } from "@/db/types";
 export const invitationRepo = {
   async findPendingByEmailAndWorkspace(email: string, workspaceId: string) {
@@ -24,29 +24,67 @@ export const invitationRepo = {
       .where(eq(invitationSchema.token, tokenHash));
     return invitation;
   },
-  async updateStatus(transaction: DbTransaction, invitationId: string) {
+  async updateStatus(
+    transaction: DbTransaction,
+    invitationId: string,
+    now = new Date(),
+  ) {
     const [invitation] = await transaction
       .update(invitationSchema)
       .set({ status: "ACCEPTED" })
-      .where(eq(invitationSchema.id, invitationId))
+      .where(
+        and(
+          eq(invitationSchema.id, invitationId),
+          eq(invitationSchema.status, "PENDING"),
+          gt(invitationSchema.expiresAt, now),
+        ),
+      )
       .returning();
     return invitation;
   },
 
-  async create(data: {
-    workspaceId: string;
-    email: string;
-    role: "admin" | "manager" | "member";
-    token: string;
-    expiresAt: Date;
-    createdBy: string;
-  }) {
-    const [invitation] = await db
+  // async create(data: {
+  //   workspaceId: string;
+  //   email: string;
+  //   role: "admin" | "manager" | "member";
+  //   token: string;
+  //   expiresAt: Date;
+  //   createdBy: string;
+  // }) {
+  //   const [invitation] = await db
+  //     .insert(invitationSchema)
+  //     .values({
+  //       workspaceId: data.workspaceId,
+  //       email: data.email,
+  //       role: data.role, // ✅ saves selected role
+  //       token: data.token,
+  //       expiresAt: data.expiresAt,
+  //       createdBy: data.createdBy,
+  //     })
+  //     .returning();
+
+  //   return invitation;
+  // },
+
+  async create(
+    data: {
+      workspaceId: string;
+      email: string;
+      role: "admin" | "manager" | "member";
+      token: string;
+      expiresAt: Date;
+      createdBy: string;
+    },
+    transaction?: DbTransaction,
+  ) {
+    const executor = transaction ?? db;
+
+    const [invitation] = await executor
       .insert(invitationSchema)
       .values({
         workspaceId: data.workspaceId,
         email: data.email,
-        role: data.role, // ✅ saves selected role
+        role: data.role,
         token: data.token,
         expiresAt: data.expiresAt,
         createdBy: data.createdBy,
@@ -55,22 +93,22 @@ export const invitationRepo = {
 
     return invitation;
   },
-  async revokeInvitation(workspaceId: string, email: string) {
-    const [invitationRevoke] = await db
-      .update(invitationSchema)
-      .set({
-        status: "REVOKED",
-      })
-      .where(
-        and(
-          eq(invitationSchema.workspaceId, workspaceId),
-          eq(invitationSchema.email, email),
-        ),
-      )
-      .returning();
+  // async revokeInvitation(workspaceId: string, email: string) {
+  //   const [invitationRevoke] = await db
+  //     .update(invitationSchema)
+  //     .set({
+  //       status: "REVOKED",
+  //     })
+  //     .where(
+  //       and(
+  //         eq(invitationSchema.workspaceId, workspaceId),
+  //         eq(invitationSchema.email, email),
+  //       ),
+  //     )
+  //     .returning();
 
-    return invitationRevoke;
-  },
+  //   return invitationRevoke;
+  // },
   // async getInvitationByWorkspaceId(workspaceId: string) {
   //   return db
   //     .select({
@@ -118,6 +156,27 @@ export const invitationRepo = {
   //     total,
   //   };
   // }
+  async revokeInvitation(
+    workspaceId: string,
+    email: string,
+    transaction?: DbTransaction,
+  ) {
+    const executor = transaction ?? db;
+
+    const [invitation] = await executor
+      .update(invitationSchema)
+      .set({ status: "REVOKED" })
+      .where(
+        and(
+          eq(invitationSchema.workspaceId, workspaceId),
+          eq(invitationSchema.email, email),
+          eq(invitationSchema.status, "PENDING"),
+        ),
+      )
+      .returning();
+
+    return invitation;
+  },
 
   async getInvitationByWorkspaceId(
     workspaceId: string,

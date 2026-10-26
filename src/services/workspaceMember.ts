@@ -4,10 +4,13 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
+import { boardMemberRepo } from "@/repositories/boardMemberRepo";
 import {
   validateData,
   workspaceMemberRoleValidation,
 } from "@/lib/validations/workspace";
+import { db } from "@/db";
+import { AuditLogService } from "@/services/auditLogService";
 // export async function getWorkspaceMembers(
 //   workspaceId: string,
 //   page: number,
@@ -205,26 +208,88 @@ export async function getWorkspaceMembersByRole(
 
 /* deactivated the user if he leave the organization */
 
+// export async function deactivateUserFromOrganization(
+//   userId: string,
+//   workspaceId: string,
+// ) {
+//   const user = await getCurrentUser();
+//   if (!user) {
+//     throw new AppError("Current User not found", 403);
+//   }
+//   await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
+//   const updatedUserStatus = organizationMemberRepo.updatedStatus(
+//     userId,
+//     workspaceId,
+//   );
+//   return NextResponse.json(
+//     {
+//       message: "User deactivated successfully!",
+//       member: updatedUserStatus,
+//     },
+//     {
+//       status: 200,
+//     },
+//   );
+// }
+
 export async function deactivateUserFromOrganization(
   userId: string,
   workspaceId: string,
 ) {
   const user = await getCurrentUser();
+
   if (!user) {
-    throw new AppError("Current User not found", 403);
+    throw new AppError("Current user not found.", 401);
   }
+
+  if (!userId) {
+    throw new AppError("Member user ID is required.", 400);
+  }
+
   await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
-  const updatedUserStatus = organizationMemberRepo.updatedStatus(
-    userId,
-    workspaceId,
-  );
+
+  const updatedMember = await db.transaction(async (tx) => {
+    const member = await organizationMemberRepo.updatedStatus(
+      userId,
+      workspaceId,
+      tx,
+    );
+
+    if (!member) {
+      throw new AppError("Active workspace member not found.", 404);
+    }
+
+    const deactivatedBoards = await boardMemberRepo.deactivateAllInWorkspace(
+      userId,
+      workspaceId,
+      tx,
+    );
+
+    await AuditLogService.record(
+      {
+        performedBy: user.userId,
+        workspaceId,
+        entityType: "workspace_member",
+        entityId: member.id,
+        action: "WORKSPACE_MEMBER_REMOVED",
+        details: {
+          targetUserId: member.userId,
+          previousStatus: "ACTIVE",
+          newStatus: member.status,
+          deactivatedBoardIds: deactivatedBoards.map((b) => b.boardId),
+        },
+      },
+      tx,
+    );
+
+    return member;
+  });
+
   return NextResponse.json(
     {
       message: "User deactivated successfully!",
-      member: updatedUserStatus,
+      member: [updatedMember],
     },
-    {
-      status: 200,
-    },
+    { status: 200 },
   );
 }

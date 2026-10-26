@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { board, boardMembers } from "@/db/boardSchema";
-
+import type { DbTransaction } from "@/db/types";
 import { eq, and } from "drizzle-orm";
 export const BoardRepo = {
   async create(
@@ -54,6 +54,7 @@ export const BoardRepo = {
         and(
           eq(board.organizationId, workspaceId),
           eq(boardMembers.userId, userId),
+          eq(boardMembers.status, "ACTIVE"),
         ),
       );
 
@@ -71,21 +72,60 @@ export const BoardRepo = {
       })
       .from(boardMembers)
       .innerJoin(board, eq(boardMembers.boardId, board.id))
-      .where(and(eq(boardMembers.userId, userId), eq(board.id, boardId)));
+      .where(
+        and(
+          eq(boardMembers.userId, userId),
+          eq(board.id, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
 
     return boardData;
   },
+  async findById(boardId: string, tx?: DbTransaction) {
+    const executor = tx ?? db;
 
-  async updateBoardName(boardId: string, boardName: string) {
-    const updateBoard = await db
-      .update(board)
-      .set({
-        boardName: boardName,
+    const [boardDetails] = await executor
+      .select({
+        id: board.id,
+        boardName: board.boardName,
+        organizationId: board.organizationId,
+        createdBy: board.createdBy,
       })
+      .from(board)
       .where(eq(board.id, boardId));
-    return updateBoard;
-  },
 
+    return boardDetails;
+  },
+  // async updateBoardName(boardId: string, boardName: string) {
+  //   const updateBoard = await db
+  //     .update(board)
+  //     .set({
+  //       boardName: boardName,
+  //     })
+  //     .where(eq(board.id, boardId));
+  //   return updateBoard;
+  // },
+
+  async updateBoardName(
+    boardId: string,
+    boardName: string,
+    tx?: DbTransaction,
+  ) {
+    const executor = tx ?? db;
+
+    const [updatedBoard] = await executor
+      .update(board)
+      .set({ boardName })
+      .where(eq(board.id, boardId))
+      .returning({
+        id: board.id,
+        boardName: board.boardName,
+        organizationId: board.organizationId,
+      });
+
+    return updatedBoard;
+  },
   async getBoardById(boardId: string) {
     const boardDetails = await db
       .select({
@@ -97,13 +137,27 @@ export const BoardRepo = {
       .where(eq(board.id, boardId));
     return boardDetails;
   },
-  async deleteBoard(boardId: string) {
-    const [deletedBoard] = await db
+  // async deleteBoard(boardId: string) {
+  //   const [deletedBoard] = await db
+  //     .delete(board)
+  //     .where(eq(board.id, boardId))
+  //     .returning({
+  //       id: board.id,
+  //       boardName: board.boardName,
+  //     });
+
+  //   return deletedBoard;
+  // },
+  async deleteBoard(boardId: string, tx?: DbTransaction) {
+    const executor = tx ?? db;
+
+    const [deletedBoard] = await executor
       .delete(board)
       .where(eq(board.id, boardId))
       .returning({
         id: board.id,
         boardName: board.boardName,
+        organizationId: board.organizationId,
       });
 
     return deletedBoard;

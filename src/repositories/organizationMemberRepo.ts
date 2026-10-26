@@ -295,8 +295,33 @@ export const organizationMemberRepo = {
   },
 
   /* update status from active to Deactivated then no more user to your organization */
-  async updatedStatus(userId: string, workspaceId: string) {
-    const DeactivatedStatus = await db
+  // async updatedStatus(userId: string, workspaceId: string) {
+  //   const DeactivatedStatus = await db
+  //     .update(organizationMembers)
+  //     .set({
+  //       status: "DEACTIVATED",
+  //     })
+  //     .where(
+  //       and(
+  //         eq(organizationMembers.userId, userId),
+  //         eq(organizationMembers.organizationId, workspaceId),
+  //       ),
+  //     )
+  //     .returning({
+  //       id: organizationMembers.id,
+  //       userId: organizationMembers.userId,
+  //       organizationId: organizationMembers.organizationId,
+  //     });
+  //   return DeactivatedStatus;
+  // },
+  async updatedStatus(
+    userId: string,
+    workspaceId: string,
+    transaction?: DbTransaction,
+  ) {
+    const executor = transaction ?? db;
+
+    const [updatedMember] = await executor
       .update(organizationMembers)
       .set({
         status: "DEACTIVATED",
@@ -305,13 +330,16 @@ export const organizationMemberRepo = {
         and(
           eq(organizationMembers.userId, userId),
           eq(organizationMembers.organizationId, workspaceId),
+          eq(organizationMembers.status, "ACTIVE"),
         ),
       )
       .returning({
         id: organizationMembers.id,
         userId: organizationMembers.userId,
         organizationId: organizationMembers.organizationId,
+        status: organizationMembers.status,
       });
-    return DeactivatedStatus;
+
+    return updatedMember;
   },
 };

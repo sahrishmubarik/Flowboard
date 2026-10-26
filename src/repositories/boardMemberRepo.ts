@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { boardMembers } from "@/db/boardSchema";
-import { eq, and, count } from "drizzle-orm";
+import { board, boardMembers } from "@/db/boardSchema";
+import type { DbTransaction } from "@/db/types";
+import { eq, and, count, inArray } from "drizzle-orm";
 import { users } from "@/db/authSchema";
 
 export const boardMemberRepo = {
@@ -127,5 +128,31 @@ export const boardMemberRepo = {
           eq(boardMembers.status, "ACTIVE"),
         ),
       );
+  },
+  // Deactivate (not delete) all of a user's board memberships in a workspace.
+  async deactivateAllInWorkspace(
+    userId: string,
+    workspaceId: string,
+    tx?: DbTransaction,
+  ) {
+    const executor = tx ?? db;
+
+    return executor
+      .update(boardMembers)
+      .set({ status: "DEACTIVATED" })
+      .where(
+        and(
+          eq(boardMembers.userId, userId),
+          eq(boardMembers.status, "ACTIVE"),
+          inArray(
+            boardMembers.boardId,
+            executor
+              .select({ id: board.id })
+              .from(board)
+              .where(eq(board.organizationId, workspaceId)),
+          ),
+        ),
+      )
+      .returning({ boardId: boardMembers.boardId });
   },
 };

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+
 import {
   getCardCommentByCommitId,
   deleteCardCommentByCommitId,
+  updateCardCommentByCommitId,
 } from "@/services/CardComments";
 import { AppError } from "@/lib/errors/AppError";
 
@@ -85,6 +87,44 @@ export async function DELETE(
       {
         status: 500,
       },
+    );
+  }
+}
+
+export async function PUT(
+  request: Request,
+  {
+    params,
+  }: {
+    params: Promise<{
+      workspaceId: string;
+      boardId: string;
+      cardId: string;
+      commentId: string;
+    }>;
+  },
+) {
+  try {
+    const { boardId, cardId, commentId } = await params;
+    const body: { description: string } = await request.json();
+
+    return await updateCardCommentByCommitId(
+      boardId,
+      cardId,
+      commentId,
+      body.description,
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Failed to update commit description." },
+      { status: 500 },
     );
   }
 }

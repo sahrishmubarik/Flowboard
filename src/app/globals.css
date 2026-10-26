@@ -1629,11 +1629,17 @@ body {
 }
 
 .card-description-editor .tiptap ul[data-type="taskList"] li > label {
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .card-description-editor .tiptap ul[data-type="taskList"] li > div {
   flex: 1;
+}
+
+.card-description-viewer input[type="checkbox"] {
+  position: relative;
+  top: -1px;
+  vertical-align: middle;
 }
 
 /*
@@ -1790,7 +1796,7 @@ body {
 }
 
 .card-description-editor .tiptap ul[data-type="taskList"] li > label {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .card-description-editor .tiptap ul[data-type="taskList"] li > div {

@@ -2,6 +2,7 @@ import {
   getBoardCardDetail,
   moveBoardCard,
   updateCardDetail,
+  deleteCardById,
 } from "@/services/card";
 
 import { AppError } from "@/lib/errors/AppError";
@@ -131,6 +132,37 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json(
         { message: "Invalid JSON request body" },
         { status: 400 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Internal server error. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request, { params }: RouteParams) {
+  try {
+    const { boardId, cardId } = await params;
+
+    if (!boardId || !cardId) {
+      return NextResponse.json(
+        { message: "boardId and cardId are required" },
+        { status: 400 },
+      );
+    }
+
+    const result = await deleteCardById(boardId, cardId);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("DELETE_Card_Error:", error);
+
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
       );
     }
 

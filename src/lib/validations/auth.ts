@@ -63,6 +63,7 @@ export const resetPasswordSchema = z
   });
 export const changePasswordSchema = z
   .object({
+    currentPassword: z.string().min(1, "Current password is required"),
     password: passwordRule,
     confirmPassword: z.string().min(1, "confirm password is required"),
   }) // Password Match Verification Constraint

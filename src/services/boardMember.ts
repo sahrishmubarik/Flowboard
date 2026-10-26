@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { boardMemberRepo } from "@/repositories/boardMemberRepo";
 import { workspaceRepo } from "@/repositories/organizationRepo";
+import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
 import { sendBoardInvitationEmail } from "@/lib/email/verificationEmail";
 import { requireBoardRole } from "@/lib/middleware/boardPermission";
 
@@ -50,6 +51,25 @@ export async function inviteMemberInBoard(
 
   // 1. Check whether the current user can manage this board.
   await requireBoardRole(currentUserId, boardId, ["owner", "admin", "manager"]);
+
+  // The target user must be an active member of the board's workspace.
+  const boardDetails = await BoardRepo.findById(boardId);
+
+  if (!boardDetails || boardDetails.organizationId !== workspaceId) {
+    throw new AppError("Board not found", 404);
+  }
+
+  const workspaceMember = await organizationMemberRepo.findByUserAndWorkspace(
+    userId,
+    boardDetails.organizationId,
+  );
+
+  if (!workspaceMember) {
+    throw new AppError(
+      "User must be an active member of this workspace to join the board.",
+      400,
+    );
+  }
 
   // 2. Check whether the target user already has a membership record.
   const existingMember = await boardMemberRepo.findByUserAndBoard(

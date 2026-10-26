@@ -19,6 +19,10 @@ export async function requireBoardRole(
     throw new AppError("You are not a member of this board.", 403);
   }
 
+  if (membership.status !== "ACTIVE") {
+    throw new AppError("Your access to this board has been deactivated.", 403);
+  }
+
   if (!allowedRoles.includes(membership.role)) {
     throw new AppError(
       "You do not have permission to perform this action.",
