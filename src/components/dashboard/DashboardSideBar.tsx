@@ -21,7 +21,6 @@ import WorkspaceModal from "@/components/WorkspaceModal";
 import UserProfileCard from "@/components/auth/UserProfileCard";
 
 import WorkspaceMemberCard from "@/components/workspaceMemberCard";
-import InviteMemberCard from "@/components/inviteMemberCard";
 
 type Workspace = {
   workspaceId: string;
@@ -84,7 +83,6 @@ export default function DashboardSidebar() {
 
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
-  const [showInvitations, setShowInvitations] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
@@ -824,19 +822,18 @@ export default function DashboardSidebar() {
               </button>
 
               {/* ======================================================== */}
-              {/* Invitations                                               */}
+              {/* Activity                                                  */}
               {/* ======================================================== */}
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowInvitations(true);
-                  setShowMembers(false);
-                  setShowBoardsDropdown(false);
-                  setShowWorkspaceDropdown(false);
-                }}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/workspace/${selectedWorkspace.workspaceId}/activity`,
+                  )
+                }
                 className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${
-                  showInvitations
+                  pathname.endsWith("/activity")
                     ? "bg-[var(--color-border)] text-[var(--color-text-primary)]"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)]"
                 }`}
@@ -851,11 +848,10 @@ export default function DashboardSidebar() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-
-                  <path d="m3 7 9 6 9-6" />
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
                 </svg>
-                Invitations
+                Activity
               </button>
             </nav>
           )}
@@ -978,19 +974,6 @@ export default function DashboardSidebar() {
         </WorkspaceModal>
       )}
 
-      {/* ================================================================== */}
-      {/* Invitations modal                                                  */}
-      {/* ================================================================== */}
-
-      {showInvitations && selectedWorkspace && (
-        <WorkspaceModal
-          isOpen={showInvitations}
-          onClose={() => setShowInvitations(false)}
-          title="Workspace Invitations"
-        >
-          <InviteMemberCard />
-        </WorkspaceModal>
-      )}
 
       {/* ================================================================== */}
       {/* User profile                                                       */}
