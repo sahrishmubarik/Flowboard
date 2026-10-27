@@ -111,9 +111,9 @@ async function requireUserId() {
 
 // The page marker is "<createdAt ISO>|<id>", base64url-encoded.
 function encodeCursor(cursor: NotificationCursor) {
-  return Buffer.from(
-    `${cursor.createdAt.toISOString()}|${cursor.id}`,
-  ).toString("base64url");
+  return Buffer.from(`${cursor.createdAt.toISOString()}|${cursor.id}`).toString(
+    "base64url",
+  );
 }
 
 function decodeCursor(value: string): NotificationCursor {
@@ -182,10 +182,7 @@ export async function markNotificationRead(notificationId: string) {
     throw new AppError(validation.error, 400);
   }
 
-  const notification = await NotificationRepo.markRead(
-    validation.data,
-    userId,
-  );
+  const notification = await NotificationRepo.markRead(validation.data, userId);
 
   // Someone else's notification looks the same as a missing one.
   if (!notification) {
