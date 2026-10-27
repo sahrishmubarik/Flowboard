@@ -129,6 +129,22 @@ export const boardMemberRepo = {
         ),
       );
   },
+  // IDs of a board's active members; runs inside the caller's transaction.
+  async getActiveMemberIds(boardId: string, tx?: DbTransaction) {
+    const executor = tx ?? db;
+
+    const rows = await executor
+      .select({ userId: boardMembers.userId })
+      .from(boardMembers)
+      .where(
+        and(
+          eq(boardMembers.boardId, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
+
+    return rows.map((row) => row.userId);
+  },
   // Deactivate (not delete) all of a user's board memberships in a workspace.
   async deactivateAllInWorkspace(
     userId: string,
