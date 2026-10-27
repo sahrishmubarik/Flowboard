@@ -227,13 +227,23 @@ export default function CardDescriptionViewer({
           p: ({ children }) => (
             <p className="mb-3 whitespace-pre-wrap">{children}</p>
           ),
-          ul: ({ children }) => (
-            <ul className="mb-3 list-disc space-y-1 pl-6">{children}</ul>
-          ),
+          // remark-gfm marks checklists with these classes; keep them so
+          // checklists get their own layout instead of bullet styling.
+          ul: ({ children, className }) =>
+            className?.includes("contains-task-list") ? (
+              <ul className="contains-task-list mb-3 space-y-1">{children}</ul>
+            ) : (
+              <ul className="mb-3 list-disc space-y-1 pl-6">{children}</ul>
+            ),
           ol: ({ children }) => (
             <ol className="mb-3 list-decimal space-y-1 pl-6">{children}</ol>
           ),
-          li: ({ children }) => <li className="pl-1">{children}</li>,
+          li: ({ children, className }) =>
+            className?.includes("task-list-item") ? (
+              <li className="task-list-item">{children}</li>
+            ) : (
+              <li className="pl-1">{children}</li>
+            ),
           a: ({ children, href }) => (
             <a
               href={href}
@@ -317,7 +327,7 @@ export default function CardDescriptionViewer({
                     setOptimisticContent(null);
                   }
                 }}
-                className="mr-2 accent-[var(--color-primary)]"
+                className="task-checkbox"
               />
             );
           },

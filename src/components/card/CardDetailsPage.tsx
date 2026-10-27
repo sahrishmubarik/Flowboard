@@ -1185,6 +1185,8 @@ import {
 } from "lucide-react";
 
 import CardCommits from "@/components/card/CardCommits";
+import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
+import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
@@ -1753,18 +1755,10 @@ export default function CardDetailsPage({
 
                     {editingCardField === "description" ? (
                       <div className="mt-3 space-y-2">
-                        <textarea
-                          autoFocus
-                          aria-label="Edit card description"
+                        {/* Same Markdown editor as the Create Card form. */}
+                        <CardDescriptionEditor
                           value={cardFieldDraft}
-                          onChange={(event) =>
-                            setCardFieldDraft(event.target.value)
-                          }
-                          rows={7}
-                          placeholder="Add a description..."
-                          className="w-full resize-y rounded-md border px-3 py-2 text-sm leading-6"
-                          style={inputStyle}
-                          disabled={updateMutation.isPending}
+                          onChange={setCardFieldDraft}
                         />
 
                         <EditActions
@@ -1774,12 +1768,19 @@ export default function CardDetailsPage({
                         />
                       </div>
                     ) : card.description?.trim() ? (
-                      <div
-                        className="mt-3 min-w-0 whitespace-pre-wrap break-words text-sm leading-7"
-                        style={primary}
-                      >
-                        {card.description}
-                      </div>
+                      // Descriptions are stored as Markdown; render it safely
+                      // (sanitized) with clickable task-list checkboxes.
+                      <CardDescriptionViewer
+                        className="mt-3"
+                        content={card.description}
+                        isSaving={updateMutation.isPending}
+                        onContentChange={async (description) => {
+                          await updateMutation.mutateAsync({
+                            action: "description",
+                            description,
+                          });
+                        }}
+                      />
                     ) : (
                       <p
                         className="mt-3 rounded-lg border border-dashed px-4 py-6 text-sm"
