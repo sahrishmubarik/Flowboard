@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 
 import { loginSchema, LoginInput } from "@/lib/validations/auth";
+import { getSafeRedirect } from "@/lib/safeRedirect";
 
 import { useToast } from "@/components/ui/ToastProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -28,7 +29,7 @@ export default function LoginCard() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirect = searchParams.get("redirect");
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
 
   const [showPassword, setShowPassword] = useState(false);
 

@@ -92,6 +92,11 @@ export async function createCard(
   ]);
 
   const user_id = user.userId;
+
+  if (startDate && dueDate && new Date(dueDate) < new Date(startDate)) {
+    throw new AppError("The due date must be on or after the start date.", 400);
+  }
+
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {

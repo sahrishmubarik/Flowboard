@@ -60,34 +60,6 @@ function formatDate(date: string) {
   });
 }
 
-function formatDetails(details: Record<string, unknown> | null) {
-  if (!details || Object.keys(details).length === 0) {
-    return "No additional details";
-  }
-
-  return Object.entries(details)
-    .map(([key, value]) => {
-      const label = key
-        .replace(/([A-Z])/g, " $1")
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-
-      const formattedValue =
-        value === null
-          ? "None"
-          : Array.isArray(value)
-            ? value.length
-              ? value.join(", ")
-              : "None"
-            : typeof value === "object"
-              ? JSON.stringify(value)
-              : String(value);
-
-      return `${label}: ${formattedValue}`;
-    })
-    .join(" · ");
-}
-
 export default function WorkspaceActivity({
   workspaceId,
 }: WorkspaceActivityProps) {
@@ -101,19 +73,18 @@ export default function WorkspaceActivity({
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  const [loadingBoards, setLoadingBoards] = useState(true);
+  const [boardsLoading, setLoadingBoards] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(false);
-  const [error, setError] = useState("");
+  const [fetchError, setError] = useState("");
+
+  // Without a workspace ID there is nothing to load, so derive that state
+  // here instead of setting it synchronously inside the effect.
+  const loadingBoards = workspaceId ? boardsLoading : false;
+  const error = workspaceId ? fetchError : "Workspace ID is missing.";
 
   // Fetch boards belonging to this workspace.
   useEffect(() => {
-    if (!workspaceId) {
-      setBoards([]);
-      setSelectedBoardId("");
-      setLoadingBoards(false);
-      setError("Workspace ID is missing.");
-      return;
-    }
+    if (!workspaceId) return;
 
     let cancelled = false;
 
@@ -123,6 +94,8 @@ export default function WorkspaceActivity({
       setBoards([]);
       setSelectedBoardId("");
       setActivities([]);
+      setTotal(0);
+      setTotalPages(0);
 
       try {
         const response = await fetch(`/api/workspace/${workspaceId}/board`, {
@@ -165,12 +138,9 @@ export default function WorkspaceActivity({
 
   // Fetch activity whenever the selected board or page changes.
   useEffect(() => {
-    if (!workspaceId || !selectedBoardId) {
-      setActivities([]);
-      setTotal(0);
-      setTotalPages(0);
-      return;
-    }
+    // Activities are cleared when the board list (re)loads, which is the only
+    // time selectedBoardId becomes empty.
+    if (!workspaceId || !selectedBoardId) return;
 
     let cancelled = false;
 

@@ -244,6 +244,57 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
     };
   });
 }
+
+// Read-only details for the accept page: who the invitation is for and who is
+// signed in, so the page can explain what will happen before the user clicks.
+export async function getInvitationPreview(workspaceId: string, body: unknown) {
+  const validation = validateData(acceptInvitationValidation, body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error, 400);
+  }
+
+  const invitation = await invitationRepo.findByToken(
+    hashToken(validation.data.token),
+  );
+
+  if (!invitation || invitation.workspaceId !== workspaceId) {
+    throw new AppError("Invalid or expired invitation.", 404);
+  }
+
+  const workspaceData = await workspaceRepo.findById(workspaceId);
+
+  const user = await getCurrentUser();
+  const account = user
+    ? await userRepo.getInvitationAccount(user.userId)
+    : null;
+
+  const isExpired = new Date() > invitation.expiresAt;
+  const emailMatches =
+    !!account &&
+    account.email.trim().toLowerCase() ===
+      invitation.email.trim().toLowerCase();
+
+  return {
+    invitation: {
+      email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      isExpired,
+      workspaceName: workspaceData?.workspaceName ?? null,
+    },
+    signedInAs: account
+      ? { email: account.email, emailVerified: !!account.emailVerified }
+      : null,
+    emailMatches,
+    canAccept:
+      invitation.status === "PENDING" &&
+      !isExpired &&
+      emailMatches &&
+      !!account?.emailVerified,
+  };
+}
+
 export async function revokeInvitation(
   workspaceId: string,
   body: {

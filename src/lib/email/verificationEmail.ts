@@ -129,7 +129,9 @@ export async function sendBoardInvitationEmail({
         Click the  below link  and join the ${boardName} of that ${organizationName} organization :
       </p>
 
-     
+      <a href="${boardInviteUrl}">
+      open board
+      </a>
     `,
   });
 }

@@ -1636,10 +1636,46 @@ body {
   flex: 1;
 }
 
-.card-description-viewer input[type="checkbox"] {
+/* Checklist checkbox size: change this one value to resize it everywhere. */
+.card-description-viewer,
+.card-description-editor {
+  --task-checkbox-size: 0.75rem;
+}
+
+/* Read-only checklist: the checkbox sits in a hanging indent, centred on the
+   first line, so wrapped text lines up under the text, not the checkbox. */
+.card-description-viewer .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.card-description-viewer .contains-task-list .contains-task-list {
+  margin: 0.25rem 0 0;
+}
+
+.card-description-viewer .task-list-item {
   position: relative;
-  top: -1px;
-  vertical-align: middle;
+  padding-left: calc(var(--task-checkbox-size) + 0.5rem);
+}
+
+/* "Loose" lists (blank lines between items) wrap each item in a <p>;
+   keep them as compact as tight lists. */
+.card-description-viewer .task-list-item > p {
+  margin-bottom: 0;
+}
+
+/* Keep line breaks but drop the space after "[ ]", which would otherwise
+   indent the first line more than the wrapped lines. */
+.card-description-viewer .task-list-item > p {
+  white-space: pre-line;
+}
+
+.card-description-viewer .task-list-item > input.task-checkbox,
+.card-description-viewer .task-list-item > p > input.task-checkbox {
+  position: absolute;
+  left: 0;
+  top: calc((1lh - var(--task-checkbox-size)) / 2);
+  margin: 0;
 }
 
 /*
@@ -1801,6 +1837,49 @@ body {
 
 .card-description-editor .tiptap ul[data-type="taskList"] li > div {
   flex: 1;
+}
+
+/* Checklist alignment: centre the checkbox on the first text line. */
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  padding-left: 0;
+  margin: 0.25rem 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 1lh;
+  margin-top: 0;
+  user-select: none;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}
+
+/* Checkbox look, shared by the editor and the read-only view. */
+.card-description-editor .tiptap ul[data-type="taskList"] input[type="checkbox"],
+.card-description-viewer input.task-checkbox {
+  width: var(--task-checkbox-size);
+  height: var(--task-checkbox-size);
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.card-description-viewer input.task-checkbox:disabled {
+  cursor: default;
+}
+
+/* Render native checkboxes dark in the dark theme. */
+[data-theme="dark"]
+  .card-description-editor
+  .tiptap
+  ul[data-type="taskList"]
+  input[type="checkbox"],
+[data-theme="dark"] .card-description-viewer input.task-checkbox {
+  color-scheme: dark;
 }
 
 /* Tables */

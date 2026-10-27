@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { getSafeRedirect } from "@/lib/safeRedirect";
 
 export default function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const token = searchParams.get("token");
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
 
   const [message, setMessage] = useState("Verifying your email...");
   const [error, setError] = useState(false);
@@ -39,8 +41,13 @@ export default function VerifyEmailContent() {
 
         setMessage(data.message);
 
+        // Keep the redirect (e.g. a pending invitation) through to login.
         const timeoutId = setTimeout(() => {
-          router.push("/auth/login");
+          router.push(
+            redirect
+              ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+              : "/auth/login",
+          );
         }, 1500);
 
         return timeoutId;
@@ -63,7 +70,7 @@ export default function VerifyEmailContent() {
         clearTimeout(timeoutId);
       }
     };
-  }, [token, router]);
+  }, [token, redirect, router]);
 
   const hasError = !token || error;
 
