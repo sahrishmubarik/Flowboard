@@ -5,6 +5,7 @@ import {
   acceptInvitation,
   revokeInvitation,
   getInvitationStatus,
+  getInvitationPreview,
 } from "@/services/invitation";
 
 export async function POST(
@@ -31,6 +32,12 @@ export async function POST(
         return NextResponse.json(result, {
           status: 200,
         });
+      }
+
+      case "preview-invitation": {
+        const preview = await getInvitationPreview(workspaceId, body);
+
+        return NextResponse.json(preview, { status: 200 });
       }
 
       default:
