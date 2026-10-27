@@ -239,6 +239,13 @@
       "when": 1792920975044,
       "tag": "20261025093615_lonely_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793090429871,
+      "tag": "20261027084029_cooing_warpath",
+      "breakpoints": true
     }
   ]
 }
