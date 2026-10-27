@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import CreateCard from "@/components/card/CreateCard";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 import { ChevronDown, Star } from "lucide-react";
 
@@ -266,7 +267,9 @@ export default function BoardHeader() {
   return (
     <main>
       <header
-        className="sticky top-0 z-30"
+        // z-40: above the board grid's sticky column header (z-30), so the
+        // notification dropdown is not covered; modals use z-50 and up.
+        className="sticky top-0 z-40"
         style={{
           borderColor: "var(--color-border)",
           backgroundColor: "var(--color-card-bg)",
@@ -419,6 +422,12 @@ export default function BoardHeader() {
                   triggerIconSize={17}
                 />
               )}
+            </div>
+
+            {/* Notifications: one instance for all screen sizes, so the
+                unread count is polled once. */}
+            <div className="ml-2 shrink-0 lg:ml-3">
+              <NotificationBell />
             </div>
           </div>
 

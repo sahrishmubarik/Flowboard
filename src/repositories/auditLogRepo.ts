@@ -48,7 +48,7 @@ export const AuditLogRepo = {
     workspaceId: string,
     boardId: string,
     page = 1,
-    limit = 10,
+    limit = 7,
   ) {
     const safePage = Math.max(1, Math.floor(page));
     const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));

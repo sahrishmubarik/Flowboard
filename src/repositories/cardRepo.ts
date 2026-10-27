@@ -631,10 +631,11 @@ import { card } from "@/db/cardSchema";
 import { users } from "@/db/authSchema";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { AuditLogService } from "@/services/auditLogService";
-import { and, asc, eq, isNull, max, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import type { AuditLogTransaction } from "@/repositories/auditLogRepo";
 import { AuditLogRepo } from "@/repositories/auditLogRepo";
-import { board } from "@/db/boardSchema";
+import { board, boardList } from "@/db/boardSchema";
+import { NotificationService } from "@/services/notificationService";
 type CardDetailUpdate = {
   title?: string;
   description?: string | null;
@@ -778,7 +779,7 @@ export const CardRepo = {
       }
 
       // Audit log must use the same transaction.
-      await AuditLogRepo.create(
+      const auditLog = await AuditLogRepo.create(
         {
           performedBy: user_id,
           workspaceId,
@@ -798,6 +799,26 @@ export const CardRepo = {
         },
         executor,
       );
+
+      // "Ali assigned a new ticket to you"
+      if (newCard.assignedTo) {
+        await NotificationService.notifyUsers(
+          {
+            type: "CARD_ASSIGNED",
+            actorId: user_id,
+            workspaceId,
+            boardId,
+            cardId: newCard.id,
+            sourceEventId: auditLog.id,
+            details: {
+              cardNumber: newCard.cardNumber,
+              cardTitle: newCard.title,
+            },
+          },
+          [newCard.assignedTo],
+          executor,
+        );
+      }
 
       return newCard;
     };
@@ -994,7 +1015,7 @@ export const CardRepo = {
       if (!boardDetails)
         throw new Error("Board not found while recording card movement");
 
-      await AuditLogService.record(
+      const auditLog = await AuditLogService.record(
         {
           performedBy,
           workspaceId: boardDetails.organizationId,
@@ -1011,6 +1032,35 @@ export const CardRepo = {
         },
         tx,
       );
+
+      // "Ali moved #12 Login page to Ready to Done" — only for a move to
+      // another list, not for reordering within the same list.
+      if (!sameList) {
+        const lists = await tx
+          .select({ id: boardList.id, listName: boardList.listName })
+          .from(boardList)
+          .where(inArray(boardList.id, [sourceListId, destinationListId]));
+        const listName = (id: string) =>
+          lists.find((list) => list.id === id)?.listName ?? null;
+
+        await NotificationService.notifyBoardMembers(
+          {
+            type: "CARD_MOVED",
+            actorId: performedBy,
+            workspaceId: boardDetails.organizationId,
+            boardId,
+            cardId,
+            sourceEventId: auditLog.id,
+            details: {
+              cardNumber: updatedCard.cardNumber,
+              cardTitle: updatedCard.title,
+              fromListName: listName(sourceListId),
+              toListName: listName(destinationListId),
+            },
+          },
+          tx,
+        );
+      }
 
       return updatedCard;
     });
