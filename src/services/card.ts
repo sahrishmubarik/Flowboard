@@ -13,6 +13,8 @@ import { NextResponse } from "next/server";
 import { boardMemberRepo } from "@/repositories/boardMemberRepo";
 import { db } from "@/db";
 import { AuditLogService } from "@/services/auditLogService";
+import { NotificationService } from "@/services/notificationService";
+import type { DbTransaction } from "@/db/types";
 
 // async function updateCardFieldWithAudit(
 //   boardId: string,
@@ -366,6 +368,8 @@ export async function updateCardDetail(
     previousValue: unknown,
     newValue: unknown,
     updates: Parameters<typeof CardRepo.updateCardFields>[2],
+    // Runs in the same transaction, only when the value actually changed.
+    onChanged?: (tx: DbTransaction, auditLogId: string) => Promise<void>,
   ) {
     const updatedCard = await db.transaction(async (tx) => {
       const updated = await CardRepo.updateCardFields(
@@ -380,7 +384,7 @@ export async function updateCardDetail(
       }
 
       if (JSON.stringify(previousValue) !== JSON.stringify(newValue)) {
-        await AuditLogService.record(
+        const auditLog = await AuditLogService.record(
           {
             performedBy: performedBy,
             workspaceId,
@@ -396,6 +400,8 @@ export async function updateCardDetail(
           },
           tx,
         );
+
+        await onChanged?.(tx, auditLog.id);
       }
 
       return updated;
@@ -649,6 +655,26 @@ export async function updateCardDetail(
         currentCard.assignedTo ?? null,
         assignedTo,
         { assignedTo },
+        // "Ali assigned a new ticket to you" (not when unassigning).
+        assignedTo === null
+          ? undefined
+          : (tx, auditLogId) =>
+              NotificationService.notifyUsers(
+                {
+                  type: "CARD_ASSIGNED",
+                  actorId: user.userId,
+                  workspaceId,
+                  boardId,
+                  cardId,
+                  sourceEventId: auditLogId,
+                  details: {
+                    cardNumber: currentCard.cardNumber,
+                    cardTitle: currentCard.title,
+                  },
+                },
+                [assignedTo],
+                tx,
+              ).then(() => undefined),
       );
     }
 

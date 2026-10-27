@@ -4,6 +4,7 @@ import { card } from "@/db/cardSchema";
 import { eq, and, ne, isNull, sql } from "drizzle-orm";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { AuditLogService } from "@/services/auditLogService";
+import { NotificationService } from "@/services/notificationService";
 export const SprintRepo = {
   // async create(
   //   boardId: string,
@@ -70,7 +71,7 @@ export const SprintRepo = {
         throw new Error("Board not found");
       }
 
-      await AuditLogService.record(
+      const auditLog = await AuditLogService.record(
         {
           performedBy: createdBy,
           workspaceId: boardDetails.organizationId,
@@ -85,6 +86,20 @@ export const SprintRepo = {
             goal: newSprint.goal,
             carryUnresolvedTickets: newSprint.carryUnresolvedTickets,
           },
+        },
+        tx,
+      );
+
+      // "Ali created a new sprint" — tell everyone on the board.
+      await NotificationService.notifyBoardMembers(
+        {
+          type: "SPRINT_CREATED",
+          actorId: createdBy,
+          workspaceId: boardDetails.organizationId,
+          boardId,
+          sprintId: newSprint.id,
+          sourceEventId: auditLog.id,
+          details: { sprintName: newSprint.sprintName },
         },
         tx,
       );

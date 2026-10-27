@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { commit } from "@/db/cardSchema";
+import { card, commit } from "@/db/cardSchema";
 import { eq, and } from "drizzle-orm";
 import { users } from "@/db/authSchema";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { AuditLogService } from "@/services/auditLogService";
+import { NotificationService } from "@/services/notificationService";
 export const CommitRepo = {
   // async createCardCommit(
   //   cardId: string,
@@ -45,7 +46,7 @@ export const CommitRepo = {
         throw new Error("Board not found");
       }
 
-      await AuditLogService.record(
+      const auditLog = await AuditLogService.record(
         {
           performedBy: userId,
           workspaceId: boardDetails.organizationId,
@@ -57,6 +58,37 @@ export const CommitRepo = {
         },
         tx,
       );
+
+      // "Ali commented on #12 Login page" — tell the card's assignee.
+      const [cardDetails] = await tx
+        .select({
+          assignedTo: card.assignedTo,
+          cardNumber: card.cardNumber,
+          title: card.title,
+        })
+        .from(card)
+        .where(eq(card.id, cardId))
+        .limit(1);
+
+      if (cardDetails?.assignedTo) {
+        await NotificationService.notifyUsers(
+          {
+            type: "COMMIT_CREATED",
+            actorId: userId,
+            workspaceId: boardDetails.organizationId,
+            boardId,
+            cardId,
+            commitId: newCommit.id,
+            sourceEventId: auditLog.id,
+            details: {
+              cardNumber: cardDetails.cardNumber,
+              cardTitle: cardDetails.title,
+            },
+          },
+          [cardDetails.assignedTo],
+          tx,
+        );
+      }
 
       return newCommit;
     });
