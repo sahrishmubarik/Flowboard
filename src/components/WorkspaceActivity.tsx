@@ -68,7 +68,7 @@ export default function WorkspaceActivity({
   const [activities, setActivities] = useState<Activity[]>([]);
 
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const limit = 7;
 
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
