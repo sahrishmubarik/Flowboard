@@ -408,7 +408,7 @@ function EditorButton({
       title={title}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-40"
       style={{
         backgroundColor: active ? "var(--color-primary)" : "transparent",
 
