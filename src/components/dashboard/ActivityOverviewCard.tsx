@@ -10,35 +10,32 @@ export default function ActivityOverviewCard({
   workspaceId,
 }: ActivityOverviewCardProps) {
   return (
-    <section className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-sm)]">
-      <div className="flex flex-col items-center gap-8 px-5 py-8">
-        {/* Icon */}
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
-          <Activity size={22} />
-        </div>
+    <section className="flex flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-sm)]">
+      {/* Header: matches the Active sprints card */}
+      <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-5 py-4">
+        <span
+          aria-hidden="true"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]"
+        >
+          <Activity size={17} />
+        </span>
+        <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">
+          Workspace activity
+        </h2>
+      </div>
 
-        {/* Heading and paragraph */}
-        <div className="min-w-0 flex-1">
-          <h2
-            className="text-[17px] font-semibold tracking-tight text-[var(--color-text-primary)] text-center"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Workspace activity
-          </h2>
+      <div className="flex flex-1 flex-col items-start gap-5 px-5 py-5">
+        <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+          Stay informed about changes across your workspace. See updates to
+          boards, cards, sprints and team members in one place.
+        </p>
 
-          <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)] text-center">
-            Stay informed about changes across your workspace. See updates to
-            boards, cards, sprints and team members in one place.
-          </p>
-        </div>
-
-        {/* Button */}
         <Link
           href={`/dashboard/workspace/${workspaceId}/activity`}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-primary)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-active-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-primary)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-active-bg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
         >
-          <span>View activity</span>
-          <ArrowRight size={16} />
+          View activity
+          <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
     </section>
