@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import CreateCard from "@/components/card/CreateCard";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import BoardActionsMenu from "@/components/board/BoardActionsMenu";
 
 import { ChevronDown, Star } from "lucide-react";
 
@@ -22,6 +23,7 @@ type WorkspaceResponse = {
 type Board = {
   id: string;
   boardName: string;
+  role?: "owner" | "admin" | "manager" | "member";
 };
 
 type BoardResponse = {
@@ -251,6 +253,9 @@ export default function BoardHeader() {
 
   const workspaceName = workspaceData?.workspace.workspaceName;
   const boardName = boardData?.board.boardName;
+  const boardRole = boardData?.board.role;
+  // Owners/admins get the rename/delete menu in place of the plain chevron.
+  const canManageBoard = boardRole === "owner" || boardRole === "admin";
 
   const visibleMembers =
     boardMemberData?.data?.members?.filter(
@@ -327,14 +332,25 @@ export default function BoardHeader() {
                   {boardName}
                 </h1>
 
-                <ChevronDown
-                  size={16}
-                  className="shrink-0 transition"
-                  style={{
-                    color: "var(--color-text-muted)",
-                  }}
-                />
+                {!canManageBoard && (
+                  <ChevronDown
+                    size={16}
+                    className="shrink-0 transition"
+                    style={{
+                      color: "var(--color-text-muted)",
+                    }}
+                  />
+                )}
               </Link>
+
+              {canManageBoard && boardName && (
+                <BoardActionsMenu
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  boardName={boardName}
+                  role={boardRole}
+                />
+              )}
 
               {/* Star */}
 
