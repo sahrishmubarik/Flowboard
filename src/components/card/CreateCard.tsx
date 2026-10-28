@@ -1508,6 +1508,7 @@ import {
 } from "lucide-react";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "./CardDescriptionViewer";
+import { useToast } from "@/components/ui/ToastProvider";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1690,6 +1691,7 @@ export default function CreateCard({
   onCardClick,
 }: CardProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
   const [cardTitle, setCardTitle] = useState("");
   const [cardDescription, setCardDescription] = useState("");
@@ -1786,6 +1788,9 @@ export default function CreateCard({
         );
         return;
       }
+      // Partial success is explained inline above; full success gets a toast.
+      // Errors stay inline in the form (createCardMutation.error).
+      showToast("Card created successfully.", "success");
       // The mutation is still "pending" while onSuccess runs, so close here
       // directly; closeCreateCardModal() ignores calls while pending.
       setIsCreateCardOpen(false);

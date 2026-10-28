@@ -10,6 +10,7 @@ import { ChevronDown, Plus, X, Pencil, Trash2 } from "lucide-react";
 import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
+import { useToast } from "@/components/ui/ToastProvider";
 
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -147,6 +148,9 @@ type BoardMemberResponse = {
   data: BoardMember[];
 };
 const UNASSIGNED = "__unassigned__";
+// Width of every board list column: the list header and each member's status
+// cell below it must use the same value so the grid stays aligned.
+const LIST_COLUMN_WIDTH = "w-[260px] min-w-[260px] max-w-[260px]";
 // The board-members endpoint returns data: [{ userId, name, email, role }].
 // Use the user ID: cards.assignedTo references users.id, not boardMembers.id.
 const memberKey = (member: BoardMember) => member.userId;
@@ -179,6 +183,7 @@ export default function BoardCanvas({
   boardId,
 }: BoardCanvasProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const router = useRouter();
 
@@ -497,7 +502,9 @@ Card creation belongs to BoardList.*/
       return data;
     },
 
-    onSuccess: () => {
+    // Errors are shown inline in the sprint form, so only success toasts.
+    onSuccess: (data) => {
+      showToast(data?.message ?? "Sprint created successfully.", "success");
       setIsSprintCreateOpen(false);
 
       setSprintName("");
@@ -1247,7 +1254,7 @@ Card creation belongs to BoardList.*/
                     // width as every status cell in the member rows below.
                     <div
                       key={list.id}
-                      className="w-[290px] min-w-[290px] max-w-[290px] shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full"
+                      className={`${LIST_COLUMN_WIDTH} shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full`}
                     >
                       <SortableBoardList id={list.id}>
                         <BoardList
@@ -1354,7 +1361,7 @@ Card creation belongs to BoardList.*/
                       return (
                         <div
                           key={`${member.id}-${list.id}`}
-                          className="w-[290px] shrink-0 border-r"
+                          className={`${LIST_COLUMN_WIDTH} shrink-0 border-r`}
                           style={{ borderColor: "var(--color-border)" }}
                         >
                           <BoardList
@@ -1629,7 +1636,7 @@ Card creation belongs to BoardList.*/
                 )}
               </div>
 
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <input
                   id="carryUnresolvedTickets"
                   type="checkbox"
@@ -1637,12 +1644,15 @@ Card creation belongs to BoardList.*/
                   onChange={(event) =>
                     setCarryUnresolvedTickets(event.target.checked)
                   }
+                  className="h-4 w-4 shrink-0 cursor-pointer"
+                  style={{ accentColor: "var(--color-primary)" }}
                 />
 
                 <div>
                   <label
                     htmlFor="carryUnresolvedTickets"
-                    className="text-sm font-medium"
+                    className="cursor-pointer text-sm font-medium"
+                    style={{ color: "var(--color-text-primary)" }}
                   >
                     Carry unresolved tickets forward
                   </label>

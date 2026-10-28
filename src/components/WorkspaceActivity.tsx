@@ -38,6 +38,9 @@ type ActivityResponse = {
   };
 };
 
+// Records per page the user can choose from.
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
+
 type WorkspaceActivityProps = {
   workspaceId: string;
 };
@@ -68,7 +71,7 @@ export default function WorkspaceActivity({
   const [activities, setActivities] = useState<Activity[]>([]);
 
   const [page, setPage] = useState(1);
-  const limit = 7;
+  const [limit, setLimit] = useState(10);
 
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -190,7 +193,7 @@ export default function WorkspaceActivity({
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, selectedBoardId, page]);
+  }, [workspaceId, selectedBoardId, page, limit]);
 
   const fieldClass =
     "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]";
@@ -267,11 +270,34 @@ export default function WorkspaceActivity({
             </select>
           </div>
 
-          {!loadingBoards && !loadingActivities && !error && (
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              {total} {total === 1 ? "activity" : "activities"}
-            </p>
-          )}
+          <div className="flex flex-wrap items-center gap-4">
+            {!loadingBoards && !loadingActivities && !error && (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {total} {total === 1 ? "activity" : "activities"}
+              </p>
+            )}
+
+            {/* Records per page */}
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+              Show
+              <select
+                value={limit}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value));
+                  setPage(1);
+                }}
+                aria-label="Activities per page"
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              per page
+            </label>
+          </div>
         </div>
 
         {/* Loading boards */}

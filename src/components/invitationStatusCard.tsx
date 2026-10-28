@@ -889,9 +889,12 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail, ChevronLeft, ChevronRight } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type InvitationStatus = "PENDING" | "ACCEPTED" | "REVOKED";
 type StatusFilter = "ALL" | InvitationStatus;
@@ -914,7 +917,17 @@ type InvitationResponse = {
   };
 };
 
+type RevokeInvitationResponse = {
+  message?: string;
+  invitation?: { id: string; status: InvitationStatus };
+};
+
 type InvitationStatusCardProps = { workspaceId?: string };
+
+// Prefix shared by every page/filter of this workspace's invitation list.
+// Invite, revoke and accept flows invalidate it so all views stay in sync.
+export const invitationsQueryKey = (workspaceId: string) =>
+  ["workspace-invitations", workspaceId] as const;
 const filters: { value: StatusFilter; label: string }[] = [
   { value: "ALL", label: "All invitations" },
   { value: "PENDING", label: "Pending" },
@@ -957,94 +970,99 @@ export default function InvitationStatusCard({
   const params = useParams();
   const workspaceId =
     workspaceIdProp ?? (params.workspaceId as string | undefined);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [invitationToRevoke, setInvitationToRevoke] =
+    useState<Invitation | null>(null);
+
+  const invitationQuery = useQuery<InvitationResponse>({
+    queryKey: [
+      ...invitationsQueryKey(workspaceId ?? ""),
+      { status, page, limit },
+    ],
+    queryFn: async ({ signal }) => {
+      const query = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (status !== "ALL") query.set("status", status);
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/invitation?${query.toString()}`,
+        { signal, cache: "no-store" },
+      );
+      const data: InvitationResponse = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to fetch invitations.");
+      return data;
+    },
+    enabled: Boolean(workspaceId),
+  });
+
+  const invitations = invitationQuery.data?.invitations ?? [];
+  const total = invitationQuery.data?.pagination?.total ?? 0;
+  const totalPages = Math.max(
+    1,
+    invitationQuery.data?.pagination?.totalPages ?? 1,
+  );
   const workspaceError = !workspaceId ? "Workspace ID is missing." : "";
-  const displayError = workspaceError || error;
-  const isLoading = Boolean(workspaceId) && loading;
+  const displayError =
+    workspaceError ||
+    (invitationQuery.error instanceof Error
+      ? invitationQuery.error.message
+      : "");
+  const isLoading = Boolean(workspaceId) && invitationQuery.isPending;
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    const controller = new AbortController();
-    const load = async () => {
-      try {
-        const query = new URLSearchParams({
-          page: String(page),
-          limit: String(limit),
-        });
-        if (status !== "ALL") query.set("status", status);
-        const response = await fetch(
-          `/api/workspace/${workspaceId}/invitation?${query.toString()}`,
-          {
-            signal: controller.signal,
-            cache: "no-store",
-          },
-        );
-        const data: InvitationResponse = await response.json();
-        if (!response.ok)
-          throw new Error(data.message || "Failed to fetch invitations.");
-        if (controller.signal.aborted) return;
-        setError("");
-        setInvitations(data.invitations ?? []);
-        setTotal(data.pagination?.total ?? 0);
-        setTotalPages(Math.max(1, data.pagination?.totalPages ?? 1));
-      } catch (err) {
-        if (!controller.signal.aborted)
-          setError(
-            err instanceof Error ? err.message : "Failed to fetch invitations.",
-          );
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-    void load();
-    return () => controller.abort();
-  }, [workspaceId, status, page, limit, refreshKey]);
-
-  const refresh = useCallback(() => {
-    setLoading(true);
-    setError("");
-    setRefreshKey((value) => value + 1);
-  }, []);
-
-  async function revoke(invitation: Invitation) {
-    if (!workspaceId || invitation.status !== "PENDING" || revokingId) return;
-    if (!window.confirm(`Revoke the invitation to ${invitation.email}?`))
-      return;
-    setRevokingId(invitation.id);
-    setError("");
-    try {
+  const revokeMutation = useMutation({
+    mutationFn: async (invitation: Invitation) => {
       // Existing PATCH contract uses email; keep it unchanged.
       const response = await fetch(`/api/workspace/${workspaceId}/invitation`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: invitation.email }),
       });
-      const data: { message?: string } = await response.json();
+      const data: RevokeInvitationResponse = await response.json();
       if (!response.ok)
         throw new Error(data.message || "Failed to revoke invitation.");
-      // Re-fetch so status filters and pagination totals reflect the database.
-      if (status === "PENDING" && invitations.length === 1 && page > 1) {
-        setLoading(true);
-        setPage((p) => p - 1);
-      } else {
-        refresh();
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to revoke invitation.",
+      return data;
+    },
+    onSuccess: async (data, invitation) => {
+      showToast(data.message || "Invitation revoked successfully.", "success");
+      setInvitationToRevoke(null);
+
+      // Show the confirmed status right away, then re-fetch so status
+      // filters and pagination totals reflect the database.
+      const revokedStatus = data.invitation?.status ?? "REVOKED";
+      queryClient.setQueryData<InvitationResponse>(
+        [...invitationsQueryKey(workspaceId ?? ""), { status, page, limit }],
+        (old) =>
+          old && {
+            ...old,
+            invitations: old.invitations.map((item) =>
+              item.id === invitation.id
+                ? { ...item, status: revokedStatus }
+                : item,
+            ),
+          },
       );
-    } finally {
-      setRevokingId(null);
-    }
+      if (status === "PENDING" && invitations.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      }
+      await queryClient.invalidateQueries({
+        queryKey: invitationsQueryKey(workspaceId ?? ""),
+      });
+    },
+    // The invitation is unchanged on failure; keep the dialog open to retry.
+    onError: (err) => {
+      showToast(err.message || "Failed to revoke invitation.", "error");
+    },
+  });
+
+  function confirmRevoke() {
+    if (!invitationToRevoke || revokeMutation.isPending) return;
+    revokeMutation.mutate(invitationToRevoke);
   }
 
   const fieldClass =
@@ -1080,8 +1098,6 @@ export default function InvitationStatusCard({
             className={fieldClass}
             value={status}
             onChange={(e) => {
-              setLoading(true);
-              setError("");
               setStatus(e.target.value as StatusFilter);
               setPage(1);
             }}
@@ -1103,8 +1119,6 @@ export default function InvitationStatusCard({
             className={fieldClass}
             value={limit}
             onChange={(e) => {
-              setLoading(true);
-              setError("");
               setLimit(Number(e.target.value));
               setPage(1);
             }}
@@ -1190,10 +1204,11 @@ export default function InvitationStatusCard({
                       <button
                         type="button"
                         className={buttonClass}
-                        disabled={revokingId !== null}
-                        onClick={() => void revoke(invitation)}
+                        disabled={revokeMutation.isPending}
+                        onClick={() => setInvitationToRevoke(invitation)}
                       >
-                        {revokingId === invitation.id
+                        {revokeMutation.isPending &&
+                        revokeMutation.variables?.id === invitation.id
                           ? "Revoking..."
                           : "Revoke"}
                       </button>
@@ -1211,11 +1226,7 @@ export default function InvitationStatusCard({
             type="button"
             className={buttonClass}
             disabled={page <= 1}
-            onClick={() => {
-              setLoading(true);
-              setError("");
-              setPage((p) => Math.max(1, p - 1));
-            }}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
             <ChevronLeft size={16} /> Previous
           </button>
@@ -1226,16 +1237,37 @@ export default function InvitationStatusCard({
             type="button"
             className={buttonClass}
             disabled={page >= totalPages}
-            onClick={() => {
-              setLoading(true);
-              setError("");
-              setPage((p) => Math.min(totalPages, p + 1));
-            }}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           >
             Next <ChevronRight size={16} />
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={invitationToRevoke !== null}
+        title="Revoke invitation?"
+        description={
+          <>
+            <span
+              className="font-semibold"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {invitationToRevoke?.email}
+            </span>{" "}
+            will no longer be able to join this workspace with their
+            invitation link. You can send a new invitation later.
+          </>
+        }
+        icon={<Mail size={20} />}
+        confirmLabel="Revoke Invitation"
+        pendingLabel="Revoking..."
+        isPending={revokeMutation.isPending}
+        onConfirm={confirmRevoke}
+        onCancel={() => {
+          if (!revokeMutation.isPending) setInvitationToRevoke(null);
+        }}
+      />
     </section>
   );
 }

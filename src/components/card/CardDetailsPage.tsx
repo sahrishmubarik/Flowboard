@@ -1179,14 +1179,12 @@ import {
   ExternalLink,
   MoreHorizontal,
   Trash2,
-  Pencil,
-  X,
-  Save,
 } from "lucide-react";
 
 import CardCommits from "@/components/card/CardCommits";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
@@ -1334,8 +1332,21 @@ export default function CardDetailsPage({
   const [cardFieldDraft, setCardFieldDraft] = useState("");
   const [timeDraft, setTimeDraft] = useState("");
 
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  // Set when an inline editor closes, so its blur does not save twice.
+  const skipBlurSaveRef = useRef(false);
+  const descriptionEditorRef = useRef<HTMLDivElement>(null);
+
+  // Per field: the newest request, how many are in flight, and the last
+  // value the server confirmed. Used so an older failed request never
+  // overwrites a newer change.
+  const fieldRequestsRef = useRef<
+    Record<
+      string,
+      { latest: number; pending: number; confirmed: Partial<CardDetails> }
+    >
+  >({});
 
   const { data, isLoading, error } = useQuery<CardDetailsResponse>({
     queryKey: ["board-card", workspaceId, boardId, cardId],
@@ -1418,12 +1429,67 @@ export default function CardDetailsPage({
   const sprints = sprintData?.sprints ?? [];
   const attachments = attachmentData?.attachments ?? [];
 
+  const cardQueryKey = ["board-card", workspaceId, boardId, cardId];
+  const updateMutationKey = ["card-update", cardId];
+
+  // The value each update should show right away, in the card cache's shape.
+  const getOptimisticPatch = (payload: EditableAction): Partial<CardDetails> => {
+    switch (payload.action) {
+      case "title":
+        return { title: payload.title };
+      case "description":
+        return { description: payload.description };
+      case "startDate":
+        return {
+          startDate: payload.startDate
+            ? new Date(payload.startDate).toISOString()
+            : null,
+        };
+      case "dueDate":
+        return {
+          dueDate: payload.dueDate
+            ? new Date(payload.dueDate).toISOString()
+            : null,
+        };
+      case "taskType":
+        return { type: payload.type };
+      case "priority":
+        return { priority: payload.priority };
+      case "estimateTime":
+        return { estimateTime: payload.estimateTime };
+      case "spentTime":
+        return { spentTime: payload.spentTime };
+      case "sprint": {
+        const sprintIds = payload.sprintId ?? [];
+        const names = sprintIds
+          .map((id) => sprints.find((sprint) => sprint.id === id)?.name)
+          .filter((name): name is string => Boolean(name));
+        return { sprintId: sprintIds, sprintName: names.join(", ") || null };
+      }
+      case "assignedTo": {
+        const name =
+          members.find((member) => member.userId === payload.assignedTo)
+            ?.name ?? null;
+        return {
+          assignedTo: payload.assignedTo,
+          assigneeName: name,
+          assignedToName: name,
+          assignee: name,
+        };
+      }
+    }
+  };
+
+  const setCardInCache = (patch: Partial<CardDetails>) => {
+    queryClient.setQueryData<CardDetailsResponse>(cardQueryKey, (old) =>
+      old ? { ...old, card: { ...old.card, ...patch } } : old,
+    );
+  };
+
   const updateMutation = useMutation({
+    mutationKey: updateMutationKey,
+
     mutationFn: async (payload: EditableAction) => {
-      console.log("Sending card update:", {
-        url: baseUrl,
-        payload,
-      });
       const response = await fetch(baseUrl, {
         method: "POST",
         headers: {
@@ -1441,81 +1507,143 @@ export default function CardDetailsPage({
       return result;
     },
 
-    onSuccess: async () => {
-      setSaveError(null);
-      setSaveSuccess("Saved successfully.");
-      setEditingCardField(null);
-      setEditingTime(null);
-      setEditingField(null);
+    // Show the new value immediately.
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: cardQueryKey });
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["board-card", workspaceId, boardId, cardId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["board-cards", workspaceId, boardId],
-        }),
-      ]);
+      const patch = getOptimisticPatch(payload);
+      const field = payload.action;
+      const entry = (fieldRequestsRef.current[field] ??= {
+        latest: 0,
+        pending: 0,
+        confirmed: {},
+      });
+
+      // With nothing in flight for this field, the cache holds the server
+      // value: remember it as the value to restore on failure.
+      const currentCard =
+        queryClient.getQueryData<CardDetailsResponse>(cardQueryKey)?.card;
+      if (entry.pending === 0 && currentCard) {
+        entry.confirmed = Object.fromEntries(
+          Object.keys(patch).map((key) => [
+            key,
+            currentCard[key as keyof CardDetails] ?? null,
+          ]),
+        );
+      }
+
+      entry.latest += 1;
+      entry.pending += 1;
+      setCardInCache(patch);
+
+      return { field, requestId: entry.latest, patch };
     },
 
-    onError: (mutationError) => {
-      setSaveSuccess(null);
-      setSaveError(
+    onSuccess: (_result, _payload, context) => {
+      const entry = fieldRequestsRef.current[context.field];
+      if (entry) entry.confirmed = context.patch;
+    },
+
+    // Restore the last confirmed value, unless a newer change to the same
+    // field has been made since this request started.
+    onError: (mutationError, _payload, context) => {
+      const entry = context && fieldRequestsRef.current[context.field];
+      if (entry && entry.latest === context.requestId) {
+        setCardInCache(entry.confirmed);
+      }
+
+      showToast(
         mutationError instanceof Error
           ? mutationError.message
           : "Unable to save changes.",
+        "error",
       );
+    },
+
+    onSettled: async (_result, _error, _payload, context) => {
+      const entry = context && fieldRequestsRef.current[context.field];
+      if (entry) entry.pending -= 1;
+
+      // Refetch only when no other card update is in flight, so a refetch
+      // cannot overwrite another field's pending change.
+      if (queryClient.isMutating({ mutationKey: updateMutationKey }) === 1) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: cardQueryKey }),
+          queryClient.invalidateQueries({
+            queryKey: ["board-cards", workspaceId, boardId],
+          }),
+        ]);
+      }
     },
   });
 
-  const update = (payload: EditableAction) => {
-    setSaveError(null);
-    setSaveSuccess(null);
-    updateMutation.mutate(payload);
+  const update = (payload: EditableAction) => updateMutation.mutate(payload);
+
+  const startCardFieldEdit = (
+    field: "title" | "description" | "startDate" | "dueDate",
+    value: string,
+  ) => {
+    skipBlurSaveRef.current = false;
+    setCardFieldDraft(value);
+    setEditingCardField(field);
   };
 
+  const closeCardFieldEditor = () => {
+    skipBlurSaveRef.current = true;
+    setEditingCardField(null);
+  };
+
+  // Saves the open title/description/date editor; unchanged values send no
+  // request.
   const saveCardField = () => {
-    if (!editingCardField) return;
+    const currentCard = data?.card;
+    if (!editingCardField || !currentCard) return;
 
     const field = editingCardField;
     const value =
       field === "description" ? cardFieldDraft : cardFieldDraft.trim();
 
-    if (field === "title") {
-      if (!value) {
-        setSaveError("Title cannot be empty.");
-        return;
-      }
+    if (field === "title" && !value) {
+      showToast("Title cannot be empty.", "error");
+      return;
+    }
 
-      update({
-        action: "title",
-        title: value,
-      });
+    closeCardFieldEditor();
+
+    if (field === "title") {
+      if (value !== currentCard.title) update({ action: "title", title: value });
       return;
     }
 
     if (field === "description") {
-      update({
-        action: "description",
-        description: cardFieldDraft,
-      });
+      if (value !== (currentCard.description ?? "")) {
+        update({ action: "description", description: value });
+      }
       return;
     }
+
+    const previous = currentCard[field]?.slice(0, 10) ?? "";
+    if (value === previous) return;
 
     if (field === "startDate") {
-      update({
-        action: "startDate",
-        startDate: value || null,
-      });
+      update({ action: "startDate", startDate: value || null });
       return;
     }
 
-    if (field === "dueDate") {
-      update({
-        action: "dueDate",
-        dueDate: value || null,
-      });
-    }
+    update({ action: "dueDate", dueDate: value || null });
+  };
+
+  // Description: save when focus really leaves the editor. Checked on the
+  // next tick, so the editor's own toolbar, its link prompt, or switching
+  // browser tabs does not save and close it.
+  const handleDescriptionBlur = () => {
+    setTimeout(() => {
+      if (skipBlurSaveRef.current || !document.hasFocus()) return;
+      if (descriptionEditorRef.current?.contains(document.activeElement)) {
+        return;
+      }
+      saveCardField();
+    }, 0);
   };
 
   const handleSaveTime = (
@@ -1523,21 +1651,24 @@ export default function CardDetailsPage({
     value: string,
   ) => {
     const trimmedValue = value.trim();
+    const numericValue = trimmedValue ? Number(trimmedValue) : null;
 
-    if (!trimmedValue) {
-      update({
-        action: field,
-        [field]: null,
-      } as EditableAction);
+    if (
+      numericValue !== null &&
+      (!Number.isFinite(numericValue) || numericValue < 0)
+    ) {
+      showToast("Please enter a valid non-negative number.", "error");
       return;
     }
 
-    const numericValue = Number(trimmedValue);
+    setEditingTime(null);
 
-    if (!Number.isFinite(numericValue) || numericValue < 0) {
-      setSaveError("Please enter a valid non-negative number.");
-      return;
-    }
+    const currentValue = data?.card?.[field];
+    const previous =
+      currentValue === null || currentValue === undefined || currentValue === ""
+        ? null
+        : Number(currentValue);
+    if (previous === numericValue) return;
 
     update({
       action: field,
@@ -1660,61 +1791,44 @@ export default function CardDetailsPage({
                     )}
                   </div>
 
-                  {/* Editable title */}
+                  {/* Title: click to edit; saves on blur or Enter, Esc cancels */}
                   {editingCardField === "title" ? (
-                    <div className="space-y-2">
-                      <input
-                        autoFocus
-                        aria-label="Edit card title"
-                        value={cardFieldDraft}
-                        maxLength={255}
-                        onChange={(event) =>
-                          setCardFieldDraft(event.target.value)
+                    <input
+                      autoFocus
+                      aria-label="Card title"
+                      value={cardFieldDraft}
+                      maxLength={255}
+                      onChange={(event) => setCardFieldDraft(event.target.value)}
+                      onBlur={() => {
+                        if (!skipBlurSaveRef.current) saveCardField();
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          event.currentTarget.blur();
                         }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") saveCardField();
-                          if (event.key === "Escape") {
-                            setEditingCardField(null);
-                          }
-                        }}
-                        className="w-full rounded-md border px-3 py-2 text-xl font-semibold"
-                        style={inputStyle}
-                        disabled={updateMutation.isPending}
-                      />
-
-                      <EditActions
-                        isSaving={updateMutation.isPending}
-                        onSave={saveCardField}
-                        onCancel={() => setEditingCardField(null)}
-                      />
-                    </div>
+                        if (event.key === "Escape") closeCardFieldEditor();
+                      }}
+                      className="-mx-2 w-[calc(100%+1rem)] rounded-md border px-2 py-1 text-xl font-semibold leading-snug tracking-tight outline-none focus:border-[var(--color-primary)] sm:text-2xl"
+                      style={inputStyle}
+                    />
                   ) : (
-                    <div className="flex items-start justify-between gap-3">
-                      <h1
-                        className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl"
-                        style={primary}
-                      >
-                        {card.title}
-                      </h1>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCardFieldDraft(card.title);
-                          setEditingCardField("title");
-                          setSaveError(null);
-                          setSaveSuccess(null);
-                        }}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-black/5"
-                        style={{
-                          borderColor: "var(--color-border)",
-                          ...secondary,
-                        }}
-                      >
-                        <Pencil size={12} />
-                        Edit
-                      </button>
-                    </div>
+                    <h1
+                      role="button"
+                      tabIndex={0}
+                      title="Click to edit"
+                      onClick={() => startCardFieldEdit("title", card.title)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          startCardFieldEdit("title", card.title);
+                        }
+                      }}
+                      className="-mx-2 cursor-text break-words rounded-md border border-transparent px-2 py-1 text-xl font-semibold leading-snug tracking-tight transition-colors hover:bg-[var(--color-card-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] sm:text-2xl"
+                      style={primary}
+                    >
+                      {card.title}
+                    </h1>
                   )}
 
                   {/* Description */}
@@ -1731,66 +1845,97 @@ export default function CardDetailsPage({
                         <FileText size={16} style={secondary} />
                         Description
                       </h2>
-
-                      {editingCardField !== "description" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCardFieldDraft(card.description ?? "");
-                            setEditingCardField("description");
-                            setSaveError(null);
-                            setSaveSuccess(null);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-black/5"
-                          style={{
-                            borderColor: "var(--color-border)",
-                            ...secondary,
-                          }}
-                        >
-                          <Pencil size={12} />
-                          Edit
-                        </button>
-                      )}
                     </div>
 
                     {editingCardField === "description" ? (
-                      <div className="mt-3 space-y-2">
+                      // Saves when focus leaves the editor or on Ctrl/Cmd+Enter;
+                      // Esc cancels.
+                      <div
+                        ref={descriptionEditorRef}
+                        className="mt-3 space-y-1.5"
+                        onBlur={handleDescriptionBlur}
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            closeCardFieldEditor();
+                          }
+                          if (
+                            event.key === "Enter" &&
+                            (event.ctrlKey || event.metaKey)
+                          ) {
+                            event.preventDefault();
+                            saveCardField();
+                          }
+                        }}
+                      >
                         {/* Same Markdown editor as the Create Card form. */}
                         <CardDescriptionEditor
                           value={cardFieldDraft}
                           onChange={setCardFieldDraft}
                         />
-
-                        <EditActions
-                          isSaving={updateMutation.isPending}
-                          onSave={saveCardField}
-                          onCancel={() => setEditingCardField(null)}
-                        />
+                        <p className="text-xs" style={muted}>
+                          Saves when you click outside · Ctrl+Enter to save ·
+                          Esc to cancel
+                        </p>
                       </div>
                     ) : card.description?.trim() ? (
-                      // Descriptions are stored as Markdown; render it safely
-                      // (sanitized) with clickable task-list checkboxes.
-                      <CardDescriptionViewer
-                        className="mt-3"
-                        content={card.description}
-                        isSaving={updateMutation.isPending}
-                        onContentChange={async (description) => {
-                          await updateMutation.mutateAsync({
-                            action: "description",
-                            description,
-                          });
+                      // Click the text to edit. Links and checklist
+                      // checkboxes keep working.
+                      <div
+                        tabIndex={0}
+                        title="Click to edit"
+                        aria-label="Edit description"
+                        onClick={(event) => {
+                          if (
+                            (event.target as HTMLElement).closest(
+                              "a, input, button, label",
+                            )
+                          ) {
+                            return;
+                          }
+                          startCardFieldEdit(
+                            "description",
+                            card.description ?? "",
+                          );
                         }}
-                      />
+                        onKeyDown={(event) => {
+                          if (
+                            event.key === "Enter" &&
+                            event.target === event.currentTarget
+                          ) {
+                            event.preventDefault();
+                            startCardFieldEdit(
+                              "description",
+                              card.description ?? "",
+                            );
+                          }
+                        }}
+                        className="-mx-2 mt-3 cursor-text rounded-md px-2 py-1 transition-colors hover:bg-[var(--color-card-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-primary)]"
+                      >
+                        {/* Descriptions are stored as Markdown; rendered
+                            safely (sanitized) with clickable checklists. */}
+                        <CardDescriptionViewer
+                          content={card.description}
+                          onContentChange={async (description) => {
+                            await updateMutation.mutateAsync({
+                              action: "description",
+                              description,
+                            });
+                          }}
+                        />
+                      </div>
                     ) : (
-                      <p
-                        className="mt-3 rounded-lg border border-dashed px-4 py-6 text-sm"
+                      <button
+                        type="button"
+                        onClick={() => startCardFieldEdit("description", "")}
+                        className="mt-3 w-full cursor-text rounded-lg border border-dashed px-4 py-6 text-left text-sm transition-colors hover:bg-[var(--color-card-hover)]"
                         style={{
                           borderColor: "var(--color-border)",
                           ...muted,
                         }}
                       >
-                        No description has been added yet.
-                      </p>
+                        Add a description...
+                      </button>
                     )}
                   </section>
 
@@ -1982,26 +2127,6 @@ export default function CardDetailsPage({
                   </div>
                 </div>
 
-                {saveError && (
-                  <p
-                    role="alert"
-                    className="mb-3 text-xs"
-                    style={{ color: "var(--color-tag-red-text)" }}
-                  >
-                    {saveError}
-                  </p>
-                )}
-
-                {saveSuccess && (
-                  <p
-                    role="status"
-                    className="mb-3 text-xs"
-                    style={{ color: "var(--color-tag-green-text)" }}
-                  >
-                    {saveSuccess}
-                  </p>
-                )}
-
                 <dl className="space-y-3">
                   <Property
                     label="Type"
@@ -2011,15 +2136,15 @@ export default function CardDetailsPage({
                       <select
                         autoFocus
                         aria-label="Change type"
-                        disabled={updateMutation.isPending}
                         value={card.type}
                         onBlur={() => setEditingField(null)}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           update({
                             action: "taskType",
                             type: event.target.value as TaskType,
-                          })
-                        }
+                          });
+                          setEditingField(null);
+                        }}
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         style={inputStyle}
                       >
@@ -2038,7 +2163,6 @@ export default function CardDetailsPage({
                     ) : (
                       <InlineValue
                         onClick={() => setEditingField("type")}
-                        disabled={updateMutation.isPending}
                       >
                         {formatLabel(card.type)}
                       </InlineValue>
@@ -2050,15 +2174,15 @@ export default function CardDetailsPage({
                       <select
                         autoFocus
                         aria-label="Change priority"
-                        disabled={updateMutation.isPending}
                         value={card.priority}
                         onBlur={() => setEditingField(null)}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           update({
                             action: "priority",
                             priority: event.target.value as CardPriority,
-                          })
-                        }
+                          });
+                          setEditingField(null);
+                        }}
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         style={inputStyle}
                       >
@@ -2083,7 +2207,6 @@ export default function CardDetailsPage({
                     ) : (
                       <InlineValue
                         onClick={() => setEditingField("priority")}
-                        disabled={updateMutation.isPending}
                       >
                         {formatLabel(card.priority)}
                       </InlineValue>
@@ -2095,15 +2218,15 @@ export default function CardDetailsPage({
                       <select
                         autoFocus
                         aria-label="Change assignee"
-                        disabled={updateMutation.isPending}
                         value={card.assignedTo ?? ""}
                         onBlur={() => setEditingField(null)}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           update({
                             action: "assignedTo",
                             assignedTo: event.target.value || null,
-                          })
-                        }
+                          });
+                          setEditingField(null);
+                        }}
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         style={inputStyle}
                       >
@@ -2136,7 +2259,6 @@ export default function CardDetailsPage({
                     ) : (
                       <InlineValue
                         onClick={() => setEditingField("assignee")}
-                        disabled={updateMutation.isPending}
                       >
                         {members.find(
                           (member) => member.userId === card.assignedTo,
@@ -2174,7 +2296,6 @@ export default function CardDetailsPage({
                           value={timeDraft}
                           onChange={(event) => setTimeDraft(event.target.value)}
                           placeholder="e.g. 120"
-                          disabled={updateMutation.isPending}
                           onKeyDown={(event) => {
                             if (event.key === "Escape") {
                               cancelTimeBlurRef.current = true;
@@ -2192,14 +2313,11 @@ export default function CardDetailsPage({
                               return;
                             }
 
-                            if (updateMutation.isPending) return;
-
                             handleSaveTime(field, event.currentTarget.value);
                           }}
                         />
                       ) : (
                         <InlineValue
-                          disabled={updateMutation.isPending}
                           onClick={() => {
                             setEditingField(null);
                             cancelTimeBlurRef.current = false;
@@ -2227,25 +2345,24 @@ export default function CardDetailsPage({
                         value={cardFieldDraft}
                         onChange={setCardFieldDraft}
                         onSave={saveCardField}
-                        onCancel={() => setEditingCardField(null)}
-                        onClear={() =>
+                        onCancel={closeCardFieldEditor}
+                        onClear={() => {
+                          closeCardFieldEditor();
                           update({
                             action: "startDate",
                             startDate: null,
-                          })
-                        }
-                        isSaving={updateMutation.isPending}
+                          });
+                        }}
                         canClear={Boolean(card.startDate)}
                       />
                     ) : (
                       <InlineValue
-                        disabled={updateMutation.isPending}
-                        onClick={() => {
-                          setCardFieldDraft(card.startDate?.slice(0, 10) ?? "");
-                          setEditingCardField("startDate");
-                          setSaveError(null);
-                          setSaveSuccess(null);
-                        }}
+                        onClick={() =>
+                          startCardFieldEdit(
+                            "startDate",
+                            card.startDate?.slice(0, 10) ?? "",
+                          )
+                        }
                       >
                         {card.startDate
                           ? formatCardDate(card.startDate)
@@ -2261,25 +2378,24 @@ export default function CardDetailsPage({
                         value={cardFieldDraft}
                         onChange={setCardFieldDraft}
                         onSave={saveCardField}
-                        onCancel={() => setEditingCardField(null)}
-                        onClear={() =>
+                        onCancel={closeCardFieldEditor}
+                        onClear={() => {
+                          closeCardFieldEditor();
                           update({
                             action: "dueDate",
                             dueDate: null,
-                          })
-                        }
-                        isSaving={updateMutation.isPending}
+                          });
+                        }}
                         canClear={Boolean(card.dueDate)}
                       />
                     ) : (
                       <InlineValue
-                        disabled={updateMutation.isPending}
-                        onClick={() => {
-                          setCardFieldDraft(card.dueDate?.slice(0, 10) ?? "");
-                          setEditingCardField("dueDate");
-                          setSaveError(null);
-                          setSaveSuccess(null);
-                        }}
+                        onClick={() =>
+                          startCardFieldEdit(
+                            "dueDate",
+                            card.dueDate?.slice(0, 10) ?? "",
+                          )
+                        }
                       >
                         {card.dueDate
                           ? formatCardDate(card.dueDate)
@@ -2317,7 +2433,6 @@ export default function CardDetailsPage({
                           aria-label="Change sprint"
                           aria-expanded="true"
                           aria-controls={`sprint-options-${cardId}`}
-                          disabled={updateMutation.isPending}
                           className="w-full rounded-md border px-2 py-1.5 text-left text-sm"
                           style={inputStyle}
                         >
@@ -2359,7 +2474,6 @@ export default function CardDetailsPage({
                                     <input
                                       type="checkbox"
                                       checked={selected}
-                                      disabled={updateMutation.isPending}
                                       onChange={() => {
                                         const currentIds = card.sprintId ?? [];
                                         update({
@@ -2406,7 +2520,6 @@ export default function CardDetailsPage({
                     ) : (
                       <InlineValue
                         onClick={() => setEditingField("sprint")}
-                        disabled={updateMutation.isPending}
                       >
                         {(card.sprintId ?? [])
                           .map(
@@ -2515,52 +2628,12 @@ export default function CardDetailsPage({
   );
 }
 
-function EditActions({
-  isSaving,
-  onSave,
-  onCancel,
-}: {
-  isSaving: boolean;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={isSaving}
-        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-        style={{ backgroundColor: "var(--color-primary)" }}
-      >
-        <Save size={14} />
-        {isSaving ? "Saving..." : "Save"}
-      </button>
-
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={isSaving}
-        className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium disabled:opacity-50"
-        style={{
-          borderColor: "var(--color-border)",
-          ...secondary,
-        }}
-      >
-        <X size={14} />
-        Cancel
-      </button>
-    </div>
-  );
-}
-
 function DateEditor({
   value,
   onChange,
   onSave,
   onCancel,
   onClear,
-  isSaving,
   canClear,
 }: {
   value: string;
@@ -2568,7 +2641,6 @@ function DateEditor({
   onSave: () => void;
   onCancel: () => void;
   onClear: () => void;
-  isSaving: boolean;
   canClear: boolean;
 }) {
   return (
@@ -2581,25 +2653,22 @@ function DateEditor({
         onChange={(event) => onChange(event.target.value)}
         className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
         style={inputStyle}
-        disabled={isSaving}
       />
 
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onSave}
-          disabled={isSaving}
-          className="rounded-md px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+            className="rounded-md px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          {isSaving ? "Saving..." : "Save"}
+          Save
         </button>
 
         <button
           type="button"
           onClick={onCancel}
-          disabled={isSaving}
-          className="rounded-md border px-2 py-1 text-xs disabled:opacity-50"
+            className="rounded-md border px-2 py-1 text-xs disabled:opacity-50"
           style={{
             borderColor: "var(--color-border)",
             ...secondary,
@@ -2611,7 +2680,7 @@ function DateEditor({
         <button
           type="button"
           onClick={onClear}
-          disabled={isSaving || !canClear}
+          disabled={!canClear}
           className="rounded-md px-1 py-1 text-xs underline disabled:opacity-50"
           style={secondary}
         >

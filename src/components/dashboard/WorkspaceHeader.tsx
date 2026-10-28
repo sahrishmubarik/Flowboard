@@ -2,8 +2,6 @@
 
 import {
   MoreHorizontal,
-  Search,
-  Bell,
   Users,
   UserPlus,
   Mail,
@@ -117,46 +115,6 @@ export default function WorkspaceHeader({
       {/* ================================================================ */}
 
       <div className="relative flex shrink-0 items-center gap-2">
-        {/* Search */}
-
-        <button
-          type="button"
-          aria-label="Search"
-          className="
-            flex h-10 w-10 items-center justify-center rounded-xl
-            border border-[var(--color-border)]
-            bg-[var(--color-card-bg)]
-            text-[var(--color-text-secondary)]
-            transition-all duration-200
-            hover:border-[var(--color-primary)]/40
-            hover:bg-[var(--color-primary-active-bg)]
-            hover:text-[var(--color-primary)]
-            cursor-pointer
-          "
-        >
-          <Search size={17} />
-        </button>
-
-        {/* Notifications */}
-
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="
-            flex h-10 w-10 items-center justify-center rounded-xl
-            border border-[var(--color-border)]
-            bg-[var(--color-card-bg)]
-            text-[var(--color-text-secondary)]
-            transition-all duration-200
-            hover:border-[var(--color-primary)]/40
-            hover:bg-[var(--color-primary-active-bg)]
-            hover:text-[var(--color-primary)]
-             cursor-pointer
-          "
-        >
-          <Bell size={17} />
-        </button>
-
         {/* ============================================================ */}
         {/* More / workspace actions                                      */}
         {/* ============================================================ */}

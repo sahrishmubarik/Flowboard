@@ -1,6 +1,6 @@
 "use client";
 import { ExternalLink } from "lucide-react";
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MessageSquareText,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type CardCommit = {
   id: string;
@@ -24,6 +25,13 @@ type CardCommit = {
   createdByName: string;
   createdAt: string;
 };
+
+type CurrentUserResponse = {
+  user?: { id: string; name: string | null };
+};
+
+// Comments shown before the server confirms them.
+const TEMP_ID_PREFIX = "temp-";
 
 type CommitsResponse = {
   message?: string;
@@ -142,6 +150,32 @@ export default function CardCommits({
 
   const commitUrl = `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}/comments`;
   const queryKey = ["card-commits", workspaceId, boardId, cardId] as const;
+  const { showToast } = useToast();
+
+  // Inline editing of the signed-in user's own comments.
+  const [editingCommitId, setEditingCommitId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const skipEditBlurRef = useRef(false);
+  const editEditorRef = useRef<HTMLDivElement>(null);
+
+  // Per comment: newest request, requests in flight, last confirmed text.
+  const commentRequestsRef = useRef<
+    Record<string, { latest: number; pending: number; confirmed: string }>
+  >({});
+
+  // Same query as the sidebar, so it is shared from the cache.
+  const { data: currentUserData } = useQuery<CurrentUserResponse>({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth");
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to fetch current user");
+      }
+      return result;
+    },
+  });
+  const currentUser = currentUserData?.user;
 
   const attachmentUrl = `/api/workspace/${workspaceId}/board/${boardId}/card/${cardId}/attachment?scope=all`;
   const attachmentQueryKey = [
@@ -313,6 +347,32 @@ export default function CardCommits({
       const failedFiles = await uploadFiles(commitId, payload.files);
       return { commitId, failedFiles };
     },
+    // Show the comment right away; it is replaced by the saved one on refetch.
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey });
+      const tempId = `${TEMP_ID_PREFIX}${Date.now()}`;
+
+      queryClient.setQueryData<CardCommit[]>(queryKey, (old) => [
+        {
+          id: tempId,
+          cardId,
+          description: payload.description,
+          createdBy: currentUser?.id ?? "",
+          createdByName: currentUser?.name ?? "You",
+          createdAt: new Date().toISOString(),
+        },
+        ...(old ?? []),
+      ]);
+
+      return { tempId };
+    },
+    // Remove the comment again; the form keeps the text and shows the error.
+    onError: (_error, _payload, context) => {
+      if (!context) return;
+      queryClient.setQueryData<CardCommit[]>(queryKey, (old) =>
+        (old ?? []).filter((comment) => comment.id !== context.tempId),
+      );
+    },
     onSuccess: async ({ commitId, failedFiles }) => {
       await queryClient.invalidateQueries({ queryKey });
       if (!commitId) {
@@ -339,6 +399,116 @@ export default function CardCommits({
       setShowForm(false);
     },
   });
+
+  const setCommentInCache = (commitId: string, text: string) => {
+    queryClient.setQueryData<CardCommit[]>(queryKey, (old) =>
+      (old ?? []).map((comment) =>
+        comment.id === commitId ? { ...comment, description: text } : comment,
+      ),
+    );
+  };
+
+  const updateCommentMutationKey = ["comment-update", cardId];
+
+  const updateCommentMutation = useMutation({
+    mutationKey: updateCommentMutationKey,
+    mutationFn: async (payload: { commitId: string; description: string }) => {
+      const response = await fetch(`${commitUrl}/${payload.commitId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: payload.description }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Failed to update comment.");
+      }
+      return result;
+    },
+    onMutate: async ({ commitId, description: text }) => {
+      await queryClient.cancelQueries({ queryKey });
+
+      const entry = (commentRequestsRef.current[commitId] ??= {
+        latest: 0,
+        pending: 0,
+        confirmed: "",
+      });
+      const current = queryClient
+        .getQueryData<CardCommit[]>(queryKey)
+        ?.find((comment) => comment.id === commitId);
+      // With nothing in flight, the cache holds the saved text.
+      if (entry.pending === 0 && current) entry.confirmed = current.description;
+
+      entry.latest += 1;
+      entry.pending += 1;
+      setCommentInCache(commitId, text);
+
+      return { commitId, requestId: entry.latest, text };
+    },
+    onSuccess: (_result, _payload, context) => {
+      const entry = commentRequestsRef.current[context.commitId];
+      if (entry) entry.confirmed = context.text;
+    },
+    // Restore the saved text, unless a newer edit was made since.
+    onError: (mutationError, _payload, context) => {
+      const entry = context && commentRequestsRef.current[context.commitId];
+      if (entry && entry.latest === context.requestId) {
+        setCommentInCache(context.commitId, entry.confirmed);
+      }
+      showToast(
+        mutationError instanceof Error
+          ? mutationError.message
+          : "Could not update comment.",
+        "error",
+      );
+    },
+    onSettled: async (_result, _error, _payload, context) => {
+      const entry = context && commentRequestsRef.current[context.commitId];
+      if (entry) entry.pending -= 1;
+
+      if (
+        queryClient.isMutating({ mutationKey: updateCommentMutationKey }) === 1
+      ) {
+        await queryClient.invalidateQueries({ queryKey });
+      }
+    },
+  });
+
+  function startEditing(comment: CardCommit) {
+    skipEditBlurRef.current = false;
+    setEditDraft(comment.description);
+    setEditingCommitId(comment.id);
+  }
+
+  function closeEditor() {
+    skipEditBlurRef.current = true;
+    setEditingCommitId(null);
+  }
+
+  // Unchanged text sends no request; empty text is not allowed.
+  function saveEdit(comment: CardCommit) {
+    const text = editDraft.trim();
+
+    if (!text) {
+      showToast("Comment cannot be empty.", "error");
+      return;
+    }
+
+    closeEditor();
+
+    if (text !== comment.description.trim()) {
+      updateCommentMutation.mutate({ commitId: comment.id, description: text });
+    }
+  }
+
+  // Save when focus really leaves the editor (not for its own toolbar,
+  // its link prompt, or switching browser tabs).
+  function handleEditBlur(comment: CardCommit) {
+    setTimeout(() => {
+      if (skipEditBlurRef.current || !document.hasFocus()) return;
+      if (editEditorRef.current?.contains(document.activeElement)) return;
+      saveEdit(comment);
+    }, 0);
+  }
 
   const commits = [...(data ?? [])].sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -682,7 +852,7 @@ export default function CardCommits({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-0.5">
           {commits.map((item) => {
             const isExpanded = expandedCommits.has(item.id);
             const descriptionLines = item.description?.trim().split(/\r?\n/) ?? [];
@@ -696,13 +866,24 @@ export default function CardCommits({
             const hasDetails =
               Boolean(descriptionDetails) || commitAttachments.length > 0;
             const detailsId = `commit-details-${item.id}`;
+            const isSending = item.id.startsWith(TEMP_ID_PREFIX);
+            // Only the author can edit (the API enforces this too).
+            const canEdit =
+              !isSending &&
+              Boolean(currentUser?.id) &&
+              item.createdBy === currentUser?.id;
+            const isEditing = editingCommitId === item.id;
 
             return (
-              <article key={item.id} className="min-w-0 rounded-lg">
+              <article
+                key={item.id}
+                className={`min-w-0 rounded-lg ${isSending ? "opacity-60" : ""}`}
+                aria-busy={isSending}
+              >
                 {/* Compact Jira-style single-line summary */}
-                <div className="flex min-w-0 items-center gap-2.5 px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
                   <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
                     style={{
                       backgroundColor: "var(--color-column-bg)",
                       color: "var(--color-text-primary)",
@@ -720,14 +901,26 @@ export default function CardCommits({
                     >
                       {author}
                     </span>
-                    {descriptionPreview && (
-                      <span
-                        className="min-w-0 flex-1 truncate text-sm"
-                        title={descriptionPreview}
-                        style={{ color: "var(--color-text-secondary)" }}
-                      >
-                        {descriptionPreview}
-                      </span>
+                    {descriptionPreview && !isEditing && (
+                      canEdit ? (
+                        <button
+                          type="button"
+                          onClick={() => startEditing(item)}
+                          title="Click to edit"
+                          className="min-w-0 flex-1 cursor-text truncate rounded px-1 text-left text-sm transition-colors hover:bg-[var(--color-card-hover)]"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        >
+                          {descriptionPreview}
+                        </button>
+                      ) : (
+                        <span
+                          className="min-w-0 flex-1 truncate text-sm"
+                          title={descriptionPreview}
+                          style={{ color: "var(--color-text-secondary)" }}
+                        >
+                          {descriptionPreview}
+                        </span>
+                      )
                     )}
                   </div>
 
@@ -746,9 +939,9 @@ export default function CardCommits({
                     className="hidden shrink-0 text-[11px] sm:block"
                     style={{ color: "var(--color-text-muted)" }}
                   >
-                    {formatCommitDate(item.createdAt)}
+                    {isSending ? "Sending..." : formatCommitDate(item.createdAt)}
                   </time>
-                  {hasDetails && (
+                  {hasDetails && !isEditing && (
                     <button
                       type="button"
                       aria-expanded={isExpanded}
@@ -767,11 +960,75 @@ export default function CardCommits({
                   )}
                 </div>
 
-                {isExpanded && (
-                  <div id={detailsId} className="space-y-2 px-3 pb-3">
-                    {descriptionDetails && (
-                      <CardDescriptionViewer content={descriptionDetails} />
-                    )}
+                {isEditing && (
+                  // Saves when focus leaves the editor or on Ctrl/Cmd+Enter;
+                  // Esc cancels.
+                  <div
+                    ref={editEditorRef}
+                    className="space-y-1.5 px-3 pb-2"
+                    onBlur={() => handleEditBlur(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        closeEditor();
+                      }
+                      if (
+                        event.key === "Enter" &&
+                        (event.ctrlKey || event.metaKey)
+                      ) {
+                        event.preventDefault();
+                        saveEdit(item);
+                      }
+                    }}
+                  >
+                    <CardDescriptionEditor
+                      value={editDraft}
+                      onChange={setEditDraft}
+                    />
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      Saves when you click outside · Ctrl+Enter to save · Esc
+                      to cancel
+                    </p>
+                  </div>
+                )}
+
+                {isExpanded && !isEditing && (
+                  <div id={detailsId} className="space-y-1.5 px-3 pb-2">
+                    {descriptionDetails &&
+                      (canEdit ? (
+                        <div
+                          tabIndex={0}
+                          title="Click to edit"
+                          aria-label="Edit comment"
+                          onClick={(event) => {
+                            if (
+                              (event.target as HTMLElement).closest(
+                                "a, input, button, label",
+                              )
+                            ) {
+                              return;
+                            }
+                            startEditing(item);
+                          }}
+                          onKeyDown={(event) => {
+                            if (
+                              event.key === "Enter" &&
+                              event.target === event.currentTarget
+                            ) {
+                              event.preventDefault();
+                              startEditing(item);
+                            }
+                          }}
+                          className="-mx-1 cursor-text rounded px-1 transition-colors hover:bg-[var(--color-card-hover)]"
+                        >
+                          <CardDescriptionViewer content={descriptionDetails} />
+                        </div>
+                      ) : (
+                        <CardDescriptionViewer content={descriptionDetails} />
+                      ))}
                     {commitAttachments.length > 0 && (
                       <>
                         <p className="text-xs font-semibold">
@@ -783,7 +1040,7 @@ export default function CardCommits({
                             href={attachment.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 rounded-md border p-2 text-xs hover:opacity-80"
+                            className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs hover:opacity-80"
                             style={{
                               borderColor: "var(--color-border)",
                               color: "var(--color-text-secondary)",

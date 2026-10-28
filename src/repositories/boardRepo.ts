@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { board, boardMembers } from "@/db/boardSchema";
 import type { DbTransaction } from "@/db/types";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 export const BoardRepo = {
   async create(
     tx: typeof db,
@@ -56,7 +56,9 @@ export const BoardRepo = {
           eq(boardMembers.userId, userId),
           eq(boardMembers.status, "ACTIVE"),
         ),
-      );
+      )
+      // Stable order: the first board is the workspace's default board.
+      .orderBy(asc(board.createdAt), asc(board.id));
 
     console.log("BOARDS FROM DB:", boards);
 

@@ -43,6 +43,11 @@ type GetWorkspaceIdResponse = {
   workspace: getWorkspaceId;
 };
 
+type WorkspaceBoardsResponse = {
+  message: string;
+  boards: { id: string }[];
+};
+
 export default function WorkspaceDashboardPage() {
   const params = useParams<{ workspaceId: string }>();
   const router = useRouter();
@@ -112,6 +117,23 @@ export default function WorkspaceDashboardPage() {
 
       if (!response.ok) {
         throw new Error("Failed to fetch workspace");
+      }
+
+      return response.json();
+    },
+
+    enabled: !!workspaceId,
+  });
+
+  // Same query (key + endpoint) as WorkspaceStats, so it is fetched once.
+  const { data: boardsData } = useQuery<WorkspaceBoardsResponse>({
+    queryKey: ["workspace-boards", workspaceId],
+
+    queryFn: async () => {
+      const response = await fetch(`/api/workspace/${workspaceId}/board`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch workspace boards");
       }
 
       return response.json();
@@ -259,7 +281,7 @@ export default function WorkspaceDashboardPage() {
           <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
             <WorkspaceHeader
               workspaceName={workspace_name}
-              boardCount={4}
+              boardCount={boardsData?.boards?.length ?? 0}
               onAction={setWorkspaceAction}
             />
 

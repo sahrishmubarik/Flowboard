@@ -339,6 +339,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { invitationsQueryKey } from "@/components/invitationStatusCard";
 
 const roles = [
   {
@@ -366,6 +368,7 @@ export default function InviteMemberCard() {
   const [error, setError] = useState("");
   const params = useParams();
   const workspaceId = params.workspaceId as string;
+  const queryClient = useQueryClient();
 
   async function handleInvite() {
     setMessage("");
@@ -391,6 +394,11 @@ export default function InviteMemberCard() {
       setMessage("Invitation sent successfully.");
       setEmail("");
       setRole("member");
+      // Re-fetch the invitation list so the new PENDING row (with its real
+      // id and timestamps) appears without a page reload.
+      await queryClient.invalidateQueries({
+        queryKey: invitationsQueryKey(workspaceId),
+      });
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",

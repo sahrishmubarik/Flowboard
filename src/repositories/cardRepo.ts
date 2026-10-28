@@ -860,6 +860,53 @@ export const CardRepo = {
       .orderBy(asc(card.position));
   },
 
+  // Visible (not archived/deleted) card counts for a board. A card counts as
+  // completed when it sits in completedListId (the board's last list).
+  async getBoardTaskCounts(boardId: string, completedListId: string | null) {
+    const [counts] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        completed: completedListId
+          ? sql<number>`(count(*) filter (where ${card.boardListId} = ${completedListId}::uuid))::int`
+          : sql<number>`0`,
+      })
+      .from(card)
+      .where(
+        and(
+          eq(card.boardId, boardId),
+          eq(card.isArchived, false),
+          isNull(card.deletedAt),
+        ),
+      );
+
+    return { total: counts?.total ?? 0, completed: counts?.completed ?? 0 };
+  },
+
+  // Estimate/spent hour totals for the visible cards of one sprint. Each card
+  // is one row, so a card assigned to several sprints is still summed once.
+  async getSprintTimeTotals(boardId: string, sprintId: string) {
+    ensureUuid(sprintId, "sprint ID");
+    const [totals] = await db
+      .select({
+        estimateHours: sql<string>`coalesce(sum(${card.estimateTime}), 0)`,
+        spentHours: sql<string>`coalesce(sum(${card.spentTime}), 0)`,
+      })
+      .from(card)
+      .where(
+        and(
+          eq(card.boardId, boardId),
+          eq(card.isArchived, false),
+          isNull(card.deletedAt),
+          sql`${sprintId}::uuid = ANY(${card.sprintId})`,
+        ),
+      );
+
+    return {
+      estimateHours: Number(totals?.estimateHours ?? 0),
+      spentHours: Number(totals?.spentHours ?? 0),
+    };
+  },
+
   async getCardSnapshot(
     boardId: string,
     cardId: string,
