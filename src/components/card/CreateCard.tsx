@@ -2214,7 +2214,7 @@ export default function CreateCard({
                       className="mb-2 block text-sm font-semibold"
                       style={{ color: "var(--color-text-primary)" }}
                     >
-                      Summary <span className="text-red-500">*</span>
+                      Summary <span className="text-[var(--color-tag-red-text)]">*</span>
                     </label>
                     <input
                       id={`card-title-${listId}`}
@@ -2341,7 +2341,7 @@ export default function CreateCard({
                             </div>
                           )}
                           {fileError && (
-                            <p className="mt-2 text-xs text-red-500">
+                            <p className="mt-2 text-xs text-[var(--color-tag-red-text)]">
                               {fileError}
                             </p>
                           )}
@@ -2524,7 +2524,7 @@ export default function CreateCard({
                           </p>
                         )}
                         {memberError && (
-                          <p className="mt-1 text-xs text-red-500">
+                          <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {memberError}
                           </p>
                         )}
@@ -2580,7 +2580,7 @@ export default function CreateCard({
                           ))}
                         </select>
                         {sprintError && (
-                          <p className="mt-1 text-xs text-red-500">
+                          <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {sprintError}
                           </p>
                         )}

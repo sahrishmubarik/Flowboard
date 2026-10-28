@@ -83,21 +83,28 @@ export default function CreateListCard({
 
   if (isCreating) {
     return (
-      <div className="h-fit min-w-[280px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="h-fit min-w-[280px] rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card-bg)] p-3 shadow-[var(--shadow-sm)]">
         <form onSubmit={handleCreateList}>
           <input
             autoFocus
             value={listName}
             onChange={(event) => setListName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !isSubmitting) {
+                setIsCreating(false);
+                setListName("");
+              }
+            }}
             placeholder="Enter list name..."
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[var(--indigo)] focus:ring-2 focus:ring-[var(--color-card-bg)]/10"
+            aria-label="List name"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-active-bg)]"
           />
 
           <div className="mt-3 flex items-center gap-2">
             <button
               type="submit"
               disabled={isSubmitting || !listName.trim()}
-              className="rounded-xl bg-[var(--indigo)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--indigo-deep)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-[var(--radius-md)] bg-[var(--color-primary)] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Adding..." : "Add list"}
             </button>
@@ -109,7 +116,8 @@ export default function CreateListCard({
                 setIsCreating(false);
                 setListName("");
               }}
-              className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Cancel adding list"
+              className="rounded-[var(--radius-md)] p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X size={18} />
             </button>
@@ -123,7 +131,7 @@ export default function CreateListCard({
     <button
       type="button"
       onClick={() => setIsCreating(true)}
-      className="flex h-fit min-w-[280px] items-center gap-2 rounded-2xl  bg-[var(--color-card)] px-4 py-4 text-left text-sm font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-card-bg)] hover:text-[var(--color-card)]"
+      className="flex h-fit min-w-[280px] cursor-pointer items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-card-bg)] px-4 py-4 text-left text-sm font-semibold text-[var(--color-text-secondary)] transition hover:bg-[var(--color-card-hover)] hover:text-[var(--color-primary)]"
     >
       <Plus size={18} />
       Add another list

@@ -1390,7 +1390,7 @@ Card creation belongs to BoardList.*/
                 <p className="p-4 text-sm">Loading board members…</p>
               )}
               {isMembersError && (
-                <p className="p-4 text-sm text-red-500" role="alert">
+                <p className="p-4 text-sm text-[var(--color-tag-red-text)]" role="alert">
                   Failed to load board members:{" "}
                   {membersError instanceof Error
                     ? membersError.message
