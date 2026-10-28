@@ -31,8 +31,9 @@ import {
   Table as TableIcon,
   AlignLeft,
   Eraser,
+  X,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 type CardDescriptionEditorProps = {
@@ -106,6 +107,10 @@ export default function CardDescriptionEditor({
     },
   });
 
+  // Inline link bar. It renders inside the editor (not a portal) so focus
+  // stays within the parent's editor wrapper, whose blur handler saves.
+  const [linkDraft, setLinkDraft] = useState<string | null>(null);
+
   useEffect(() => {
     if (!editor) return;
 
@@ -126,21 +131,35 @@ export default function CardDescriptionEditor({
     return null;
   }
 
+  const hasLink = editor.isActive("link");
+
   const addLink = () => {
     const previousUrl = editor.getAttributes("link").href;
+    setLinkDraft(previousUrl || "https://");
+  };
 
-    const url = window.prompt("Enter URL", previousUrl || "https://");
+  const closeLinkBar = () => {
+    setLinkDraft(null);
+    editor.chain().focus().run();
+  };
 
-    if (url === null) {
-      return;
-    }
+  // Same rules as before: empty removes the link, otherwise set it on the
+  // current selection (the editor keeps its selection while the bar is open).
+  const applyLink = () => {
+    const url = (linkDraft ?? "").trim();
+    setLinkDraft(null);
 
     if (url === "") {
-      editor.chain().focus().unsetLink().run();
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
       return;
     }
 
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  };
+
+  const removeLink = () => {
+    setLinkDraft(null);
+    editor.chain().focus().extendMarkRange("link").unsetLink().run();
   };
 
   const addTable = () => {
@@ -359,6 +378,81 @@ export default function CardDescriptionEditor({
           </>
         )}
       </div>
+
+      {/* Link bar */}
+
+      {linkDraft !== null && (
+        <div
+          className="flex flex-wrap items-center gap-2 border-b px-2 py-2"
+          style={{
+            borderColor: "var(--color-border)",
+            backgroundColor: "var(--color-card-bg)",
+          }}
+        >
+          <LinkIcon
+            size={15}
+            aria-hidden="true"
+            className="shrink-0"
+            style={{ color: "var(--color-text-muted)" }}
+          />
+
+          <input
+            type="url"
+            autoFocus
+            value={linkDraft}
+            onChange={(event) => setLinkDraft(event.target.value)}
+            onKeyDown={(event) => {
+              // Keep Enter/Esc from submitting a parent form or cancelling
+              // the parent's edit mode.
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.stopPropagation();
+                applyLink();
+              }
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                closeLinkBar();
+              }
+            }}
+            aria-label="Link URL"
+            placeholder="https://"
+            className="h-8 min-w-0 flex-1 rounded-[var(--radius-sm)] border px-2.5 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-active-bg)]"
+            style={{
+              borderColor: "var(--color-border)",
+              backgroundColor: "var(--color-input-bg)",
+              color: "var(--color-text-primary)",
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={applyLink}
+            className="h-8 rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+          >
+            Apply
+          </button>
+
+          {hasLink && (
+            <button
+              type="button"
+              onClick={removeLink}
+              className="h-8 rounded-[var(--radius-sm)] px-2.5 text-xs font-medium text-[var(--color-tag-red-text)] transition-colors hover:bg-[var(--color-tag-red-bg)]"
+            >
+              Remove
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={closeLinkBar}
+            aria-label="Cancel link"
+            className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)]"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       {/* Editor */}
 
