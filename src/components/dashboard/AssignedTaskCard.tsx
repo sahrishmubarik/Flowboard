@@ -44,6 +44,32 @@ type BoardSprintSummary = {
   resolvedCards: number;
 };
 
+type SprintState = "To Do" | "In Progress" | "Done";
+
+// Done only when every ticket is resolved; nothing resolved (or no tickets)
+// means the sprint has not started moving yet.
+function getSprintState(resolvedCards: number, totalCards: number): SprintState {
+  if (totalCards > 0 && resolvedCards >= totalCards) return "Done";
+  if (resolvedCards > 0) return "In Progress";
+  return "To Do";
+}
+
+const sprintStateClasses: Record<SprintState, { badge: string; dot: string }> = {
+  "To Do": {
+    badge:
+      "bg-[var(--color-tag-neutral-bg)] text-[var(--color-tag-neutral-text)]",
+    dot: "bg-[var(--color-status-todo)]",
+  },
+  "In Progress": {
+    badge: "bg-[var(--color-tag-blue-bg)] text-[var(--color-tag-blue-text)]",
+    dot: "bg-[var(--color-status-progress)]",
+  },
+  Done: {
+    badge: "bg-[var(--color-tag-green-bg)] text-[var(--color-tag-green-text)]",
+    dot: "bg-[var(--color-status-done)]",
+  },
+};
+
 /* =========================================================
    COMPONENT
    ========================================================= */
@@ -430,6 +456,7 @@ export default function AssignedTasksCard() {
                 const progress = totalCards
                   ? Math.round((resolvedCards / totalCards) * 100)
                   : 0;
+                const sprintState = getSprintState(resolvedCards, totalCards);
                 return (
                   <tr
                     key={board.id}
@@ -583,12 +610,21 @@ export default function AssignedTasksCard() {
                         >
                           —
                         </span>
+                      ) : summary?.activeSprint ? (
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-[11px] font-medium ${sprintStateClasses[sprintState].badge}`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${sprintStateClasses[sprintState].dot}`}
+                          />
+                          {sprintState}
+                        </span>
                       ) : (
                         <span
-                          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--color-tag-blue-bg)] px-2 py-1 text-[11px] font-medium text-[var(--color-tag-blue-text)]"
+                          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--color-tag-neutral-bg)] px-2 py-1 text-[11px] font-medium text-[var(--color-tag-neutral-text)]"
                         >
-                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)]" />
-                          {summary?.activeSprint ? "In Progress" : "No active sprint"}
+                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-status-todo)]" />
+                          No active sprint
                         </span>
                       )}
                     </td>
