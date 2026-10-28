@@ -1636,7 +1636,7 @@ Card creation belongs to BoardList.*/
                 )}
               </div>
 
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <input
                   id="carryUnresolvedTickets"
                   type="checkbox"
@@ -1644,12 +1644,15 @@ Card creation belongs to BoardList.*/
                   onChange={(event) =>
                     setCarryUnresolvedTickets(event.target.checked)
                   }
+                  className="h-4 w-4 shrink-0 cursor-pointer"
+                  style={{ accentColor: "var(--color-primary)" }}
                 />
 
                 <div>
                   <label
                     htmlFor="carryUnresolvedTickets"
-                    className="text-sm font-medium"
+                    className="cursor-pointer text-sm font-medium"
+                    style={{ color: "var(--color-text-primary)" }}
                   >
                     Carry unresolved tickets forward
                   </label>
