@@ -24,7 +24,7 @@ export async function GET(
 
     const boardId = searchParams.get("boardId");
     const page = Number(searchParams.get("page") ?? "1");
-    const limit = Number(searchParams.get("limit") ?? "7");
+    const limit = Number(searchParams.get("limit") ?? "10");
 
     if (!boardId) {
       throw new AppError("boardId is required", 400);

@@ -25,7 +25,7 @@ export const AuditLogService = {
     workspaceId: string,
     boardId: string,
     page = 1,
-    limit = 7,
+    limit = 10,
   ) {
     return AuditLogRepo.getByWorkspaceAndBoard(
       workspaceId,
