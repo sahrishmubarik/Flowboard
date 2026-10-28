@@ -1172,6 +1172,7 @@ import {
   Clock3,
   FileText,
   Image as ImageIcon,
+  KanbanSquare,
   Layers3,
   Paperclip,
   Sparkles,
@@ -1186,6 +1187,7 @@ import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { getPriorityColor } from "@/components/card/priority";
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
@@ -1203,6 +1205,7 @@ type CardDetails = {
   completedAt: string | null;
   sprintName: string | null;
   sprintId: string[] | null;
+  boardListId?: string;
   estimateTime?: string | number | null;
   spentTime?: string | number | null;
   assignedTo?: string | null;
@@ -1252,6 +1255,11 @@ type Sprint = {
 type SprintResponse = {
   message: string;
   sprints: Sprint[];
+};
+type BoardListItem = {
+  id: string;
+  listName: string;
+  position: number;
 };
 
 type EditableAction =
@@ -1407,6 +1415,24 @@ export default function CardDetailsPage({
 
       return result;
     },
+  });
+
+  const { data: boardLists = [] } = useQuery<BoardListItem[]>({
+    queryKey: ["board-lists", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Failed to fetch board lists.");
+      }
+
+      return result.boardLists ?? result.lists ?? [];
+    },
+    enabled: Boolean(workspaceId && boardId),
   });
 
   const { data: sprintData } = useQuery<SprintResponse>({
@@ -1721,6 +1747,13 @@ export default function CardDetailsPage({
 
   const card = data?.card;
 
+  // Status is the card's list; the last list holds completed cards (same
+  // rule as the dashboard).
+  const sortedLists = [...boardLists].sort((a, b) => a.position - b.position);
+  const cardList = sortedLists.find((list) => list.id === card?.boardListId);
+  const isInLastList =
+    Boolean(cardList) && sortedLists.at(-1)?.id === cardList?.id;
+
   return (
     <main
       className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
@@ -1762,7 +1795,7 @@ export default function CardDetailsPage({
           <>
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_285px] xl:gap-6">
               <article
-                className="min-w-0 overflow-hidden rounded-xl border"
+                className="min-w-0 overflow-hidden rounded-xl border lg:col-start-1 lg:row-start-1"
                 style={surface}
               >
                 <div className="p-5 sm:p-7 lg:p-8">
@@ -2065,19 +2098,12 @@ export default function CardDetailsPage({
                       </div>
                     )}
                   </section>
-
-                  {/* Commits */}
-                  <CardCommits
-                    workspaceId={workspaceId}
-                    boardId={boardId}
-                    cardId={cardId}
-                  />
                 </div>
               </article>
 
               {/* Card properties */}
               <aside
-                className="min-w-0 rounded-xl border p-5 lg:sticky lg:top-4"
+                className="min-w-0 rounded-xl border p-5 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1"
                 style={surface}
                 aria-label="Card properties"
               >
@@ -2129,6 +2155,32 @@ export default function CardDetailsPage({
                 </div>
 
                 <dl className="space-y-3">
+                  {/* Status = the list the card is in (move cards on the board) */}
+                  <Property label="Status" icon={<KanbanSquare size={15} />}>
+                    {cardList ? (
+                      <span
+                        className="inline-flex max-w-full items-center rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-semibold uppercase tracking-wide"
+                        style={
+                          isInLastList
+                            ? {
+                                backgroundColor: "var(--color-tag-green-bg)",
+                                color: "var(--color-tag-green-text)",
+                              }
+                            : {
+                                backgroundColor: "var(--color-tag-neutral-bg)",
+                                color: "var(--color-tag-neutral-text)",
+                              }
+                        }
+                      >
+                        <span className="truncate">{cardList.listName}</span>
+                      </span>
+                    ) : (
+                      <span className="text-sm" style={muted}>
+                        —
+                      </span>
+                    )}
+                  </Property>
+
                   <Property
                     label="Type"
                     icon={<TaskTypeIcon type={card.type} />}
@@ -2209,7 +2261,16 @@ export default function CardDetailsPage({
                       <InlineValue
                         onClick={() => setEditingField("priority")}
                       >
-                        {formatLabel(card.priority)}
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{
+                              backgroundColor: getPriorityColor(card.priority),
+                            }}
+                          />
+                          {formatLabel(card.priority)}
+                        </span>
                       </InlineValue>
                     )}
                   </Property>
@@ -2537,6 +2598,19 @@ export default function CardDetailsPage({
                   </Property>
                 </dl>
               </aside>
+
+              {/* Comments: own grid item so phones show Details first */}
+              <section
+                className="min-w-0 rounded-xl border p-5 sm:p-7 lg:col-start-1 lg:row-start-2 lg:p-8"
+                style={surface}
+                aria-label="Comments"
+              >
+                <CardCommits
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  cardId={cardId}
+                />
+              </section>
             </div>
 
             {/* Delete confirmation */}

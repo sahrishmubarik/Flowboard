@@ -1510,6 +1510,7 @@ import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "./CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useModalBehavior } from "@/components/ui/Modal";
+import { getPriorityColor } from "@/components/card/priority";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1608,22 +1609,6 @@ type Sprint = {
   name: string;
   status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 };
-function getPriorityColor(priority: CardPriority) {
-  switch (priority) {
-    case "normal":
-      return "#3b82f6";
-    case "show stopper":
-      return "#a855f7";
-    case "critical":
-      return "#ef4444";
-    case "major":
-      return "#eab308";
-    case "minor":
-      return "#9ca3af";
-    default:
-      return "var(--color-border)";
-  }
-}
 type BoardMember = {
   userId: string;
   name: string;

@@ -556,7 +556,7 @@ export default function CardCommits({
   return (
     <section
       aria-labelledby="card-comments-heading"
-      className="mt-8 min-w-0 pt-6"
+      className="min-w-0"
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
