@@ -18,6 +18,7 @@ import InvitationStatusCard from "@/components/invitationStatusCard";
 import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
 import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
 import CreateBoard from "@/components/board/CreateBoardCard";
+import { pageContainerClass } from "@/components/ui/PageHeader";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -278,7 +279,7 @@ export default function WorkspaceDashboardPage() {
         ================================================== */}
 
         <main className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+          <div className={pageContainerClass}>
             <WorkspaceHeader
               workspaceName={workspace_name}
               boardCount={boardsData?.boards?.length ?? 0}

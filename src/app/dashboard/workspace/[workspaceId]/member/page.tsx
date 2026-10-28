@@ -2,6 +2,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
+import PageHeader, { pageContainerClass } from "@/components/ui/PageHeader";
 import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 import InvitationStatusCard from "@/components/invitationStatusCard";
 import InviteMemberCard from "@/components/inviteMemberCard";
@@ -69,42 +70,13 @@ export default function MembersPage() {
 
   return (
     <main className="min-h-screen w-full bg-[var(--color-app-bg)] text-[var(--color-text-primary)]">
-      <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+      <div className={pageContainerClass}>
         {/* PAGE HEADER */}
-        <header className="mb-8 border-b border-[var(--color-border)] pb-6">
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
-            <span>Workspace</span>
-            <span>/</span>
-            <span className="text-[var(--color-primary)]">
-              Members & access
-            </span>
-          </div>
-
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div className="max-w-3xl">
-              <h1
-                className="text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Members & access
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                Everything you need to manage your team, invite collaborators,
-                review invitations, and control your workspace in one place.
-              </p>
-            </div>
-
-            <div className="shrink-0 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-3">
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Workspace settings
-              </p>
-              <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
-                Team & access management
-              </p>
-            </div>
-          </div>
-        </header>
+        <PageHeader
+          workspaceId={workspaceId}
+          title="Members & access"
+          description="Everything you need to manage your team, invite collaborators, review invitations, and control your workspace in one place."
+        />
 
         {/* INTRODUCTION */}
 

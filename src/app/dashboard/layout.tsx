@@ -8,7 +8,7 @@ export default function DashboardLayout({
   modal: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen bg-[var(--paper-raised)]">
+    <div className="flex min-h-screen flex-col bg-[var(--color-app-bg)] lg:flex-row">
       <DashboardSidebar />
 
       <main className="min-w-0 flex-1">
