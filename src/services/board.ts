@@ -3,6 +3,9 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
 import { validateData, boardValidation } from "@/lib/validations/board";
 import { BoardRepo } from "@/repositories/boardRepo";
+import { BoardListRepo } from "@/repositories/boardListRepo";
+import { CardRepo } from "@/repositories/cardRepo";
+import { SprintRepo } from "@/repositories/sprintRepo";
 import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { db } from "@/db";
 import { AuditLogService } from "@/services/auditLogService";
@@ -138,6 +141,62 @@ export async function getBoardById(boardId: string) {
     {
       status: 200,
     },
+  );
+}
+
+/* GET TASK + ACTIVE SPRINT TIME STATS FOR A BOARD */
+
+export async function getBoardStats(boardId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user", 401);
+  }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
+  const [lists, sprints] = await Promise.all([
+    BoardListRepo.getListByBoardId(boardId),
+    SprintRepo.getByBoardId(boardId),
+  ]);
+
+  // Same rule as the dashboard sprint table: the last list (by position)
+  // holds resolved cards. Lists are returned ordered by position.
+  const completedListId = lists.at(-1)?.id ?? null;
+  const activeSprint =
+    sprints.find((sprint) => sprint.status === "ACTIVE") ?? null;
+
+  const [taskCounts, sprintTime] = await Promise.all([
+    CardRepo.getBoardTaskCounts(boardId, completedListId),
+    activeSprint
+      ? CardRepo.getSprintTimeTotals(boardId, activeSprint.id)
+      : Promise.resolve(null),
+  ]);
+
+  return Response.json(
+    {
+      message: "Fetched board stats successfully",
+      stats: {
+        totalCards: taskCounts.total,
+        completedCards: taskCounts.completed,
+        activeSprint: activeSprint
+          ? {
+              id: activeSprint.id,
+              name: activeSprint.name,
+              startDate: activeSprint.startDate,
+              endDate: activeSprint.endDate,
+              estimateHours: sprintTime?.estimateHours ?? 0,
+              spentHours: sprintTime?.spentHours ?? 0,
+            }
+          : null,
+      },
+    },
+    { status: 200 },
   );
 }
 

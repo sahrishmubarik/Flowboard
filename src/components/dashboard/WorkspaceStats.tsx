@@ -345,6 +345,23 @@ type BoardsResponse = {
   boards: Board[];
 };
 
+type BoardStatsResponse = {
+  message: string;
+  stats: {
+    totalCards: number;
+    completedCards: number;
+  };
+};
+
+// Fixed working-time capacity shown in the "Time logged" box.
+const HOURS_PER_DAY_PER_MEMBER = 8;
+const WORK_DAYS_PER_WEEK = 5;
+const HOURS_PER_WEEK = HOURS_PER_DAY_PER_MEMBER * WORK_DAYS_PER_WEEK;
+
+function percentOf(part: number, whole: number) {
+  return whole > 0 ? Math.min(100, Math.round((part / whole) * 100)) : 0;
+}
+
 export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
   const { data: boardsData, isLoading: boardsLoading } =
     useQuery<BoardsResponse>({
@@ -384,21 +401,51 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
 
   const boardCount = boardsData?.boards?.length ?? 0;
 
+  // The first board (oldest) is the workspace's default board, matching the
+  // activity page and the "View all my tasks" link.
+  const defaultBoard = boardsData?.boards?.[0];
+
+  const {
+    data: boardStatsData,
+    isLoading: boardStatsLoading,
+    isError: boardStatsError,
+  } = useQuery<BoardStatsResponse>({
+    queryKey: ["board-stats", workspaceId, defaultBoard?.id],
+
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${defaultBoard?.id}/stats`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch board stats");
+      }
+
+      return data;
+    },
+
+    enabled: Boolean(workspaceId && defaultBoard?.id),
+  });
+
   const memberCount =
     membersData?.pagination?.total ?? membersData?.members?.length ?? 0;
 
-  // Static until task/time APIs are available
-  const completedTasks = 18;
-  const totalTasks = 25;
+  const boardStats = boardStatsData?.stats;
+  const isStatsPending =
+    boardsLoading || (Boolean(defaultBoard) && boardStatsLoading);
 
-  const loggedHours = 26;
-  const plannedHours = 40;
+  const completedTasks = boardStats?.completedCards ?? 0;
+  const totalTasks = boardStats?.totalCards ?? 0;
+  const taskProgress = percentOf(completedTasks, totalTasks);
 
-  const taskProgress =
-    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  const timeProgress =
-    plannedHours > 0 ? Math.round((loggedHours / plannedHours) * 100) : 0;
+  // Shared context line when the default board has no stats to show.
+  const unavailableContext = !defaultBoard
+    ? "No boards yet"
+    : boardStatsError
+      ? "Failed to load board stats"
+      : null;
 
   const stats = [
     {
@@ -449,8 +496,13 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
 
     {
       label: "Tasks",
-      value: `${taskProgress}%`,
-      context: `${completedTasks} of ${totalTasks} tasks completed`,
+      value:
+        isStatsPending || unavailableContext ? "—" : `${taskProgress}%`,
+      context:
+        unavailableContext ??
+        (isStatsPending
+          ? "Loading tasks..."
+          : `${completedTasks} of ${totalTasks} tasks completed`),
       icon: CheckSquare,
       progress: taskProgress,
 
@@ -471,10 +523,10 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
 
     {
       label: "Time logged",
-      value: `${loggedHours}h`,
-      context: `${plannedHours}h planned this week`,
+      value: `${HOURS_PER_WEEK}h`,
+      valueSuffix: " / week",
+      context: `${HOURS_PER_DAY_PER_MEMBER}h per day per member`,
       icon: Clock3,
-      progress: timeProgress,
 
       // Amber
       valueClass: "text-[var(--color-priority-medium)]",
@@ -558,6 +610,11 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
                   `}
                 >
                   {stat.value}
+                  {"valueSuffix" in stat && stat.valueSuffix && (
+                    <span className="text-lg font-semibold tracking-normal text-[var(--color-text-muted)]">
+                      {stat.valueSuffix}
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -584,7 +641,10 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
             <div className="mt-6">
               <div className="flex items-center justify-between gap-3">
                 <p
+                  title={stat.context}
                   className={`
+                    min-w-0
+                    truncate
                     text-xs
                     font-medium
                     ${stat.contextClass}
