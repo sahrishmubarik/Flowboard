@@ -148,6 +148,9 @@ type BoardMemberResponse = {
   data: BoardMember[];
 };
 const UNASSIGNED = "__unassigned__";
+// Width of every board list column: the list header and each member's status
+// cell below it must use the same value so the grid stays aligned.
+const LIST_COLUMN_WIDTH = "w-[260px] min-w-[260px] max-w-[260px]";
 // The board-members endpoint returns data: [{ userId, name, email, role }].
 // Use the user ID: cards.assignedTo references users.id, not boardMembers.id.
 const memberKey = (member: BoardMember) => member.userId;
@@ -1251,7 +1254,7 @@ Card creation belongs to BoardList.*/
                     // width as every status cell in the member rows below.
                     <div
                       key={list.id}
-                      className="w-[290px] min-w-[290px] max-w-[290px] shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full"
+                      className={`${LIST_COLUMN_WIDTH} shrink-0 [&>*]:!w-full [&>*]:!min-w-0 [&>*]:!max-w-full`}
                     >
                       <SortableBoardList id={list.id}>
                         <BoardList
@@ -1358,7 +1361,7 @@ Card creation belongs to BoardList.*/
                       return (
                         <div
                           key={`${member.id}-${list.id}`}
-                          className="w-[290px] shrink-0 border-r"
+                          className={`${LIST_COLUMN_WIDTH} shrink-0 border-r`}
                           style={{ borderColor: "var(--color-border)" }}
                         >
                           <BoardList
