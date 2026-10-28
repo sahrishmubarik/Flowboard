@@ -6,7 +6,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useRouter } from "next/navigation";
 
-import { ChevronDown, Plus, Pencil, Trash2, Zap } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  Pencil,
+  Plus,
+  Trash2,
+  UserRound,
+  Zap,
+} from "lucide-react";
 import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
@@ -1212,6 +1220,38 @@ Card creation belongs to BoardList.*/
             </div>
           )}
         </div>
+
+        {/* Active sprint dates, time left and goal */}
+
+        {activeSprint && (
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+            <CalendarDays
+              size={14}
+              aria-hidden="true"
+              className="hidden shrink-0 text-[var(--color-text-muted)] sm:block"
+            />
+            <span className="whitespace-nowrap">
+              {formatSprintDate(activeSprint.startDate)} –{" "}
+              {formatSprintDate(activeSprint.endDate)}
+            </span>
+
+            {sprintTimeLeft(activeSprint.endDate) && (
+              <span className="whitespace-nowrap rounded-[var(--radius-sm)] bg-[var(--color-column-bg)] px-1.5 py-0.5 font-medium text-[var(--color-text-secondary)]">
+                {sprintTimeLeft(activeSprint.endDate)}
+              </span>
+            )}
+
+            {activeSprint.goal?.trim() && (
+              <span
+                title={activeSprint.goal}
+                className="hidden min-w-0 truncate text-[var(--color-text-muted)] sm:inline"
+              >
+                <span aria-hidden="true">· </span>
+                {activeSprint.goal}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ======================================================
@@ -1250,7 +1290,7 @@ Card creation belongs to BoardList.*/
                 }}
               >
                 <div
-                  className="sticky left-0 z-40 w-52 shrink-0 border-r px-3 py-4 text-sm font-semibold"
+                  className="sticky left-0 z-40 w-36 shrink-0 border-r px-3 py-4 text-sm font-semibold sm:w-52"
                   style={{
                     backgroundColor: "var(--color-card-bg)",
                     borderColor: "var(--color-border)",
@@ -1283,7 +1323,6 @@ Card creation belongs to BoardList.*/
                               !card.deletedAt,
                           )}
                           activeSprintId={activeSprint?.id ?? null}
-                          activeSprintName={activeSprint?.name ?? null}
                           headerOnly
                           hideAddCard
                           seamless
@@ -1339,7 +1378,7 @@ Card creation belongs to BoardList.*/
                     style={{ borderColor: "var(--color-border)" }}
                   >
                     <div
-                      className="sticky left-0 z-20 flex w-52 shrink-0 flex-col gap-2 border-r p-3"
+                      className="sticky left-0 z-20 flex w-36 shrink-0 flex-col gap-2 border-r p-3 sm:w-52"
                       style={{
                         backgroundColor: "var(--color-card-bg)",
                         borderColor: "var(--color-border)",
@@ -1353,7 +1392,11 @@ Card creation belongs to BoardList.*/
                           color: "var(--color-text-primary)",
                         }}
                       >
-                        {member.name.slice(0, 2).toUpperCase()}
+                        {member.id === UNASSIGNED ? (
+                          <UserRound size={16} aria-hidden="true" />
+                        ) : (
+                          memberInitials(member.name)
+                        )}
                       </div>
                       <div
                         className="max-w-full break-words text-sm font-semibold"
@@ -1365,7 +1408,8 @@ Card creation belongs to BoardList.*/
                         className="text-xs"
                         style={{ color: "var(--color-text-muted)" }}
                       >
-                        {memberCards.length} tickets
+                        {memberCards.length}{" "}
+                        {memberCards.length === 1 ? "ticket" : "tickets"}
                       </div>
                     </div>
                     {sortedLists.map((list) => {
@@ -1385,7 +1429,6 @@ Card creation belongs to BoardList.*/
                             closeMenuSignal={closeMenuSignal}
                             cards={cellCards}
                             activeSprintId={activeSprint?.id ?? null}
-                            activeSprintName={activeSprint?.name ?? null}
                             isCardsLoading={isCardsLoading}
                             isCardsError={isCardsError}
                             onCardClick={handleCardClick}
@@ -1776,6 +1819,27 @@ Card creation belongs to BoardList.*/
 
 
  */
+
+// "3 days left", "Ends today" or "Ended", from a YYYY-MM-DD end date.
+function sprintTimeLeft(endDate: string) {
+  const end = new Date(`${endDate}T00:00:00`);
+  if (!endDate || Number.isNaN(end.getTime())) return "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((end.getTime() - today.getTime()) / 86_400_000);
+
+  if (days < 0) return "Ended";
+  if (days === 0) return "Ends today";
+  return days === 1 ? "1 day left" : `${days} days left`;
+}
+
+// Initials from the first two words: "Sahrish Mubarik" -> "SM".
+function memberInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.trim().slice(0, 2).toUpperCase();
+}
 
 function formatSprintDate(date: string) {
   if (!date) {

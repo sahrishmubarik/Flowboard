@@ -77,7 +77,6 @@ type BoardListProps = {
 
   activeSprintId?: string | null;
 
-  activeSprintName?: string | null;
 
   isCardsLoading?: boolean;
 
@@ -114,7 +113,6 @@ export default function BoardList({
 
   activeSprintId = null,
 
-  activeSprintName = null,
 
   isCardsLoading = false,
 
@@ -443,7 +441,7 @@ export default function BoardList({
       \======================================================= */}
 
       <div
-        className={`flex ${headerOnly ? "" : "min-h-full"} w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
+        className={`group/cell flex ${headerOnly ? "" : "min-h-full"} w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
         style={{
           backgroundColor: "var(--color-column-bg)",
 
@@ -530,7 +528,6 @@ export default function BoardList({
                   boardId={boardId}
                   listId={list.id}
                   listName={list.listName}
-                  sprintName={activeSprintName}
                   activeSprintId={activeSprintId}
                   triggerClassName="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
                   onCreateClick={() => {
@@ -575,18 +572,6 @@ export default function BoardList({
 
         {!headerOnly && (
           <>
-            {!hideAddCard && (
-              <CreateCard
-                workspaceId={workspaceId}
-                boardId={boardId}
-                listId={list.id}
-                listName={list.listName}
-                activeSprintId={activeSprintId}
-                sprintName={activeSprintName}
-                triggerClassName="mx-2 mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                triggerIconSize={16}
-              />
-            )}
 
             {/* ====================================================
 
@@ -671,7 +656,6 @@ export default function BoardList({
                           boardId={boardId}
                           listId={list.id}
                           listName={list.listName}
-                          sprintName={card.sprintName ?? activeSprintName}
                           activeSprintId={activeSprintId}
                           onCardClick={onCardClick}
                         />
@@ -685,16 +669,27 @@ export default function BoardList({
 
             \=================================================== */
 
-                <div
-                  className="flex min-h-30 flex-1 items-center justify-center text-xs"
-                  style={{
-                    color: "var(--color-text-muted)",
-                  }}
-                >
-                  No cards yet
-                </div>
+                <div aria-hidden="true" className="min-h-12 flex-1" />
               )}
             </div>
+
+            {/* Create: always visible on touch screens; on devices with a
+                pointer it appears when the cell is hovered or focused. */}
+            {!hideAddCard && (
+              <div className="px-2 pb-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={list.id}
+                  listName={list.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel="Create"
+                  triggerAriaLabel={`Create card in ${list.listName}`}
+                  triggerClassName="flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-black/5 hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] dark:hover:bg-white/5"
+                  triggerIconSize={15}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

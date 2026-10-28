@@ -1539,7 +1539,6 @@ type CardProps = {
   boardId: string;
   listId: string;
   listName: string;
-  sprintName?: string | null;
   triggerLabel?: string;
   triggerClassName?: string;
   triggerAriaLabel?: string;
@@ -1685,7 +1684,6 @@ export default function CreateCard({
   boardId,
   listId,
   listName,
-  sprintName,
   triggerLabel = "Add card",
   triggerClassName,
   triggerAriaLabel,
@@ -2034,9 +2032,8 @@ export default function CreateCard({
             className="text-[10px] font-semibold"
             style={{ color: "var(--color-text-muted)" }}
           >
-            {sprintName
-              ? `${sprintName}_${card.cardNumber}`
-              : `CARD-${card.cardNumber}`}
+            {/* Same key format as the card details page. */}
+            CARD-{card.cardNumber}
           </span>
           <div className="flex items-center gap-1.5">
             {card.type && (
