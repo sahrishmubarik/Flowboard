@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invitationsQueryKey } from "@/components/invitationStatusCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
@@ -82,7 +83,13 @@ export default function AcceptInvitationPage() {
       postInvitationAction(workspaceId, "accept-invitation", token as string),
 
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] }),
+        // This invitation is no longer PENDING in the workspace's list.
+        queryClient.invalidateQueries({
+          queryKey: invitationsQueryKey(workspaceId),
+        }),
+      ]);
 
       // Short pause so the user sees the confirmation.
       setTimeout(() => {
