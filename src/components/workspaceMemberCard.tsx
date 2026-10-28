@@ -4303,7 +4303,7 @@ export default function WorkspaceMemberCard() {
                             <span aria-hidden="true">⋮</span>
                           </button>
                           {openMenuId === member.userId && (
-                            <div className="absolute bottom-11 right-0 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
+                            <div className="absolute right-0 top-11 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
                               <button
                                 type="button"
                                 onClick={() =>

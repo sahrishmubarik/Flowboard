@@ -1070,6 +1070,32 @@ export default function InvitationStatusCard({
   const buttonClass =
     "inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)] disabled:opacity-40 disabled:cursor-not-allowed";
 
+
+  const renderStatus = (invitation: Invitation) => (
+    <span
+      className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
+      style={statusStyle(invitation.status)}
+    >
+      {invitation.status}
+    </span>
+  );
+
+  // Only pending invitations can be revoked; one request at a time.
+  const renderRevoke = (invitation: Invitation) =>
+    invitation.status === "PENDING" ? (
+      <button
+        type="button"
+        className={buttonClass}
+        disabled={revokeMutation.isPending}
+        onClick={() => setInvitationToRevoke(invitation)}
+      >
+        {revokeMutation.isPending &&
+        revokeMutation.variables?.id === invitation.id
+          ? "Revoking..."
+          : "Revoke"}
+      </button>
+    ) : null;
+
   return (
     <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
       <div className="flex flex-col gap-4 border-b border-[var(--color-border)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -1151,7 +1177,9 @@ export default function InvitationStatusCard({
           found.
         </p>
       ) : !displayError ? (
-        <div className="overflow-x-auto">
+        <>
+        {/* Table from md up; a stacked list on phones. */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[750px] border-collapse text-left">
             <thead className="bg-[var(--color-app-bg)] text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
               <tr className="border-y border-[var(--color-border)]">
@@ -1186,12 +1214,7 @@ export default function InvitationStatusCard({
                     {invitation.role}
                   </td>
                   <td className="px-5 py-4">
-                    <span
-                      className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
-                      style={statusStyle(invitation.status)}
-                    >
-                      {invitation.status}
-                    </span>
+                    {renderStatus(invitation)}
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-xs text-[var(--color-text-muted)]">
                     {displayDate(invitation.createdAt)}
@@ -1200,25 +1223,41 @@ export default function InvitationStatusCard({
                     {displayDate(invitation.expiresAt)}
                   </td>
                   <td className="px-5 py-4">
-                    {invitation.status === "PENDING" && (
-                      <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={revokeMutation.isPending}
-                        onClick={() => setInvitationToRevoke(invitation)}
-                      >
-                        {revokeMutation.isPending &&
-                        revokeMutation.variables?.id === invitation.id
-                          ? "Revoking..."
-                          : "Revoke"}
-                      </button>
-                    )}
+                    {renderRevoke(invitation)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        <ul className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)] md:hidden">
+          {invitations.map((invitation) => (
+            <li key={invitation.id} className="flex items-start gap-3 px-5 py-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-semibold text-[var(--color-primary)]">
+                {invitation.email.charAt(0).toUpperCase() || "U"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-sm font-medium text-[var(--color-text-primary)]"
+                  title={invitation.email}
+                >
+                  {invitation.email}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                  {renderStatus(invitation)}
+                  <span className="capitalize">{invitation.role}</span>
+                </div>
+                <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                  Invited {displayDate(invitation.createdAt)} · Expires{" "}
+                  {displayDate(invitation.expiresAt)}
+                </p>
+              </div>
+              <div className="shrink-0">{renderRevoke(invitation)}</div>
+            </li>
+          ))}
+        </ul>
+        </>
       ) : null}
       {!isLoading && !displayError && totalPages > 1 && (
         <div className="flex items-center justify-between gap-3 border-t border-[var(--color-border)] px-5 py-4">

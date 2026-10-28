@@ -518,6 +518,97 @@ export default function WorkspaceMember({
     panelRef: boardDialogRef,
   });
 
+
+  // Joined date, same format as the invitation list ("Sep 1, 2026").
+  const formatJoined = (value: string) => {
+    const date = new Date(value);
+    return value && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—";
+  };
+
+  // Row actions, shared by the desktop table and the mobile list. The menu
+  // opens downward so it is never cut off above the first rows.
+  const renderMemberActions = (member: Member) => (
+    <>
+      {member.role === "owner" ? (
+        <span className="text-xs text-[var(--color-text-muted)]">
+          Workspace owner
+        </span>
+      ) : (
+        <div
+          className="relative inline-block text-left"
+          data-member-menu
+        >
+          <button
+            type="button"
+            aria-label={`Actions for ${member.name}`}
+            aria-expanded={openMenuId === member.userId}
+            onClick={() =>
+              setOpenMenuId((current) =>
+                current === member.userId
+                  ? null
+                  : member.userId,
+              )
+            }
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-xl text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+          >
+            <span aria-hidden="true">⋮</span>
+          </button>
+          {openMenuId === member.userId && (
+            <div className="absolute right-0 top-11 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
+              <button
+                type="button"
+                onClick={() =>
+                  void openBoardDialog(member, "assign")
+                }
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+              >
+                Assign to board
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  void openBoardDialog(member, "remove-board")
+                }
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+              >
+                Remove from board
+              </button>
+              <button
+                type="button"
+                disabled={
+                  deactivatingMemberId === member.userId ||
+                  confirming
+                }
+                onClick={() => requestWorkspaceRemoval(member)}
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:opacity-50"
+              >
+                Remove from workspace
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const memberAvatar = (member: Member) => (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-semibold text-[var(--color-primary)]">
+      {member.name?.charAt(0).toUpperCase() || "U"}
+    </div>
+  );
+
+  const roleBadge = (member: Member) => (
+    <span className="inline-flex rounded-full bg-[var(--color-tag-neutral-bg)] px-2.5 py-1 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
+      {member.role}
+    </span>
+  );
+
   return (
     <section className="relative w-full overflow-visible rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
       {/* HEADER */}
@@ -543,10 +634,7 @@ export default function WorkspaceMember({
           </div>
 
           <div>
-            <h2
-              className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Workspace members
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
@@ -662,124 +750,85 @@ export default function WorkspaceMember({
           </div>
         )}
 
-        {/* WORKSPACE MEMBERS TABLE */}
+        {/* WORKSPACE MEMBERS: table from md up (no scroll wrapper, so the
+            actions menu is not clipped), a stacked list on phones. */}
         {!loading && !error && members.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
-            <table className="w-full min-w-[720px] border-collapse text-left">
-              <thead className="bg-[var(--color-app-bg)]">
-                <tr className="border-b border-[var(--color-border)]">
-                  {(["Member", "Role", "Joined", "Actions"] as const).map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        scope="col"
-                        className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] ${heading === "Actions" ? "text-right" : ""}`}
-                      >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {members.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="hover:bg-[var(--color-app-bg)]"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-semibold text-[var(--color-primary)]">
-                          {member.name?.charAt(0).toUpperCase() || "U"}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="max-w-[240px] truncate text-sm font-medium text-[var(--color-text-primary)]">
-                            {member.name}
-                          </p>
-                          <p className="max-w-[240px] truncate text-xs text-[var(--color-text-muted)]">
-                            {member.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex rounded-full bg-[var(--color-tag-neutral-bg)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
-                        {member.role}
-                      </span>
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4 text-xs text-[var(--color-text-muted)]">
-                      {member.createdAt &&
-                      !Number.isNaN(new Date(member.createdAt).getTime())
-                        ? new Date(member.createdAt).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      {member.role === "owner" ? (
-                        <span className="text-xs text-[var(--color-text-muted)]">
-                          Workspace owner
-                        </span>
-                      ) : (
-                        <div
-                          className="relative inline-block text-left"
-                          data-member-menu
+          <>
+            <div className="hidden rounded-xl border border-[var(--color-border)] md:block">
+              <table className="w-full border-collapse text-left">
+                <thead className="bg-[var(--color-app-bg)]">
+                  <tr className="border-b border-[var(--color-border)]">
+                    {(["Member", "Role", "Joined", "Actions"] as const).map(
+                      (heading) => (
+                        <th
+                          key={heading}
+                          scope="col"
+                          className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] first:rounded-tl-xl last:rounded-tr-xl ${heading === "Actions" ? "text-right" : ""}`}
                         >
-                          <button
-                            type="button"
-                            aria-label={`Actions for ${member.name}`}
-                            aria-expanded={openMenuId === member.userId}
-                            onClick={() =>
-                              setOpenMenuId((current) =>
-                                current === member.userId
-                                  ? null
-                                  : member.userId,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-xl text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                          >
-                            <span aria-hidden="true">⋮</span>
-                          </button>
-                          {openMenuId === member.userId && (
-                            <div className="absolute bottom-11 right-0 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void openBoardDialog(member, "assign")
-                                }
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                              >
-                                Assign to board
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void openBoardDialog(member, "remove-board")
-                                }
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                              >
-                                Remove from board
-                              </button>
-                              <button
-                                type="button"
-                                disabled={
-                                  deactivatingMemberId === member.userId ||
-                                  confirming
-                                }
-                                onClick={() => requestWorkspaceRemoval(member)}
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:opacity-50"
-                              >
-                                Remove from workspace
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                          {heading}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {members.map((member) => (
+                    <tr
+                      key={member.id}
+                      className="hover:bg-[var(--color-app-bg)]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {memberAvatar(member)}
+                          <div className="min-w-0">
+                            <p className="max-w-[240px] truncate text-sm font-medium text-[var(--color-text-primary)]">
+                              {member.name}
+                            </p>
+                            <p className="max-w-[240px] truncate text-xs text-[var(--color-text-muted)]">
+                              {member.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">{roleBadge(member)}</td>
+                      <td className="whitespace-nowrap px-5 py-4 text-xs text-[var(--color-text-muted)]">
+                        {formatJoined(member.createdAt)}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {renderMemberActions(member)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] md:hidden">
+              {members.map((member) => (
+                <li key={member.id} className="flex items-start gap-3 p-4">
+                  {memberAvatar(member)}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                      {member.name}
+                    </p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">
+                      {member.email}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                      {roleBadge(member)}
+                      <span>Joined {formatJoined(member.createdAt)}</span>
+                    </div>
+                  </div>
+                  {/* The Owner badge already says it; skip the owner label. */}
+                  {member.role !== "owner" && (
+                    <div className="shrink-0 text-right">
+                      {renderMemberActions(member)}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
 
         {/* PAGINATION */}
