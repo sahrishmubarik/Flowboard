@@ -1168,7 +1168,7 @@ body {
 
   .fb-input:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(53, 66, 204, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-active-bg);
   }
 
   /* =========================================================
@@ -1345,6 +1345,8 @@ body {
   .auth-form-panel {
     @apply flex min-h-screen items-center justify-center;
     background: var(--color-card-bg);
+    /* Keeps the form off the edges when the 40% column is narrow. */
+    padding: 32px clamp(20px, 4vw, 56px);
   }
 
   .auth-form-container {

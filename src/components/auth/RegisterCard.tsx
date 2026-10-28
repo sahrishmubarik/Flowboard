@@ -290,6 +290,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 
 export default function RegisterCard() {
   const searchParams = useSearchParams();
@@ -415,6 +416,8 @@ export default function RegisterCard() {
 
         <section className="auth-form-panel">
           <div className="auth-form-container">
+            <AuthMobileLogo />
+
             {/* -------------------------------------------------
                 Heading
             -------------------------------------------------- */}

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 import { getSafeRedirect } from "@/lib/safeRedirect";
 
 export default function VerifyEmailContent() {
@@ -99,6 +100,8 @@ export default function VerifyEmailContent() {
 
         <section className="auth-form-panel">
           <div className="auth-form-container" aria-live="polite">
+            <AuthMobileLogo />
+
             {/* Status icon */}
 
             <div
