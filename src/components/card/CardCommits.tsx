@@ -852,7 +852,7 @@ export default function CardCommits({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-0.5">
           {commits.map((item) => {
             const isExpanded = expandedCommits.has(item.id);
             const descriptionLines = item.description?.trim().split(/\r?\n/) ?? [];
@@ -881,9 +881,9 @@ export default function CardCommits({
                 aria-busy={isSending}
               >
                 {/* Compact Jira-style single-line summary */}
-                <div className="flex min-w-0 items-center gap-2.5 px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
                   <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
                     style={{
                       backgroundColor: "var(--color-column-bg)",
                       color: "var(--color-text-primary)",
@@ -965,7 +965,7 @@ export default function CardCommits({
                   // Esc cancels.
                   <div
                     ref={editEditorRef}
-                    className="space-y-1.5 px-3 pb-3"
+                    className="space-y-1.5 px-3 pb-2"
                     onBlur={() => handleEditBlur(item)}
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
@@ -996,7 +996,7 @@ export default function CardCommits({
                 )}
 
                 {isExpanded && !isEditing && (
-                  <div id={detailsId} className="space-y-2 px-3 pb-3">
+                  <div id={detailsId} className="space-y-1.5 px-3 pb-2">
                     {descriptionDetails &&
                       (canEdit ? (
                         <div
@@ -1040,7 +1040,7 @@ export default function CardCommits({
                             href={attachment.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 rounded-md border p-2 text-xs hover:opacity-80"
+                            className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs hover:opacity-80"
                             style={{
                               borderColor: "var(--color-border)",
                               color: "var(--color-text-secondary)",
