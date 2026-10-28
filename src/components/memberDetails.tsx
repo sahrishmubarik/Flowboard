@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useModalBehavior } from "@/components/ui/Modal";
 
 type MemberRole = "owner" | "admin" | "manager" | "member";
 type BoardStatus = "ACTIVE" | "DEACTIVATED";
@@ -506,6 +508,16 @@ export default function WorkspaceMember({
 
   const confirmingMember = confirmation?.member;
 
+
+  // Esc, focus handling and scroll lock for the assign/remove board dialog.
+  const boardDialogRef = useRef<HTMLElement>(null);
+  useModalBehavior({
+    isOpen: Boolean(activeMember),
+    onClose: closeBoardDialog,
+    dismissible: !savingBoard && !confirming,
+    panelRef: boardDialogRef,
+  });
+
   return (
     <section className="relative w-full overflow-visible rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
       {/* HEADER */}
@@ -820,10 +832,12 @@ export default function WorkspaceMember({
           }}
         >
           <section
+            ref={boardDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="board-dialog-title"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
+            tabIndex={-1}
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto outline-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-6 py-5">
               <div>
@@ -1011,109 +1025,48 @@ export default function WorkspaceMember({
       )}
 
       {/* CUSTOM CONFIRMATION MODAL */}
-      {confirmation && confirmingMember && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !confirming) {
-              setConfirmation(null);
-            }
-          }}
-        >
-          <section
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="remove-confirmation-title"
-            aria-describedby="remove-confirmation-description"
-            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-6 shadow-2xl"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-tag-red-bg)] text-[var(--color-priority-high)]">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                  <path d="M10.3 3.86 1.82 18.5A2 2 0 0 0 3.55 21h16.9a2 2 0 0 0 1.73-2.5L13.7 3.86a2 2 0 0 0-3.4 0Z" />
-                </svg>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h3
-                  id="remove-confirmation-title"
-                  className="text-lg font-semibold text-[var(--color-text-primary)]"
-                >
-                  {confirmation.type === "workspace"
-                    ? "Remove workspace member?"
-                    : "Remove member from board?"}
-                </h3>
-
-                <p
-                  id="remove-confirmation-description"
-                  className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]"
-                >
-                  {confirmation.type === "workspace" ? (
-                    <>
-                      Are you sure you want to remove{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {confirmingMember.name}
-                      </span>{" "}
-                      from this workspace? Their workspace membership will be
-                      deactivated.
-                    </>
-                  ) : (
-                    <>
-                      Are you sure you want to remove{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {confirmingMember.name}
-                      </span>{" "}
-                      from{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {boards.find(
-                          (board) => board.id === confirmation.boardId,
-                        )?.boardName ?? "this board"}
-                      </span>
-                      ? They will lose access through this board membership.
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={confirming}
-                onClick={() => setConfirmation(null)}
-                className={secondaryButtonClass}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={confirming}
-                onClick={() => void handleConfirmRemoval()}
-                className={dangerButtonClass}
-              >
-                {confirming
-                  ? "Removing..."
-                  : confirmation.type === "workspace"
-                    ? "Remove member"
-                    : "Remove from board"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(confirmation && confirmingMember)}
+        title={
+          confirmation?.type === "workspace"
+            ? "Remove workspace member?"
+            : "Remove member from board?"
+        }
+        description={
+          confirmation?.type === "workspace" ? (
+            <>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {confirmingMember?.name}
+              </span>{" "}
+              from this workspace? Their workspace membership will be
+              deactivated.
+            </>
+          ) : (
+            <>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {confirmingMember?.name}
+              </span>{" "}
+              from{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {boards.find((board) => board.id === confirmation?.boardId)
+                  ?.boardName ?? "this board"}
+              </span>
+              ? They will lose access through this board membership.
+            </>
+          )
+        }
+        confirmLabel={
+          confirmation?.type === "workspace"
+            ? "Remove member"
+            : "Remove from board"
+        }
+        pendingLabel="Removing..."
+        isPending={confirming}
+        onConfirm={() => void handleConfirmRemoval()}
+        onCancel={() => setConfirmation(null)}
+      />
     </section>
   );
 }

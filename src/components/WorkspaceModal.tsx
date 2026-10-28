@@ -1,7 +1,8 @@
-//
 "use client";
 
 import { ReactNode } from "react";
+
+import Modal from "@/components/ui/Modal";
 
 type WorkspaceModalProps = {
   isOpen: boolean;
@@ -10,41 +11,17 @@ type WorkspaceModalProps = {
   children: ReactNode;
 };
 
+// Container for the workspace action panels (members, invite, settings…).
+// Built on the shared Modal for Esc, focus handling and the mobile sheet.
 export default function WorkspaceModal({
   isOpen,
   onClose,
   title,
   children,
 }: WorkspaceModalProps) {
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(9_30_66_/_0.4)] px-4">
-      <div className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-6 shadow-xl">
-        {/* Close */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--color-text-muted)] transition hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)]"
-        >
-          ×
-        </button>
-
-        {/* Title */}
-        <div className="mb-6 pr-8">
-          <h2
-            className="text-xl font-medium text-[var(--color-text-primary)]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {title}
-          </h2>
-        </div>
-
-        {/* Selected card */}
-        {children}
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="md">
+      {children}
+    </Modal>
   );
 }

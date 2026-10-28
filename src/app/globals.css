@@ -42,6 +42,11 @@
   --color-priority-medium: #e2b203;
   --color-priority-low: #22a06b;
 
+  /* Destructive actions (button background + its text) */
+  --color-danger: #c9372c;
+  --color-danger-hover: #ae2e24;
+  --color-on-danger: #ffffff;
+
   /* Tags */
   --color-tag-blue-bg: #e9f2ff;
   --color-tag-blue-text: #0055cc;
@@ -156,6 +161,11 @@
   --color-priority-high: #f87168;
   --color-priority-medium: #f5cd47;
   --color-priority-low: #4bce97;
+
+  /* Destructive actions (button background + its text) */
+  --color-danger: #f87168;
+  --color-danger-hover: #fd9891;
+  --color-on-danger: #1d2125;
 
   /* Tags */
   --color-tag-blue-bg: #1c2b41;

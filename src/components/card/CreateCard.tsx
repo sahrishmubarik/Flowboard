@@ -1491,7 +1491,7 @@
 // }
 
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1509,6 +1509,7 @@ import {
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "./CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useModalBehavior } from "@/components/ui/Modal";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1936,6 +1937,14 @@ export default function CreateCard({
     resetForm();
     createCardMutation.reset();
   };
+  // Esc, focus handling and scroll lock; the form keeps its own layout.
+  const createCardPanelRef = useRef<HTMLDivElement>(null);
+  useModalBehavior({
+    isOpen: isCreateCardOpen,
+    onClose: closeCreateCardModal,
+    dismissible: !createCardMutation.isPending,
+    panelRef: createCardPanelRef,
+  });
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incomingFiles = Array.from(event.target.files ?? []);
     setFileError("");
@@ -2117,7 +2126,7 @@ export default function CreateCard({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-2 backdrop-blur-[2px] sm:p-5"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgb(9_30_66_/_0.45)] p-2 backdrop-blur-[2px] sm:p-5"
             onClick={(event) => {
               if (event.target === event.currentTarget) {
                 closeCreateCardModal();
@@ -2125,7 +2134,12 @@ export default function CreateCard({
             }}
           >
             <div
-              className="flex h-[min(92dvh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border shadow-2xl"
+              ref={createCardPanelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`create-card-title-${listId}`}
+              tabIndex={-1}
+              className="flex h-[min(92dvh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border shadow-2xl outline-none"
               style={{
                 backgroundColor: "var(--color-card-bg)",
                 borderColor: "var(--color-border)",
@@ -2152,6 +2166,7 @@ export default function CreateCard({
                     </span>
                     <div>
                       <h2
+                        id={`create-card-title-${listId}`}
                         className="text-lg font-semibold"
                         style={{ color: "var(--color-text-primary)" }}
                       >
@@ -2222,7 +2237,7 @@ export default function CreateCard({
                       value={cardTitle}
                       onChange={(event) => setCardTitle(event.target.value)}
                       placeholder="What needs to be done?"
-                      autoFocus
+                      data-autofocus
                       disabled={cardCreated || createCardMutation.isPending}
                       className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition focus:ring-2 focus:ring-blue-500/20"
                       style={{

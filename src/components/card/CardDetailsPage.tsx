@@ -1185,6 +1185,7 @@ import CardCommits from "@/components/card/CardCommits";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
@@ -2539,88 +2540,32 @@ export default function CardDetailsPage({
             </div>
 
             {/* Delete confirmation */}
-            {isDeleteDialogOpen && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="delete-card-title"
-              >
-                <button
-                  type="button"
-                  aria-label="Close delete confirmation"
-                  disabled={deleteCardMutation.isPending}
-                  onClick={() => setIsDeleteDialogOpen(false)}
-                  className="absolute inset-0 cursor-default bg-black/40"
-                />
-
-                <div
-                  className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-                  style={{
-                    backgroundColor: "var(--color-card-bg)",
-                    borderColor: "var(--color-border)",
-                  }}
-                >
-                  <h2
-                    id="delete-card-title"
-                    className="text-lg font-semibold"
-                    style={primary}
-                  >
-                    Delete card?
-                  </h2>
-
-                  <p className="mt-2 text-sm leading-6" style={secondary}>
-                    Are you sure you want to delete this card
-                    <span className="font-semibold" style={primary}>
-                      {" "}
-                      &quot;{card.title}&quot;
-                    </span>
-                    ?
-                  </p>
-
-                  {deleteCardMutation.isError && (
-                    <p
-                      role="alert"
-                      className="mt-3 text-sm"
-                      style={{ color: "var(--color-tag-red-text)" }}
-                    >
-                      {deleteCardMutation.error instanceof Error
-                        ? deleteCardMutation.error.message
-                        : "Unable to delete this card."}
-                    </p>
-                  )}
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsDeleteDialogOpen(false)}
-                      disabled={deleteCardMutation.isPending}
-                      className="rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
-                      style={{
-                        borderColor: "var(--color-border)",
-                        ...primary,
-                      }}
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => deleteCardMutation.mutate()}
-                      disabled={deleteCardMutation.isPending}
-                      className="rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                      style={{
-                        backgroundColor: "var(--color-tag-red-text)",
-                      }}
-                    >
-                      {deleteCardMutation.isPending
-                        ? "Deleting..."
-                        : "Delete Card"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <ConfirmDialog
+              isOpen={isDeleteDialogOpen}
+              title="Delete card?"
+              description={
+                <>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    &quot;{card.title}&quot;
+                  </span>
+                  ? This action cannot be undone.
+                </>
+              }
+              icon={<Trash2 size={20} />}
+              confirmLabel="Delete card"
+              pendingLabel="Deleting..."
+              isPending={deleteCardMutation.isPending}
+              error={
+                deleteCardMutation.isError
+                  ? deleteCardMutation.error instanceof Error
+                    ? deleteCardMutation.error.message
+                    : "Unable to delete this card."
+                  : null
+              }
+              onConfirm={() => deleteCardMutation.mutate()}
+              onCancel={() => setIsDeleteDialogOpen(false)}
+            />
           </>
         ) : null}
       </div>

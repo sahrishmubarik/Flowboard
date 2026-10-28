@@ -6,11 +6,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useRouter } from "next/navigation";
 
-import { ChevronDown, Plus, X, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Pencil, Trash2, Zap } from "lucide-react";
 import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
 import { useToast } from "@/components/ui/ToastProvider";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Modal, { modalButtonClass } from "@/components/ui/Modal";
 
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -596,6 +598,18 @@ Card creation belongs to BoardList.*/
       });
     },
   });
+  const isSprintSaving =
+    createSprintMutation.isPending || updateSprintMutation.isPending;
+
+  const closeSprintForm = () => {
+    if (isSprintSaving) return;
+    setIsSprintCreateOpen(false);
+    setEditingSprint(null);
+    setIsDatePickerOpen(false);
+    createSprintMutation.reset();
+    updateSprintMutation.reset();
+  };
+
   const handleCreateSprint = (payload: CreateSprintPayload) => {
     if (!payload.sprintName.trim()) {
       return;
@@ -1431,59 +1445,63 @@ Card creation belongs to BoardList.*/
 
           \\====================================================== */}
 
-      {isSprintCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div
-            className="w-full max-w-md rounded-xl border p-5 shadow-xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
+      <Modal
+        isOpen={isSprintCreateOpen}
+        onClose={closeSprintForm}
+        title={editingSprint ? "Edit sprint" : "Create sprint"}
+        description={
+          editingSprint
+            ? "Update this sprint's details."
+            : "Create a sprint for this board."
+        }
+        size="sm"
+        dismissible={!isSprintSaving}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={closeSprintForm}
+              disabled={isSprintSaving}
+              className={modalButtonClass.secondary}
+            >
+              Cancel
+            </button>
 
-              borderColor: "var(--color-border)",
-            }}
-          >
-            <div className="mb-5 flex items-start justify-between">
-              <div>
-                <h2
-                  className="text-lg font-semibold"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {/* Create Sprint */}
-                  {editingSprint ? "Edit Sprint" : "Create Sprint"}
-                </h2>
-
-                <p
-                  className="mt-1 text-sm"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                  }}
-                >
-                  {editingSprint
-                    ? "Update this sprint's details."
-                    : "Create a sprint for this board."}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSprintCreateOpen(false);
-
-                  setEditingSprint(null);
-                  setIsDatePickerOpen(false);
-                  createSprintMutation.reset();
-                  updateSprintMutation.reset();
-                }}
-                className="rounded-md p-1"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
+            <button
+              type="button"
+              disabled={
+                isSprintSaving ||
+                !sprintName.trim() ||
+                !startDate ||
+                !endDate ||
+                new Date(endDate) < new Date(startDate)
+              }
+              onClick={() => {
+                if (editingSprint) {
+                  handleUpdateSprint();
+                } else {
+                  handleCreateSprint({
+                    sprintName: sprintName.trim(),
+                    goal: sprintGoal.trim(),
+                    startDate,
+                    endDate,
+                    carryUnresolvedTickets,
+                  });
+                }
+              }}
+              className={modalButtonClass.primary}
+            >
+              {updateSprintMutation.isPending
+                ? "Saving..."
+                : createSprintMutation.isPending
+                  ? "Creating..."
+                  : editingSprint
+                    ? "Save changes"
+                    : "Create sprint"}
+            </button>
+          </>
+        }
+      >
             <div className="space-y-4">
               {/* Sprint name */}
 
@@ -1663,107 +1681,16 @@ Card creation belongs to BoardList.*/
             {(editingSprint
               ? updateSprintMutation.isError
               : createSprintMutation.isError) && (
-              <div
-                className="mt-4 rounded-lg border px-3 py-2 text-sm"
-                style={{
-                  backgroundColor: "var(--color-tag-red-bg)",
-                  borderColor: "var(--color-tag-red-text)",
-                  color: "var(--color-tag-red-text)",
-                }}
+              <p
+                role="alert"
+                className="mt-4 rounded-[var(--radius-md)] bg-[var(--color-tag-red-bg)] px-3 py-2 text-sm text-[var(--color-tag-red-text)]"
               >
                 {editingSprint
                   ? updateSprintMutation.error?.message
                   : createSprintMutation.error?.message}
-              </div>
+              </p>
             )}
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSprintCreateOpen(false);
-                  setEditingSprint(null);
-                  setIsDatePickerOpen(false);
-                  createSprintMutation.reset();
-                  updateSprintMutation.reset();
-                }}
-                className="rounded-lg border px-4 py-2 text-sm font-medium"
-                style={{
-                  borderColor: "var(--color-border)",
-
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Cancel
-              </button>
-
-              {/* <button
-                type="button"
-                disabled={
-                  createSprintMutation.isPending ||
-                  !sprintName.trim() ||
-                  !startDate ||
-                  !endDate ||
-                  new Date(endDate) < new Date(startDate)
-                }
-                onClick={() =>
-                  handleCreateSprint({
-                    sprintName: sprintName.trim(),
-
-                    goal: sprintGoal.trim(),
-
-                    startDate,
-
-                    endDate,
-                    carryUnresolvedTickets,
-                  })
-                }
-                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-              >
-                {createSprintMutation.isPending
-                  ? "Creating..."
-                  : "Create Sprint"}
-              </button> */}
-              <button
-                type="button"
-                disabled={
-                  createSprintMutation.isPending ||
-                  updateSprintMutation.isPending ||
-                  !sprintName.trim() ||
-                  !startDate ||
-                  !endDate ||
-                  new Date(endDate) < new Date(startDate)
-                }
-                onClick={() => {
-                  if (editingSprint) {
-                    handleUpdateSprint();
-                  } else {
-                    handleCreateSprint({
-                      sprintName: sprintName.trim(),
-                      goal: sprintGoal.trim(),
-                      startDate,
-                      endDate,
-                      carryUnresolvedTickets,
-                    });
-                  }
-                }}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ backgroundColor: "var(--color-primary)" }}
-              >
-                {updateSprintMutation.isPending
-                  ? "Saving..."
-                  : createSprintMutation.isPending
-                    ? "Creating..."
-                    : editingSprint
-                      ? "Save Changes"
-                      : "Create Sprint"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ======================================================
 
@@ -1775,180 +1702,59 @@ Card creation belongs to BoardList.*/
 
           \\====================================================== */}
 
-      {isActivateSprintOpen && selectedSprint && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-          <div
-            className="w-full max-w-md rounded-xl border p-5 shadow-xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
+      <ConfirmDialog
+        isOpen={isActivateSprintOpen && selectedSprint !== null}
+        title="Activate sprint?"
+        description={
+          <>
+            Are you sure you want to activate{" "}
+            <span className="font-semibold text-[var(--color-text-primary)]">
+              {selectedSprint?.name}
+            </span>
+            ? The current active sprint will be marked as completed.
+          </>
+        }
+        icon={<Zap size={20} />}
+        tone="primary"
+        confirmLabel="Activate sprint"
+        pendingLabel="Activating..."
+        isPending={activateSprintMutation.isPending}
+        error={activateSprintMutation.error?.message}
+        onConfirm={() => {
+          if (selectedSprint) handleActivateSprint(selectedSprint.id);
+        }}
+        onCancel={() => {
+          setIsActivateSprintOpen(false);
+          setSelectedSprint(null);
+          activateSprintMutation.reset();
+        }}
+      />
 
-              borderColor: "var(--color-border)",
-            }}
-          >
-            <h2
-              className="text-lg font-semibold"
-              style={{
-                color: "var(--color-text-primary)",
-              }}
-            >
-              Activate Sprint
-            </h2>
-
-            <p
-              className="mt-2 text-sm leading-6"
-              style={{
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              Are you sure you want to activate{" "}
-              <span
-                className="font-semibold"
-                style={{
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                {selectedSprint.name}
-              </span>
-              ?
-            </p>
-
-            <p
-              className="mt-2 text-sm"
-              style={{
-                color: "var(--color-text-muted)",
-              }}
-            >
-              The current active sprint will be marked as completed.
-            </p>
-
-            {activateSprintMutation.isError && (
-              <div
-                className="mt-4 rounded-lg border px-3 py-2 text-sm"
-                style={{
-                  backgroundColor: "var(--color-tag-red-bg)",
-
-                  borderColor: "var(--color-tag-red-text)",
-
-                  color: "var(--color-tag-red-text)",
-                }}
-              >
-                {activateSprintMutation.error.message}
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                disabled={activateSprintMutation.isPending}
-                onClick={() => {
-                  setIsActivateSprintOpen(false);
-
-                  setSelectedSprint(null);
-
-                  activateSprintMutation.reset();
-                }}
-                className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
-                style={{
-                  borderColor: "var(--color-border)",
-
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={activateSprintMutation.isPending}
-                onClick={() => handleActivateSprint(selectedSprint.id)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-              >
-                {activateSprintMutation.isPending
-                  ? "Activating..."
-                  : "Activate Sprint"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* delete model */}
-      {deletingSprint && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-          <div
-            className="w-full max-w-md rounded-xl border p-5 shadow-xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
-              borderColor: "var(--color-border)",
-            }}
-          >
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              Delete Sprint
-            </h2>
-
-            <p
-              className="mt-3 text-sm leading-6"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              Are you sure you want to delete{" "}
-              <strong style={{ color: "var(--color-text-primary)" }}>
-                {deletingSprint.name}
-              </strong>
-              ? This action cannot be undone.
-            </p>
-
-            {deleteSprintMutation.isError && (
-              <div
-                className="mt-4 rounded-lg border px-3 py-2 text-sm"
-                style={{
-                  backgroundColor: "var(--color-tag-red-bg)",
-                  borderColor: "var(--color-tag-red-text)",
-                  color: "var(--color-tag-red-text)",
-                }}
-              >
-                {deleteSprintMutation.error.message}
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                disabled={deleteSprintMutation.isPending}
-                onClick={() => {
-                  setDeletingSprint(null);
-                  deleteSprintMutation.reset();
-                }}
-                className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={deleteSprintMutation.isPending}
-                onClick={() => deleteSprintMutation.mutate(deletingSprint.id)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--color-tag-red-text)",
-                }}
-              >
-                {deleteSprintMutation.isPending
-                  ? "Deleting..."
-                  : "Delete Sprint"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={deletingSprint !== null}
+        title="Delete sprint?"
+        description={
+          <>
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-[var(--color-text-primary)]">
+              {deletingSprint?.name}
+            </span>
+            ? This action cannot be undone.
+          </>
+        }
+        icon={<Trash2 size={20} />}
+        confirmLabel="Delete sprint"
+        pendingLabel="Deleting..."
+        isPending={deleteSprintMutation.isPending}
+        error={deleteSprintMutation.error?.message}
+        onConfirm={() => {
+          if (deletingSprint) deleteSprintMutation.mutate(deletingSprint.id);
+        }}
+        onCancel={() => {
+          setDeletingSprint(null);
+          deleteSprintMutation.reset();
+        }}
+      />
     </main>
   );
 }

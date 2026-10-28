@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/validations/auth";
 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useModalBehavior } from "@/components/ui/Modal";
 
 type User = {
   id: string;
@@ -61,6 +62,23 @@ export default function UserProfileCard({
       password: "",
       confirmPassword: "",
     },
+  });
+
+  const closeProfile = () => {
+    setChangePasswordOpen(false);
+    setMessage("");
+    setError("");
+    reset();
+    onClose();
+  };
+
+  // Esc, focus handling and scroll lock for this dialog's own layout.
+  const panelRef = useRef<HTMLElement>(null);
+  useModalBehavior({
+    isOpen: isOpen && Boolean(user),
+    onClose: closeProfile,
+    dismissible: !loading,
+    panelRef,
   });
 
   if (!isOpen || !user) {
@@ -110,13 +128,7 @@ export default function UserProfileCard({
     }
   };
 
-  const handleClose = () => {
-    setChangePasswordOpen(false);
-    setMessage("");
-    setError("");
-    reset();
-    onClose();
-  };
+  const handleClose = closeProfile;
 
   return (
     <>
@@ -128,7 +140,12 @@ export default function UserProfileCard({
 
       {/* Card */}
       <section
-        className="fixed left-1/2 top-1/2 z-[101] w-[calc(100%-32px)] max-w-[460px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-profile-title"
+        tabIndex={-1}
+        className="fixed left-1/2 top-1/2 z-[101] outline-none w-[calc(100%-32px)] max-w-[460px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
@@ -141,6 +158,7 @@ export default function UserProfileCard({
 
               <div>
                 <h2
+                  id="user-profile-title"
                   className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
                   style={{
                     fontFamily: "var(--font-display)",
