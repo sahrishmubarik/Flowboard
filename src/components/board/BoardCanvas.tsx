@@ -10,6 +10,7 @@ import { ChevronDown, Plus, X, Pencil, Trash2 } from "lucide-react";
 import BoardList from "./BoardList";
 
 import CreateListCard from "./CreateListCard";
+import { useToast } from "@/components/ui/ToastProvider";
 
 import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -179,6 +180,7 @@ export default function BoardCanvas({
   boardId,
 }: BoardCanvasProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const router = useRouter();
 
@@ -497,7 +499,9 @@ Card creation belongs to BoardList.*/
       return data;
     },
 
-    onSuccess: () => {
+    // Errors are shown inline in the sprint form, so only success toasts.
+    onSuccess: (data) => {
+      showToast(data?.message ?? "Sprint created successfully.", "success");
       setIsSprintCreateOpen(false);
 
       setSprintName("");
