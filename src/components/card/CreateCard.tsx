@@ -2131,106 +2131,94 @@ export default function CreateCard({
                 borderColor: "var(--color-border)",
               }}
             >
-              {/* Modal header */}
-              <div
-                className="z-10 flex shrink-0 items-start justify-between gap-4 border-b px-5 py-4 sm:px-8"
-                style={{
-                  backgroundColor: "var(--color-card-bg)",
-                  borderColor: "var(--color-border)",
-                }}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="flex h-9 w-9 items-center justify-center rounded-xl"
-                      style={{
-                        backgroundColor: "var(--color-column-bg)",
-                        color: "var(--color-primary)",
-                      }}
-                    >
-                      <Plus size={18} />
-                    </span>
-                    <div>
-                      <h2
-                        id={`create-card-title-${listId}`}
-                        className="text-lg font-semibold"
-                        style={{ color: "var(--color-text-primary)" }}
-                      >
-                        Create ticket
-                      </h2>
-                      <p
-                        className="mt-0.5 text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Describe the work and assign the details.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <span style={{ color: "var(--color-text-muted)" }}>
-                      Adding to
-                    </span>
-                    <span
-                      className="rounded-md border px-2 py-1 font-medium"
-                      style={{
-                        backgroundColor: "var(--color-column-bg)",
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-primary)",
-                      }}
-                    >
-                      {listName}
-                    </span>
-                    <p
-                      className="text-xs leading-5"
-                      style={{ color: "var(--color-text-secondary)" }}
-                    >
-                      {selectedSprintId
-                        ? `This card will be added to ${
-                            sprints.find(
-                              (sprint) => sprint.id === selectedSprintId,
-                            )?.name ?? "the selected sprint"
-                          }.`
-                        : "This card will be created without a sprint."}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={createCardMutation.isPending}
-                  onClick={closeCreateCardModal}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5"
-                  style={{ color: "var(--color-text-muted)" }}
-                  aria-label="Close create card form"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_385px] lg:overflow-hidden">
+              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_315px] lg:overflow-hidden">
                 {/* Main ticket content: title, rich editor and attachments */}
                 <main className="card-scroll min-w-0 space-y-7 overflow-y-visible px-5 py-6 sm:px-8 lg:overflow-y-auto lg:px-10">
-                  {/* Title */}
-                  <section>
-                    <label
-                      htmlFor={`card-title-${listId}`}
-                      className="mb-2 block text-sm font-semibold"
-                      style={{ color: "var(--color-text-primary)" }}
+                  {/* Header: in the left column so Details runs full height */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex h-9 w-9 items-center justify-center rounded-xl"
+                          style={{
+                            backgroundColor: "var(--color-column-bg)",
+                            color: "var(--color-primary)",
+                          }}
+                        >
+                          <Plus size={18} />
+                        </span>
+                        <div>
+                          <h2
+                            id={`create-card-title-${listId}`}
+                            className="text-lg font-semibold"
+                            style={{ color: "var(--color-text-primary)" }}
+                          >
+                            Create ticket
+                          </h2>
+                          <p
+                            className="mt-0.5 text-xs"
+                            style={{ color: "var(--color-text-muted)" }}
+                          >
+                            Describe the work and assign the details.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        <span style={{ color: "var(--color-text-muted)" }}>
+                          Adding to
+                        </span>
+                        <span
+                          className="rounded-md border px-2 py-1 font-medium"
+                          style={{
+                            backgroundColor: "var(--color-column-bg)",
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-text-primary)",
+                          }}
+                        >
+                          {listName}
+                        </span>
+                        <p
+                          className="text-xs leading-5"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        >
+                          {selectedSprintId
+                            ? `This card will be added to ${
+                                sprints.find(
+                                  (sprint) => sprint.id === selectedSprintId,
+                                )?.name ?? "the selected sprint"
+                              }.`
+                            : "This card will be created without a sprint."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={createCardMutation.isPending}
+                      onClick={closeCreateCardModal}
+                      // Phones only; on desktop it sits at the top of Details.
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 lg:hidden dark:hover:bg-white/5"
+                      style={{ color: "var(--color-text-muted)" }}
+                      aria-label="Close create card form"
                     >
-                      Summary <span className="text-[var(--color-tag-red-text)]">*</span>
-                    </label>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {/* Title: one underlined line; "Summary" is the placeholder. */}
+                  <section>
                     <input
                       id={`card-title-${listId}`}
                       type="text"
                       value={cardTitle}
                       onChange={(event) => setCardTitle(event.target.value)}
-                      placeholder="What needs to be done?"
+                      placeholder="Summary"
+                      aria-label="Summary"
+                      aria-required="true"
+                      // No browser suggestions: hovering one previews it in
+                      // light autofill colours, which flashes white in dark mode.
+                      autoComplete="off"
                       data-autofocus
                       disabled={cardCreated || createCardMutation.isPending}
-                      className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition focus:ring-2 focus:ring-blue-500/20"
-                      style={{
-                        backgroundColor: "var(--color-input-bg)",
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-primary)",
-                      }}
+                      className="h-12 w-full border-0 border-b-2 border-[var(--color-border)] bg-transparent px-0 text-xl font-semibold text-[var(--color-text-primary)] outline-none transition-colors placeholder:font-medium placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] disabled:opacity-60 autofill:shadow-[inset_0_0_0_1000px_var(--color-card-bg)] autofill:[-webkit-text-fill-color:var(--color-text-primary)]"
                     />
                   </section>
                   {/* Description */}
@@ -2244,6 +2232,7 @@ export default function CreateCard({
                     <CardDescriptionEditor
                       value={cardDescription}
                       onChange={setCardDescription}
+                      toolbarOnFocus
                       toolbarAction={
                         <label
                           className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5 ${
@@ -2377,18 +2366,30 @@ export default function CreateCard({
                     >
                       Details
                     </h3>
-                    <span
-                      className="rounded-md border px-2 py-1 text-xs"
-                      style={{
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-muted)",
-                      }}
-                    >
-                      {listName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="rounded-md border px-2 py-1 text-xs"
+                        style={{
+                          borderColor: "var(--color-border)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        {listName}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={createCardMutation.isPending}
+                        onClick={closeCreateCardModal}
+                        className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 lg:flex dark:hover:bg-white/5"
+                        style={{ color: "var(--color-text-muted)" }}
+                        aria-label="Close create card form"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-type-${listId}`}
                         className="text-xs font-medium"
@@ -2428,7 +2429,7 @@ export default function CreateCard({
                         </select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-priority-${listId}`}
                         className="text-xs font-medium"
@@ -2466,7 +2467,7 @@ export default function CreateCard({
                         </select>
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-assignee-${listId}`}
                         className="text-xs font-medium"
@@ -2531,7 +2532,7 @@ export default function CreateCard({
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-sprint-${listId}`}
                         className="text-xs font-medium"
@@ -2604,7 +2605,7 @@ export default function CreateCard({
                       ] as const
                     ).map(({ field, label, value, placeholder }) => (
                       <div key={field} className="min-w-0 space-y-3">
-                        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                        <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                           <span
                             className="text-xs font-medium"
                             style={{ color: "var(--color-text-secondary)" }}
