@@ -138,19 +138,21 @@ export async function getMyNotifications(searchParams: URLSearchParams) {
   const validation = validateData(listNotificationsValidation, {
     limit: searchParams.get("limit") ?? undefined,
     cursor: searchParams.get("cursor") ?? undefined,
+    unread: searchParams.get("unread") ?? undefined,
   });
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
   }
 
-  const { limit, cursor } = validation.data;
+  const { limit, cursor, unread } = validation.data;
 
   const [page, unreadCount] = await Promise.all([
     NotificationRepo.listForUser(
       userId,
       limit,
       cursor ? decodeCursor(cursor) : undefined,
+      unread,
     ),
     NotificationRepo.countUnread(userId),
   ]);

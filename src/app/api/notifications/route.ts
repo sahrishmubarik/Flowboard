@@ -29,7 +29,7 @@ function errorResponse(error: unknown, label: string) {
   );
 }
 
-// GET /api/notifications?limit=20&cursor=... — the current user's notifications
+// GET /api/notifications?limit=20&cursor=...&unread=true — the current user's notifications
 export async function GET(request: NextRequest) {
   try {
     return await getMyNotifications(request.nextUrl.searchParams);
