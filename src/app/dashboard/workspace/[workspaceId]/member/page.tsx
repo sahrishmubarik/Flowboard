@@ -23,7 +23,7 @@ export default function MembersPage() {
         <PeopleTable workspaceId={workspaceId} />
 
         <div className="mt-10">
-          <DeleteWorkspaceCard />
+          <DeleteWorkspaceCard workspaceId={workspaceId} />
         </div>
 
         {/* FOOTER NOTE */}

@@ -16,7 +16,7 @@ import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 import InviteMemberCard from "@/components/inviteMemberCard";
 import InvitationStatusCard from "@/components/invitationStatusCard";
 import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
-import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
+import { DeleteWorkspaceDialog } from "@/components/deleteWorkspaceCard";
 import CreateBoard from "@/components/board/CreateBoardCard";
 import { pageContainerClass } from "@/components/ui/PageHeader";
 
@@ -271,6 +271,7 @@ export default function WorkspaceDashboardPage() {
               workspaceName={workspace_name}
               boardCount={boardsData?.boards?.length ?? 0}
               onAction={setWorkspaceAction}
+              canDelete={workspace.role === "owner"}
             />
 
             <WorkspaceStats workspaceId={workspaceId} />
@@ -289,7 +290,7 @@ export default function WorkspaceDashboardPage() {
           WORKSPACE MODAL
       ====================================================== */}
 
-      {workspaceAction && (
+      {workspaceAction && workspaceAction !== "delete" && (
         <WorkspaceModal
           isOpen={workspaceAction !== null}
           onClose={() => setWorkspaceAction(null)}
@@ -302,9 +303,7 @@ export default function WorkspaceDashboardPage() {
                   ? "Invitation Status"
                   : workspaceAction === "update-name"
                     ? "Update Workspace"
-                    : workspaceAction === "delete"
-                      ? "Delete Workspace"
-                      : "Create Board"
+                    : "Create Board"
           }
         >
           {workspaceAction === "members" && <WorkspaceMemberCard />}
@@ -315,13 +314,18 @@ export default function WorkspaceDashboardPage() {
 
           {workspaceAction === "update-name" && <UpdateWorkspaceCard />}
 
-          {workspaceAction === "delete" && <DeleteWorkspaceCard />}
-
           {workspaceAction === "create-board" && (
             <CreateBoard onClose={() => setWorkspaceAction(null)} />
           )}
         </WorkspaceModal>
       )}
+
+      {/* Opens on its own, not inside WorkspaceModal. */}
+      <DeleteWorkspaceDialog
+        workspaceId={workspaceId}
+        isOpen={workspaceAction === "delete"}
+        onClose={() => setWorkspaceAction(null)}
+      />
     </div>
   );
 }

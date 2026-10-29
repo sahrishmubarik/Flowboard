@@ -26,6 +26,8 @@ type WorkspaceHeaderProps = {
   workspaceName?: string;
   boardCount: number;
   onAction: (action: WorkspaceAction) => void;
+  // Only the owner can delete a workspace, so others don't see the action.
+  canDelete?: boolean;
 };
 
 const actions = [
@@ -72,8 +74,12 @@ export default function WorkspaceHeader({
   workspaceName,
   boardCount,
   onAction,
+  canDelete = false,
 }: WorkspaceHeaderProps) {
   const [showActions, setShowActions] = useState(false);
+  const visibleActions = canDelete
+    ? actions
+    : actions.filter((action) => action.value !== "delete");
 
   const handleAction = (action: WorkspaceAction) => {
     setShowActions(false);
@@ -150,7 +156,7 @@ export default function WorkspaceHeader({
               {/* Actions */}
 
               <div className="p-1.5 ">
-                {actions.map((action) => {
+                {visibleActions.map((action) => {
                   const Icon = action.icon;
                   const isDestructive = action.destructive;
 
