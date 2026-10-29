@@ -342,7 +342,7 @@ import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { invitationsQueryKey } from "@/components/invitationStatusCard";
 
-const roles = [
+export const inviteRoles = [
   {
     value: "admin",
     label: "Admin",
@@ -494,14 +494,14 @@ export default function InviteMemberCard() {
               }}
               className={fieldClass}
             >
-              {roles.map((item) => (
+              {inviteRoles.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
               ))}
             </select>
             <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
-              {roles.find((item) => item.value === role)?.description}
+              {inviteRoles.find((item) => item.value === role)?.description}
             </p>
           </div>
         </div>
