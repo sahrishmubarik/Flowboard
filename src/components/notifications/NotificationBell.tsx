@@ -212,6 +212,22 @@ export default function NotificationBell() {
   const openNotification = (notification: NotificationItem) => {
     if (!notification.readAt) markReadMutation.mutate(notification.id);
     setIsOpen(false);
+
+    // A board-level link (e.g. a new sprint) can point at the board that is
+    // already open, where navigating does not reload it. Refetch its data so
+    // the change shows either way.
+    const { workspaceId, boardId } = notification;
+    for (const key of [
+      "sprints",
+      "board-cards",
+      "board-lists",
+      "board-header-lists",
+      "board-members",
+      "board-members-all",
+    ]) {
+      queryClient.invalidateQueries({ queryKey: [key, workspaceId, boardId] });
+    }
+
     router.push(getLink(notification));
   };
 
