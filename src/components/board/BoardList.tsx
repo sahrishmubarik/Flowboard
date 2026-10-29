@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import CreateCard from "@/components/card/CreateCard";
 import {
@@ -13,6 +13,8 @@ import {
 } from "@dnd-kit/sortable";
 
 import SortableCard from "./SortableCard";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Modal, { modalButtonClass } from "@/components/ui/Modal";
 
 import { useDroppable } from "@dnd-kit/core";
 
@@ -75,7 +77,6 @@ type BoardListProps = {
 
   activeSprintId?: string | null;
 
-  activeSprintName?: string | null;
 
   isCardsLoading?: boolean;
 
@@ -112,7 +113,6 @@ export default function BoardList({
 
   activeSprintId = null,
 
-  activeSprintName = null,
 
   isCardsLoading = false,
 
@@ -400,6 +400,7 @@ export default function BoardList({
 
   const handleDeleteClick = () => {
     setOpenedAtSignal(null);
+    deleteListMutation.reset();
     setIsDeleteModalOpen(true);
   };
 
@@ -440,7 +441,7 @@ export default function BoardList({
       \======================================================= */}
 
       <div
-        className={`flex ${headerOnly ? "" : "min-h-full"} w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
+        className={`group/cell flex ${headerOnly ? "" : "min-h-full"} w-full shrink-0 flex-col ${seamless ? "rounded-none border-0" : "rounded-xl border"}`}
         style={{
           backgroundColor: "var(--color-column-bg)",
 
@@ -527,7 +528,6 @@ export default function BoardList({
                   boardId={boardId}
                   listId={list.id}
                   listName={list.listName}
-                  sprintName={activeSprintName}
                   activeSprintId={activeSprintId}
                   triggerClassName="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
                   onCreateClick={() => {
@@ -572,18 +572,6 @@ export default function BoardList({
 
         {!headerOnly && (
           <>
-            {!hideAddCard && (
-              <CreateCard
-                workspaceId={workspaceId}
-                boardId={boardId}
-                listId={list.id}
-                listName={list.listName}
-                activeSprintId={activeSprintId}
-                sprintName={activeSprintName}
-                triggerClassName="mx-2 mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
-                triggerIconSize={16}
-              />
-            )}
 
             {/* ====================================================
 
@@ -668,7 +656,6 @@ export default function BoardList({
                           boardId={boardId}
                           listId={list.id}
                           listName={list.listName}
-                          sprintName={card.sprintName ?? activeSprintName}
                           activeSprintId={activeSprintId}
                           onCardClick={onCardClick}
                         />
@@ -682,16 +669,27 @@ export default function BoardList({
 
             \=================================================== */
 
-                <div
-                  className="flex min-h-30 flex-1 items-center justify-center text-xs"
-                  style={{
-                    color: "var(--color-text-muted)",
-                  }}
-                >
-                  No cards yet
-                </div>
+                <div aria-hidden="true" className="min-h-12 flex-1" />
               )}
             </div>
+
+            {/* Create: always visible on touch screens; on devices with a
+                pointer it appears when the cell is hovered or focused. */}
+            {!hideAddCard && (
+              <div className="px-2 pb-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={list.id}
+                  listName={list.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel="Create"
+                  triggerAriaLabel={`Create card in ${list.listName}`}
+                  triggerClassName="flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-black/5 hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] dark:hover:bg-white/5"
+                  triggerIconSize={15}
+                />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -702,178 +700,75 @@ export default function BoardList({
 
       \======================================================= */}
 
-      {isRenameModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="rename-list-title"
-        >
-          {/* Backdrop */}
-
-          <button
-            type="button"
-            aria-label="Close rename modal"
-            onClick={handleCloseRenameModal}
-            className="absolute inset-0 cursor-default bg-black/40"
-          />
-
-          {/* Modal */}
-
-          <div
-            className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
-
-              borderColor: "var(--color-border)",
-            }}
-          >
-            {/* Close */}
-
+      <Modal
+        isOpen={isRenameModalOpen}
+        onClose={handleCloseRenameModal}
+        title="Rename list"
+        description="Update the name of this list."
+        icon={<Pencil size={20} />}
+        size="sm"
+        dismissible={!updateListMutation.isPending}
+        footer={
+          <>
             <button
               type="button"
               onClick={handleCloseRenameModal}
               disabled={updateListMutation.isPending}
-              className="absolute right-4 top-4 rounded-lg p-1.5 transition disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                color: "var(--color-text-secondary)",
-              }}
-              aria-label="Close"
+              className={modalButtonClass.secondary}
             >
-              <X size={18} />
+              Cancel
             </button>
 
-            {/* Icon */}
-
-            <div
-              className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-              style={{
-                backgroundColor: "var(--color-primary)",
-
-                color: "var(--color-primary-active-bg)",
-              }}
+            <button
+              type="button"
+              onClick={handleUpdateListName}
+              disabled={
+                updateListMutation.isPending ||
+                !listName.trim() ||
+                listName.trim() === list.listName
+              }
+              className={modalButtonClass.primary}
             >
-              <Pencil size={20} />
-            </div>
+              {updateListMutation.isPending ? "Updating..." : "Update list"}
+            </button>
+          </>
+        }
+      >
+        <label
+          htmlFor={`list-name-${list.id}`}
+          className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
+        >
+          List name
+        </label>
 
-            {/* Title */}
+        <input
+          id={`list-name-${list.id}`}
+          type="text"
+          value={listName}
+          onChange={(event) => setListName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              handleUpdateListName();
+            }
+          }}
+          data-autofocus
+          maxLength={100}
+          disabled={updateListMutation.isPending}
+          className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-active-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+          placeholder="Enter list name"
+        />
 
-            <h2
-              id="rename-list-title"
-              className="text-lg font-semibold"
-              style={{
-                color: "var(--color-text-primary)",
-              }}
-            >
-              Rename list
-            </h2>
-
-            {/* Description */}
-
-            <p
-              className="mt-1 text-sm"
-              style={{
-                color: "var(--color-text-secondary)",
-              }}
-            >
-              Update the name of this list.
-            </p>
-
-            {/* Input */}
-
-            <div className="mt-5">
-              <label
-                htmlFor={`list-name-${list.id}`}
-                className="mb-2 block text-sm font-medium"
-                style={{
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                List name
-              </label>
-
-              <input
-                id={`list-name-${list.id}`}
-                type="text"
-                value={listName}
-                onChange={(event) => setListName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleUpdateListName();
-                  }
-
-                  if (event.key === "Escape") {
-                    handleCloseRenameModal();
-                  }
-                }}
-                autoFocus
-                maxLength={100}
-                disabled={updateListMutation.isPending}
-                className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  backgroundColor: "var(--color-app-bg)",
-
-                  borderColor: "var(--color-border)",
-
-                  color: "var(--color-text-primary)",
-                }}
-                placeholder="Enter list name"
-              />
-
-              {/* Error */}
-
-              {updateListMutation.isError && (
-                <p
-                  className="mt-2 text-xs"
-                  style={{
-                    color: "var(--color-tag-red-text)",
-                  }}
-                >
-                  {updateListMutation.error instanceof Error
-                    ? updateListMutation.error.message
-                    : "Failed to update list"}
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseRenameModal}
-                disabled={updateListMutation.isPending}
-                className="rounded-xl border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  borderColor: "var(--color-border)",
-
-                  backgroundColor: "var(--color-card-bg)",
-
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleUpdateListName}
-                disabled={
-                  updateListMutation.isPending ||
-                  !listName.trim() ||
-                  listName.trim() === list.listName
-                }
-                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-              >
-                {updateListMutation.isPending ? "Updating..." : "Update list"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        {updateListMutation.isError && (
+          <p
+            role="alert"
+            className="mt-2 text-xs text-[var(--color-tag-red-text)]"
+          >
+            {updateListMutation.error instanceof Error
+              ? updateListMutation.error.message
+              : "Failed to update list"}
+          </p>
+        )}
+      </Modal>
 
       {/* ======================================================
 
@@ -881,124 +776,26 @@ export default function BoardList({
 
       \======================================================= */}
 
-      {isDeleteModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-list-title"
-        >
-          {/* Backdrop */}
-
-          <button
-            type="button"
-            aria-label="Close delete confirmation"
-            onClick={handleCloseDeleteModal}
-            className="absolute inset-0 cursor-default bg-black/40"
-          />
-
-          {/* Modal */}
-
-          <div
-            className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-            style={{
-              backgroundColor: "var(--color-card-bg)",
-
-              borderColor: "var(--color-border)",
-            }}
-          >
-            {/* Close */}
-
-            <button
-              type="button"
-              onClick={handleCloseDeleteModal}
-              disabled={deleteListMutation.isPending}
-              className="absolute right-4 top-4 rounded-lg p-1 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                color: "var(--color-text-secondary)",
-              }}
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-
-            {/* Icon */}
-
-            <div
-              className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-              style={{
-                backgroundColor: "var(--color-tag-red-bg)",
-
-                color: "var(--color-tag-red-text)",
-              }}
-            >
-              <Trash2 size={20} />
-            </div>
-
-            {/* Content */}
-
-            <div className="pr-8">
-              <h2
-                id="delete-list-title"
-                className="text-lg font-semibold"
-                style={{
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                Delete list?
-              </h2>
-
-              <p
-                className="mt-2 text-sm leading-6"
-                style={{
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                Are you sure you want to delete
-                <span
-                  className="font-semibold"
-                  style={{
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  &quot;{list.listName}&quot;?
-                </span>
-                ? This action cannot be undone.
-              </p>
-            </div>
-
-            {/* Actions */}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseDeleteModal}
-                disabled={deleteListMutation.isPending}
-                className="rounded-xl border px-4 py-2.5 text-sm font-medium transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  borderColor: "var(--color-border)",
-
-                  color: "var(--color-text-primary)",
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleteListMutation.isPending}
-                className="rounded-xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  backgroundColor: "var(--color-tag-red-text)",
-                }}
-              >
-                {deleteListMutation.isPending ? "Deleting..." : "Delete list"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={isDeleteModalOpen}
+        title="Delete list?"
+        description={
+          <>
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-[var(--color-text-primary)]">
+              &quot;{list.listName}&quot;
+            </span>
+            ? This action cannot be undone.
+          </>
+        }
+        icon={<Trash2 size={20} />}
+        confirmLabel="Delete list"
+        pendingLabel="Deleting..."
+        isPending={deleteListMutation.isPending}
+        error={deleteListMutation.error?.message}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCloseDeleteModal}
+      />
     </>
   );
 }

@@ -18,6 +18,7 @@ import InvitationStatusCard from "@/components/invitationStatusCard";
 import UpdateWorkspaceCard from "@/components/updateWorkspaceNameCard";
 import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
 import CreateBoard from "@/components/board/CreateBoardCard";
+import { pageContainerClass } from "@/components/ui/PageHeader";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -146,27 +147,38 @@ export default function WorkspaceDashboardPage() {
      LOADING
   ========================================================== */
 
-  if (workspaceLoading) {
-    return (
-      <div className="min-h-screen bg-[var(--color-app-bg)] text-[var(--color-text-primary)]">
-        <main className="min-h-screen p-6 lg:p-10">
-          <div className="mx-auto max-w-[1500px] animate-pulse">
-            <div className="h-4 w-24 rounded bg-[var(--color-border)]" />
+  // Shared by both loading phases below.
+  const loadingView = (
+      <div
+        aria-busy="true"
+        aria-label="Loading workspace"
+        className="min-h-screen bg-[var(--color-board-bg)]"
+      >
+        {/* Same container and shapes as the loaded page, so nothing jumps. */}
+        <div className={`${pageContainerClass} animate-pulse`}>
+          <div className="h-3 w-32 rounded bg-[var(--color-border)]" />
+          <div className="mt-3 h-8 w-64 max-w-full rounded bg-[var(--color-border)]" />
+          <div className="mt-3 h-4 w-96 max-w-full rounded bg-[var(--color-border)]" />
 
-            <div className="mt-4 h-10 w-72 rounded bg-[var(--color-border)]" />
-
-            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-32 rounded-2xl bg-[var(--color-border)]"
-                />
-              ))}
-            </div>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[148px] rounded-[var(--radius-xl)] bg-[var(--color-border)]"
+              />
+            ))}
           </div>
-        </main>
+
+          <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+            <div className="h-72 rounded-[var(--radius-xl)] bg-[var(--color-border)]" />
+            <div className="h-72 rounded-[var(--radius-xl)] bg-[var(--color-border)]" />
+          </div>
+        </div>
       </div>
-    );
+  );
+
+  if (workspaceLoading) {
+    return loadingView;
   }
 
   /* =========================================================
@@ -208,31 +220,7 @@ export default function WorkspaceDashboardPage() {
   ========================================================== */
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[var(--color-app-bg)]">
-        <div className="flex min-h-screen">
-          {/* Sidebar placeholder */}
-          <div className="hidden w-[260px] border-r border-[var(--color-border)] bg-[var(--color-card-bg)] lg:block" />
-
-          <main className="flex-1 p-6 lg:p-10">
-            <div className="mx-auto max-w-[1500px] animate-pulse">
-              <div className="h-4 w-24 rounded bg-[var(--color-border)]" />
-
-              <div className="mt-4 h-10 w-72 rounded bg-[var(--color-border)]" />
-
-              <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-32 rounded-2xl bg-[var(--color-border)]"
-                  />
-                ))}
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
+    return loadingView;
   }
 
   /* =========================================================
@@ -278,7 +266,7 @@ export default function WorkspaceDashboardPage() {
         ================================================== */}
 
         <main className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+          <div className={pageContainerClass}>
             <WorkspaceHeader
               workspaceName={workspace_name}
               boardCount={boardsData?.boards?.length ?? 0}

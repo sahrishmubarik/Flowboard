@@ -332,10 +332,7 @@ export default function DeleteWorkspaceCard() {
             </svg>
           </div>
           <div className="min-w-0">
-            <h2
-              className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Delete workspace
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">

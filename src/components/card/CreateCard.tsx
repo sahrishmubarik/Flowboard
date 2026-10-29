@@ -1491,7 +1491,7 @@
 // }
 
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1509,6 +1509,8 @@ import {
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
 import CardDescriptionViewer from "./CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useModalBehavior } from "@/components/ui/Modal";
+import { getPriorityColor } from "@/components/card/priority";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1538,7 +1540,6 @@ type CardProps = {
   boardId: string;
   listId: string;
   listName: string;
-  sprintName?: string | null;
   triggerLabel?: string;
   triggerClassName?: string;
   triggerAriaLabel?: string;
@@ -1608,22 +1609,6 @@ type Sprint = {
   name: string;
   status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 };
-function getPriorityColor(priority: CardPriority) {
-  switch (priority) {
-    case "normal":
-      return "#3b82f6";
-    case "show stopper":
-      return "#a855f7";
-    case "critical":
-      return "#ef4444";
-    case "major":
-      return "#eab308";
-    case "minor":
-      return "#9ca3af";
-    default:
-      return "var(--color-border)";
-  }
-}
 type BoardMember = {
   userId: string;
   name: string;
@@ -1631,7 +1616,11 @@ type BoardMember = {
 };
 function formatCardDate(date: string | null) {
   if (!date) return "";
-  const parsedDate = new Date(`${date}T12:00:00`);
+  // The API returns full timestamps; bare YYYY-MM-DD values are read at
+  // local noon so they never shift a day.
+  const parsedDate = new Date(
+    /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00` : date,
+  );
   if (Number.isNaN(parsedDate.getTime())) return date;
   return parsedDate.toLocaleDateString("en-US", {
     month: "short",
@@ -1680,7 +1669,6 @@ export default function CreateCard({
   boardId,
   listId,
   listName,
-  sprintName,
   triggerLabel = "Add card",
   triggerClassName,
   triggerAriaLabel,
@@ -1936,6 +1924,14 @@ export default function CreateCard({
     resetForm();
     createCardMutation.reset();
   };
+  // Esc, focus handling and scroll lock; the form keeps its own layout.
+  const createCardPanelRef = useRef<HTMLDivElement>(null);
+  useModalBehavior({
+    isOpen: isCreateCardOpen,
+    onClose: closeCreateCardModal,
+    dismissible: !createCardMutation.isPending,
+    panelRef: createCardPanelRef,
+  });
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incomingFiles = Array.from(event.target.files ?? []);
     setFileError("");
@@ -2021,9 +2017,8 @@ export default function CreateCard({
             className="text-[10px] font-semibold"
             style={{ color: "var(--color-text-muted)" }}
           >
-            {sprintName
-              ? `${sprintName}_${card.cardNumber}`
-              : `CARD-${card.cardNumber}`}
+            {/* Same key format as the card details page. */}
+            CARD-{card.cardNumber}
           </span>
           <div className="flex items-center gap-1.5">
             {card.type && (
@@ -2117,7 +2112,7 @@ export default function CreateCard({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-2 backdrop-blur-[2px] sm:p-5"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgb(9_30_66_/_0.45)] p-2 backdrop-blur-[2px] sm:p-5"
             onClick={(event) => {
               if (event.target === event.currentTarget) {
                 closeCreateCardModal();
@@ -2125,7 +2120,12 @@ export default function CreateCard({
             }}
           >
             <div
-              className="flex h-[min(92dvh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border shadow-2xl"
+              ref={createCardPanelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`create-card-title-${listId}`}
+              tabIndex={-1}
+              className="flex h-[min(92dvh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border shadow-2xl outline-none"
               style={{
                 backgroundColor: "var(--color-card-bg)",
                 borderColor: "var(--color-border)",
@@ -2152,6 +2152,7 @@ export default function CreateCard({
                     </span>
                     <div>
                       <h2
+                        id={`create-card-title-${listId}`}
                         className="text-lg font-semibold"
                         style={{ color: "var(--color-text-primary)" }}
                       >
@@ -2214,7 +2215,7 @@ export default function CreateCard({
                       className="mb-2 block text-sm font-semibold"
                       style={{ color: "var(--color-text-primary)" }}
                     >
-                      Summary <span className="text-red-500">*</span>
+                      Summary <span className="text-[var(--color-tag-red-text)]">*</span>
                     </label>
                     <input
                       id={`card-title-${listId}`}
@@ -2222,7 +2223,7 @@ export default function CreateCard({
                       value={cardTitle}
                       onChange={(event) => setCardTitle(event.target.value)}
                       placeholder="What needs to be done?"
-                      autoFocus
+                      data-autofocus
                       disabled={cardCreated || createCardMutation.isPending}
                       className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition focus:ring-2 focus:ring-blue-500/20"
                       style={{
@@ -2341,7 +2342,7 @@ export default function CreateCard({
                             </div>
                           )}
                           {fileError && (
-                            <p className="mt-2 text-xs text-red-500">
+                            <p className="mt-2 text-xs text-[var(--color-tag-red-text)]">
                               {fileError}
                             </p>
                           )}
@@ -2524,7 +2525,7 @@ export default function CreateCard({
                           </p>
                         )}
                         {memberError && (
-                          <p className="mt-1 text-xs text-red-500">
+                          <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {memberError}
                           </p>
                         )}
@@ -2580,7 +2581,7 @@ export default function CreateCard({
                           ))}
                         </select>
                         {sprintError && (
-                          <p className="mt-1 text-xs text-red-500">
+                          <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {sprintError}
                           </p>
                         )}

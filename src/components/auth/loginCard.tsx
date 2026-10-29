@@ -20,8 +20,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import BrandLogo from "@/components/BrandLogo";
+import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 
 export default function LoginCard() {
   const { showToast } = useToast();
@@ -94,94 +94,11 @@ export default function LoginCard() {
   return (
     <main className="auth-page">
       <div className="auth-layout ">
-        <section className="auth-brand-panel flex justify-center items-center">
-          {/* Logo */}
-          <div className="px-8 py-3 ml-[-460px]">
-            <Link href="/" className="brand-logo ">
-              <BrandLogo
-                className="brand-logo"
-                markClassName="brand-logo-mark"
-                nameClassName="brand-logo-name"
-                size={28}
-              />
-            </Link>
-          </div>
-
-          {/* Brand Content */}
-
-          <div className="flex flex-1 items-center px-8 pb-12">
-            <div className="w-full max-w-[610px]">
-              <span className="auth-eyebrow">Welcome back</span>
-
-              <h1 className="auth-brand-title">Your sprint is waiting.</h1>
-
-              <p className="auth-brand-description">
-                Pick up exactly where you left off — every issue, comment and
-                task stays organized in one place.
-              </p>
-
-              {/* Board preview */}
-
-              <div className="auth-board">
-                <div className="auth-board-grid">
-                  {/* Open */}
-
-                  <div>
-                    <p className="auth-board-column-title">Open&nbsp; 6</p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-151</p>
-
-                      <p className="auth-task-title">Breadcrumb navigation</p>
-                    </div>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-155</p>
-
-                      <p className="auth-task-title">
-                        Footer misaligned on Safari
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* In progress */}
-
-                  <div>
-                    <p className="auth-board-column-title">
-                      In Progress&nbsp; 5
-                    </p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-142</p>
-
-                      <p className="auth-task-title">Responsive navbar</p>
-                    </div>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-147</p>
-
-                      <p className="auth-task-title">SVG icon sprite</p>
-                    </div>
-                  </div>
-
-                  {/* Testing */}
-
-                  <div>
-                    <p className="auth-board-column-title">Testing&nbsp; 2</p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-133</p>
-
-                      <p className="auth-task-title">
-                        Checkout fails on empty coupon
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <AuthBrandPanel
+          eyebrow="Welcome back"
+          title="Your sprint is waiting."
+          description="Pick up exactly where you left off — every issue, comment and task stays organized in one place."
+        />
 
         {/* =====================================================
             RIGHT LOGIN PANEL
@@ -189,6 +106,8 @@ export default function LoginCard() {
 
         <section className="auth-form-panel">
           <div className="auth-form-container">
+            <AuthMobileLogo />
+
             {/* Heading */}
 
             <div>

@@ -1,6 +1,8 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Modal from "@/components/ui/Modal";
+import PageHeader, { pageContainerClass } from "@/components/ui/PageHeader";
 import WorkspaceMemberCard from "@/components/workspaceMemberCard";
 import InvitationStatusCard from "@/components/invitationStatusCard";
 import InviteMemberCard from "@/components/inviteMemberCard";
@@ -48,19 +50,6 @@ export default function MembersPage() {
   const params = useParams<{ workspaceId: string }>();
 
   const workspaceId = params.workspaceId;
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActivePanel(null);
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   const activeItem = panels.find((item) => item.id === activePanel);
 
@@ -81,42 +70,13 @@ export default function MembersPage() {
 
   return (
     <main className="min-h-screen w-full bg-[var(--color-app-bg)] text-[var(--color-text-primary)]">
-      <div className="mx-auto w-full max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+      <div className={pageContainerClass}>
         {/* PAGE HEADER */}
-        <header className="mb-8 border-b border-[var(--color-border)] pb-6">
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
-            <span>Workspace</span>
-            <span>/</span>
-            <span className="text-[var(--color-primary)]">
-              Members & access
-            </span>
-          </div>
-
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div className="max-w-3xl">
-              <h1
-                className="text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Members & access
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                Everything you need to manage your team, invite collaborators,
-                review invitations, and control your workspace in one place.
-              </p>
-            </div>
-
-            <div className="shrink-0 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card-bg)] px-4 py-3">
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Workspace settings
-              </p>
-              <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">
-                Team & access management
-              </p>
-            </div>
-          </div>
-        </header>
+        <PageHeader
+          workspaceId={workspaceId}
+          title="Members & access"
+          description="Everything you need to manage your team, invite collaborators, review invitations, and control your workspace in one place."
+        />
 
         {/* INTRODUCTION */}
 
@@ -142,58 +102,15 @@ export default function MembersPage() {
       </div>
 
       {/* LARGE, CENTERED MODAL */}
-      {activePanel && activeItem && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6 lg:p-8"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setActivePanel(null);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="workspace-panel-title"
-            className="flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl sm:max-h-[90dvh]"
-          >
-            {/* MODAL HEADER */}
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4 sm:px-8 sm:py-5">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">
-                  Workspace management
-                </p>
-
-                <h2
-                  id="workspace-panel-title"
-                  className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {activeItem.title}
-                </h2>
-
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  {activeItem.description}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setActivePanel(null)}
-                aria-label="Close management panel"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] text-2xl text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-app-bg)] hover:text-[var(--color-text-primary)]"
-              >
-                ×
-              </button>
-            </header>
-
-            {/* PANEL CONTENT */}
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
-              <div className="mx-auto w-full max-w-3.5xl">{renderPanel()}</div>
-            </div>
-          </section>
-        </div>
-      )}
+      <Modal
+        isOpen={Boolean(activePanel && activeItem)}
+        onClose={() => setActivePanel(null)}
+        title={activeItem?.title ?? ""}
+        description={activeItem?.description}
+        size="lg"
+      >
+        <div className="mx-auto w-full">{renderPanel()}</div>
+      </Modal>
     </main>
   );
 }

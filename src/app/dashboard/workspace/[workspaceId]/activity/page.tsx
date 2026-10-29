@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import WorkspaceActivity from "@/components/WorkspaceActivity";
+import PageHeader, { pageContainerClass } from "@/components/ui/PageHeader";
 
 type ActivityPageProps = {
   params: Promise<{
@@ -16,8 +17,14 @@ export default async function ActivityPage({ params }: ActivityPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-app-bg)] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto w-full max-w-[1600px]">
+    <main className="min-h-screen bg-[var(--color-app-bg)]">
+      <div className={pageContainerClass}>
+        <PageHeader
+          workspaceId={workspaceId}
+          title="Activity"
+          description="Track changes and actions performed on your boards."
+        />
+
         <WorkspaceActivity workspaceId={workspaceId} />
       </div>
     </main>

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the app's theme toggle (data-theme on <html>),
+   not the operating-system preference. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* =========================================================
    FLOWBOARD COLOR SYSTEM
    ========================================================= */
@@ -38,6 +42,11 @@
   --color-priority-medium: #e2b203;
   --color-priority-low: #22a06b;
 
+  /* Destructive actions (button background + its text) */
+  --color-danger: #c9372c;
+  --color-danger-hover: #ae2e24;
+  --color-on-danger: #ffffff;
+
   /* Tags */
   --color-tag-blue-bg: #e9f2ff;
   --color-tag-blue-text: #0055cc;
@@ -72,10 +81,12 @@
      NON-COLOR DESIGN TOKENS
      ======================================================= */
 
-  --font-display: "Fraunces", serif;
+  /* --font-fraunces / --font-inter are loaded by next/font in app/layout.tsx */
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
 
   --font-body:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -87,6 +98,34 @@
 
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
+
+  /* =======================================================
+     ALIASES
+
+     Names used by components that were never defined. They
+     point at the semantic tokens above, so they follow the
+     light and dark themes automatically.
+     ======================================================= */
+
+  --color-input-bg: var(--color-card-bg);
+  --color-primary-soft: var(--color-primary-active-bg);
+  --color-card: var(--color-card-bg);
+
+  /* Legacy palette from the original Flowboard design */
+  --ink: var(--color-text-primary);
+  --ink-soft: var(--color-text-secondary);
+  --paper: var(--color-app-bg);
+  --paper-raised: var(--color-card-bg);
+  --mist: var(--color-border);
+  --indigo: var(--color-primary);
+  --indigo-deep: var(--color-primary-hover);
+  --sky: var(--color-status-progress);
+  --sage: var(--color-status-done);
+  --amber: var(--color-priority-medium);
+  --coral: var(--color-priority-high);
+  --board-ink: var(--color-product-window);
+  --board-panel: var(--color-product-window-panel);
+  --board-line: var(--color-product-window-line);
 }
 
 /* =========================================================
@@ -123,6 +162,11 @@
   --color-priority-medium: #f5cd47;
   --color-priority-low: #4bce97;
 
+  /* Destructive actions (button background + its text) */
+  --color-danger: #f87168;
+  --color-danger-hover: #fd9891;
+  --color-on-danger: #1d2125;
+
   /* Tags */
   --color-tag-blue-bg: #1c2b41;
   --color-tag-blue-text: #85b8ff;
@@ -155,8 +199,8 @@
 
 body {
   background: var(--color-app-bg);
-  color: var(--foreground);
-  font-family: "Fraunces", sans-serif;
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
 }
 @layer components {
   .nav-link {
@@ -1124,7 +1168,7 @@ body {
 
   .fb-input:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(53, 66, 204, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-active-bg);
   }
 
   /* =========================================================
@@ -1301,6 +1345,8 @@ body {
   .auth-form-panel {
     @apply flex min-h-screen items-center justify-center;
     background: var(--color-card-bg);
+    /* Keeps the form off the edges when the 40% column is narrow. */
+    padding: 32px clamp(20px, 4vw, 56px);
   }
 
   .auth-form-container {

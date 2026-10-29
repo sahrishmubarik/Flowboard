@@ -203,39 +203,6 @@ export default function WorkspaceActivity({
 
   return (
     <section className="w-full overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
-      {/* Header */}
-      <div className="border-b border-[var(--color-border)] px-6 py-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
-            <svg
-              width="21"
-              height="21"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-          </div>
-
-          <div>
-            <h2
-              className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Activity history
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
-              Track changes and actions performed on your boards.
-            </p>
-          </div>
-        </div>
-      </div>
 
       <div className="space-y-5 p-6">
         {/* Board filter */}

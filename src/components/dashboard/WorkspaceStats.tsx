@@ -311,6 +311,8 @@
 
 "use client";
 
+import type { ReactNode } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   KanbanSquare,
@@ -318,6 +320,7 @@ import {
   CheckSquare,
   Clock3,
   ArrowUpRight,
+  type LucideIcon,
 } from "lucide-react";
 
 type WorkspaceStatsProps = {
@@ -357,6 +360,20 @@ type BoardStatsResponse = {
 const HOURS_PER_DAY_PER_MEMBER = 8;
 const WORK_DAYS_PER_WEEK = 5;
 const HOURS_PER_WEEK = HOURS_PER_DAY_PER_MEMBER * WORK_DAYS_PER_WEEK;
+
+type Stat = {
+  label: string;
+  value: ReactNode;
+  valueSuffix?: string;
+  isLoading?: boolean;
+  context: string;
+  icon: LucideIcon;
+  // Colour token for the top accent, icon and progress bar.
+  accent: string;
+  // Only cards with a real destination are links.
+  href?: string;
+  progress?: number;
+};
 
 function percentOf(part: number, whole: number) {
   return whole > 0 ? Math.min(100, Math.round((part / whole) * 100)) : 0;
@@ -402,7 +419,7 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
   const boardCount = boardsData?.boards?.length ?? 0;
 
   // The first board (oldest) is the workspace's default board, matching the
-  // activity page and the "View all my tasks" link.
+  // activity page and the Active sprints card.
   const defaultBoard = boardsData?.boards?.[0];
 
   const {
@@ -447,78 +464,46 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
       ? "Failed to load board stats"
       : null;
 
-  const stats = [
+  const stats: Stat[] = [
     {
       label: "Boards",
-      value: boardsLoading ? "—" : boardCount,
+      value: boardCount,
+      isLoading: boardsLoading,
       context:
         boardCount === 1 ? "1 active board" : `${boardCount} active boards`,
       icon: KanbanSquare,
-
-      // Primary blue
-      valueClass: "text-[var(--color-primary)]",
-      labelClass: "text-[var(--color-primary)]/75",
-      contextClass: "text-[var(--color-text-secondary)]",
-
-      iconClass:
-        "bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]",
-
-      iconHoverClass:
-        "group-hover:bg-[var(--color-primary)] group-hover:text-white",
-
-      accentClass: "bg-[var(--color-primary)]",
-      progressClass: "bg-[var(--color-primary)]",
+      accent: "var(--color-primary)",
     },
 
     {
       label: "Members",
-      value: membersLoading ? "—" : memberCount,
+      value: memberCount,
+      isLoading: membersLoading,
       context:
         memberCount === 1
           ? "1 workspace member"
           : `${memberCount} workspace members`,
       icon: Users,
-
-      // Status blue
-      valueClass: "text-[var(--color-status-progress)]",
-      labelClass: "text-[var(--color-status-progress)]/75",
-      contextClass: "text-[var(--color-text-secondary)]",
-
-      iconClass:
-        "bg-[var(--color-primary-active-bg)] text-[var(--color-status-progress)]",
-
-      iconHoverClass:
-        "group-hover:bg-[var(--color-status-progress)] group-hover:text-white",
-
-      accentClass: "bg-[var(--color-status-progress)]",
-      progressClass: "bg-[var(--color-status-progress)]",
+      accent: "var(--color-status-progress)",
+      href: `/dashboard/workspace/${workspaceId}/member`,
     },
 
     {
       label: "Tasks",
-      value:
-        isStatsPending || unavailableContext ? "—" : `${taskProgress}%`,
+      value: unavailableContext ? "—" : `${taskProgress}%`,
+      isLoading: isStatsPending,
       context:
         unavailableContext ??
         (isStatsPending
           ? "Loading tasks..."
           : `${completedTasks} of ${totalTasks} tasks completed`),
       icon: CheckSquare,
-      progress: taskProgress,
-
-      // Green
-      valueClass: "text-[var(--color-status-done)]",
-      labelClass: "text-[var(--color-status-done)]/75",
-      contextClass: "text-[var(--color-text-secondary)]",
-
-      iconClass:
-        "bg-[var(--color-tag-green-bg)] text-[var(--color-status-done)]",
-
-      iconHoverClass:
-        "group-hover:bg-[var(--color-status-done)] group-hover:text-white",
-
-      accentClass: "bg-[var(--color-status-done)]",
-      progressClass: "bg-[var(--color-status-done)]",
+      accent: "var(--color-status-done)",
+      // The counts come from the default board, so that is where it leads.
+      href: defaultBoard
+        ? `/dashboard/workspace/${workspaceId}/board/${defaultBoard.id}`
+        : undefined,
+      progress: unavailableContext ? undefined : taskProgress,
     },
 
     {
@@ -527,167 +512,113 @@ export default function WorkspaceStats({ workspaceId }: WorkspaceStatsProps) {
       valueSuffix: " / week",
       context: `${HOURS_PER_DAY_PER_MEMBER}h per day per member`,
       icon: Clock3,
-
-      // Amber
-      valueClass: "text-[var(--color-priority-medium)]",
-      labelClass: "text-[var(--color-priority-medium)]/80",
-      contextClass: "text-[var(--color-text-secondary)]",
-
-      iconClass:
-        "bg-[var(--color-priority-medium)]/15 text-[var(--color-priority-medium)]",
-
-      iconHoverClass:
-        "group-hover:bg-[var(--color-priority-medium)] group-hover:text-white",
-
-      accentClass: "bg-[var(--color-priority-medium)]",
-      progressClass: "bg-[var(--color-priority-medium)]",
+      accent: "var(--color-priority-medium)",
     },
   ];
 
   return (
-    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section
+      aria-label="Workspace summary"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+    >
       {stats.map((stat) => {
         const Icon = stat.icon;
 
-        return (
-          <div
-            key={stat.label}
-            className="
-              group
-              relative
-              overflow-hidden
-              rounded-2xl
-              border
-              border-[var(--color-border)]
-              bg-[var(--color-card-bg)]
-              p-5
-              transition-all
-              duration-200
-              hover:-translate-y-1
-              hover:border-[var(--color-border)]
-              hover:bg-[var(--color-card-hover)]
-              hover:shadow-[var(--shadow-md)]
-            "
-          >
+        const content = (
+          <>
             {/* Top accent */}
-            <div
-              className={`
-                absolute
-                inset-x-0
-                top-0
-                h-[3px]
-                ${stat.accentClass}
-                opacity-70
-                transition-opacity
-                duration-200
-                group-hover:opacity-100
-              `}
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-0 top-0 h-[3px]"
+              style={{ backgroundColor: stat.accent }}
             />
 
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <p
-                  className={`
-                    text-[11px]
-                    font-bold
-                    uppercase
-                    tracking-[0.15em]
-                    ${stat.labelClass}
-                  `}
-                >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
                   {stat.label}
                 </p>
 
-                <p
-                  className={`
-                    mt-3
-                    text-[32px]
-                    font-bold
-                    leading-none
-                    tracking-[-0.04em]
-                    ${stat.valueClass}
-                  `}
-                >
-                  {stat.value}
-                  {"valueSuffix" in stat && stat.valueSuffix && (
-                    <span className="text-lg font-semibold tracking-normal text-[var(--color-text-muted)]">
-                      {stat.valueSuffix}
-                    </span>
-                  )}
-                </p>
+                {stat.isLoading ? (
+                  <span className="mt-3 block h-[30px] w-16 animate-pulse rounded bg-[var(--color-border)]" />
+                ) : (
+                  <p className="mt-3 text-[30px] font-semibold leading-none tracking-tight text-[var(--color-text-primary)]">
+                    {stat.value}
+                    {stat.valueSuffix && (
+                      <span className="text-base font-medium tracking-normal text-[var(--color-text-muted)]">
+                        {stat.valueSuffix}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
 
-              {/* Icon */}
-              <div
-                className={`
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
-                  rounded-xl
-                  transition-all
-                  duration-200
-                  ${stat.iconClass}
-                  ${stat.iconHoverClass}
-                `}
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)]"
+                style={{
+                  color: stat.accent,
+                  backgroundColor: `color-mix(in srgb, ${stat.accent} 14%, transparent)`,
+                }}
               >
-                <Icon size={19} strokeWidth={1.9} />
-              </div>
+                <Icon size={18} strokeWidth={1.9} />
+              </span>
             </div>
 
-            {/* Bottom information */}
-            <div className="mt-6">
+            <div className="mt-auto pt-5">
               <div className="flex items-center justify-between gap-3">
                 <p
                   title={stat.context}
-                  className={`
-                    min-w-0
-                    truncate
-                    text-xs
-                    font-medium
-                    ${stat.contextClass}
-                  `}
+                  className="min-w-0 truncate text-xs font-medium text-[var(--color-text-secondary)]"
                 >
                   {stat.context}
                 </p>
 
-                <ArrowUpRight
-                  size={15}
-                  className={`
-                    ${stat.valueClass}
-                    shrink-0
-                    opacity-0
-                    transition-all
-                    duration-200
-                    group-hover:translate-x-0.5
-                    group-hover:-translate-y-0.5
-                    group-hover:opacity-100
-                  `}
-                />
+                {stat.href && (
+                  <ArrowUpRight
+                    size={15}
+                    aria-hidden="true"
+                    className="shrink-0 text-[var(--color-text-muted)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)]"
+                  />
+                )}
               </div>
 
-              {/* Progress */}
-              {stat.progress !== undefined && (
-                <div className="mt-4">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-column-bg)]">
-                    <div
-                      className={`
-                        h-full
-                        rounded-full
-                        ${stat.progressClass}
-                        transition-all
-                        duration-700
-                      `}
-                      style={{
-                        width: `${stat.progress}%`,
-                      }}
-                    />
-                  </div>
+              {stat.progress !== undefined && !stat.isLoading && (
+                <div
+                  role="progressbar"
+                  aria-label={`${stat.label} completed`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={stat.progress}
+                  className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-column-bg)]"
+                >
+                  <div
+                    className="h-full rounded-full transition-[width] duration-700"
+                    style={{
+                      width: `${stat.progress}%`,
+                      backgroundColor: stat.accent,
+                    }}
+                  />
                 </div>
               )}
             </div>
+          </>
+        );
+
+        const cardClass =
+          "group relative flex min-h-[148px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] p-5 shadow-[var(--shadow-sm)]";
+
+        return stat.href ? (
+          <Link
+            key={stat.label}
+            href={stat.href}
+            className={`${cardClass} transition-colors hover:border-[var(--color-primary)]/40 hover:bg-[var(--color-card-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]`}
+          >
+            {content}
+          </Link>
+        ) : (
+          <div key={stat.label} className={cardClass}>
+            {content}
           </div>
         );
       })}

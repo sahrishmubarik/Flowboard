@@ -12,7 +12,8 @@ import {
 
 import { useToast } from "@/components/ui/ToastProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import BrandLogo from "@/components/BrandLogo";
+import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 
 export default function ForgotPasswordPage() {
   const { showToast } = useToast();
@@ -76,109 +77,21 @@ export default function ForgotPasswordPage() {
   return (
     <main className="auth-page">
       <div className="auth-layout ">
-        <section className="auth-brand-panel flex justify-center items-center">
-          {/* Logo */}
-          <div className="px-8 py-3 ml-[-460px]">
-            <Link href="/" className="brand-logo ">
-              <BrandLogo
-                className="brand-logo"
-                markClassName="brand-logo-mark"
-                nameClassName="brand-logo-name"
-                size={28}
-              />
-            </Link>
-          </div>
-
-          {/* Brand Content */}
-
-          <div className="flex flex-1 items-center px-8 pb-12">
-            <div className="w-full max-w-[610px]">
-              <span className="auth-eyebrow">Welcome back</span>
-
-              <h1 className="auth-brand-title">Your sprint is waiting.</h1>
-
-              <p className="auth-brand-description">
-                Pick up exactly where you left off — every issue, comment and
-                task stays organized in one place.
-              </p>
-
-              {/* Board preview */}
-
-              <div className="auth-board">
-                <div className="auth-board-grid">
-                  {/* Open */}
-
-                  <div>
-                    <p className="auth-board-column-title">Open&nbsp; 6</p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-151</p>
-
-                      <p className="auth-task-title">Breadcrumb navigation</p>
-                    </div>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-155</p>
-
-                      <p className="auth-task-title">
-                        Footer misaligned on Safari
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* In progress */}
-
-                  <div>
-                    <p className="auth-board-column-title">
-                      In Progress&nbsp; 5
-                    </p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-142</p>
-
-                      <p className="auth-task-title">Responsive navbar</p>
-                    </div>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-147</p>
-
-                      <p className="auth-task-title">SVG icon sprite</p>
-                    </div>
-                  </div>
-
-                  {/* Testing */}
-
-                  <div>
-                    <p className="auth-board-column-title">Testing&nbsp; 2</p>
-
-                    <div className="auth-task">
-                      <p className="auth-task-id">WEB-133</p>
-
-                      <p className="auth-task-title">
-                        Checkout fails on empty coupon
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================
-            RIGHT LOGIN PANEL
-        ====================================================== */}
+        <AuthBrandPanel
+          eyebrow="Account recovery"
+          title="Get back to your sprint."
+          description="Enter your email and we'll send you a secure link to choose a new password."
+        />
 
         <section className="auth-form-panel">
           <div className="auth-form-container">
-            {/* Heading */}
-            {/* Heading */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] mb-5">
-                Forgot Password?
-              </h2>
+            <AuthMobileLogo />
 
-              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            {/* Heading */}
+            <div>
+              <h2 className="auth-title">Forgot your password?</h2>
+
+              <p className="auth-subtitle">
                 Enter your email address and we&apos;ll send you a link to reset
                 your password.
               </p>
@@ -186,31 +99,28 @@ export default function ForgotPasswordPage() {
 
             <Suspense>
               <form
-                className="space-y-5"
+                className="mt-6 space-y-5"
                 onSubmit={handleSubmit(onSubmit)}
                 noValidate
               >
                 {/* Email */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium tracking-wider text-[var(--color-text-secondary)]">
-                    Email Address
+                  <label htmlFor="forgot-email" className="fb-label">
+                    Email address
                   </label>
 
                   <input
+                    id="forgot-email"
                     type="email"
+                    autoComplete="email"
                     {...register("email")}
-                    className={`w-full rounded-lg border bg-[var(--color-card-bg)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition ${
-                      errors.email
-                        ? "border-[var(--color-priority-high)] focus:border-[var(--color-priority-high)] focus:ring-1 focus:ring-[var(--color-priority-high)]"
-                        : "border-[var(--color-border)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
-                    }`}
-                    placeholder="alex@example.com"
+                    className={`fb-input ${errors.email ? "fb-input-error" : ""}`}
+                    placeholder="you@company.com"
+                    aria-invalid={Boolean(errors.email)}
                   />
 
                   {errors.email && (
-                    <p className="mt-1 text-xs font-medium text-[var(--color-priority-high)]">
-                      {errors.email.message}
-                    </p>
+                    <p className="fb-error">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -218,7 +128,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={mutation.isPending}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] py-3 text-sm font-semibold text-white transition duration-150 hover:bg-[var(--color-primary-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-brand gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {mutation.isPending ? (
                     <>
@@ -226,19 +136,19 @@ export default function ForgotPasswordPage() {
                       <span>Sending reset link...</span>
                     </>
                   ) : (
-                    "Reset Password"
+                    "Send reset link"
                   )}
                 </button>
 
                 {/* Back to Login */}
-                <p className=" text-sm text-[var(--color-text-secondary)]">
+                <p className="text-center text-sm text-[var(--color-text-secondary)]">
                   Remember your password?{" "}
-                  <a
+                  <Link
                     href="/auth/login"
                     className="font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
                   >
-                    Login
-                  </a>
+                    Log in
+                  </Link>
                 </p>
               </form>
             </Suspense>

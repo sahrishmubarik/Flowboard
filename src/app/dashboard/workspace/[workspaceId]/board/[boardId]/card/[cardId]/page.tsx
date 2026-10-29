@@ -13,7 +13,7 @@ export default function BoardCardPage() {
   }>();
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-[calc(100dvh-3rem)] flex-col overflow-hidden lg:h-screen">
       <BoardHeader />
       <CardDetailsPage
         workspaceId={workspaceId}

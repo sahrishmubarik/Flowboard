@@ -12,6 +12,8 @@ import {
 
 import { useState } from "react";
 
+import PageHeader from "@/components/ui/PageHeader";
+
 export type WorkspaceAction =
   | "members"
   | "invite"
@@ -79,42 +81,13 @@ export default function WorkspaceHeader({
   };
 
   return (
-    <header className="mb-8 flex items-start justify-between gap-6">
-      {/* ================================================================ */}
-      {/* Workspace information                                            */}
-      {/* ================================================================ */}
-
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
-          <span>Workspace</span>
-
-          <span className="text-[var(--color-border)]">/</span>
-
-          <span>
-            {boardCount} {boardCount === 1 ? "board" : "boards"}
-          </span>
-        </div>
-
-        <h2
-          className="mt-2 truncate text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]"
-          style={{
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          {workspaceName}
-        </h2>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-          Organize your work, keep your team aligned, and move ideas from
-          planning to completion.
-        </p>
-      </div>
-
-      {/* ================================================================ */}
-      {/* Header actions                                                    */}
-      {/* ================================================================ */}
-
-      <div className="relative flex shrink-0 items-center gap-2">
+    <PageHeader
+      breadcrumbs={[{ label: "Workspace" }]}
+      meta={`${boardCount} ${boardCount === 1 ? "board" : "boards"}`}
+      title={workspaceName}
+      description="Organize your work, keep your team aligned, and move ideas from planning to completion."
+      actions={
+        <>
         {/* ============================================================ */}
         {/* More / workspace actions                                      */}
         {/* ============================================================ */}
@@ -228,7 +201,8 @@ export default function WorkspaceHeader({
             </div>
           </>
         )}
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }

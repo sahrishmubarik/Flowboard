@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   useMutation,
   useQueryClient,
   type Query,
 } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Modal, { modalButtonClass } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import { boardValidation, validateData } from "@/lib/validations/board";
 
@@ -281,126 +281,81 @@ export default function BoardActionsMenu({
           RENAME BOARD MODAL
       ====================================================== */}
 
-      {isRenameOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="rename-board-title"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") closeRename();
-            }}
-          >
+      <Modal
+        isOpen={isRenameOpen}
+        onClose={closeRename}
+        title="Rename board"
+        icon={<Pencil size={20} />}
+        size="sm"
+        dismissible={!renameMutation.isPending}
+        footer={
+          <>
             <button
               type="button"
-              aria-label="Close rename board"
               onClick={closeRename}
               disabled={renameMutation.isPending}
-              className="absolute inset-0 cursor-default bg-black/40"
-            />
-
-            <form
-              onSubmit={handleRenameSubmit}
-              noValidate
-              className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-              style={{
-                backgroundColor: "var(--color-card-bg)",
-                borderColor: "var(--color-border)",
-              }}
+              className={modalButtonClass.secondary}
             >
-              <button
-                type="button"
-                onClick={closeRename}
-                disabled={renameMutation.isPending}
-                className="absolute right-4 top-4 rounded-lg p-1 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ color: "var(--color-text-secondary)" }}
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
+              Cancel
+            </button>
 
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-primary-active-bg)] text-[var(--color-primary)]">
-                <Pencil size={20} />
-              </div>
-
-              <h2
-                id="rename-board-title"
-                className="pr-8 text-lg font-semibold"
-                style={{ color: "var(--color-text-primary)" }}
-              >
-                Rename board
-              </h2>
-
-              <label
-                htmlFor="rename-board-name"
-                className="mt-4 mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
-              >
-                Board name
-              </label>
-
-              <input
-                id="rename-board-name"
-                type="text"
-                autoFocus
-                value={nameDraft}
-                disabled={renameMutation.isPending}
-                aria-invalid={Boolean(nameError)}
-                aria-describedby={nameError ? "rename-board-error" : undefined}
-                onChange={(event) => {
-                  setNameDraft(event.target.value);
-                  setNameError("");
-                }}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)] disabled:opacity-60"
-              />
-
-              {nameError ? (
-                <p
-                  id="rename-board-error"
-                  role="alert"
-                  className="mt-2 text-xs text-[var(--color-tag-red-text)]"
-                >
-                  {nameError}
-                </p>
-              ) : (
-                <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  3–50 characters.
-                </p>
+            <button
+              type="submit"
+              form="rename-board-form"
+              disabled={
+                renameMutation.isPending ||
+                nameDraft.trim() === boardName ||
+                !nameDraft.trim()
+              }
+              className={modalButtonClass.primary}
+            >
+              {renameMutation.isPending && (
+                <span
+                  aria-hidden="true"
+                  className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
               )}
+              {renameMutation.isPending ? "Saving..." : "Save"}
+            </button>
+          </>
+        }
+      >
+        <form id="rename-board-form" onSubmit={handleRenameSubmit} noValidate>
+          <label
+            htmlFor="rename-board-name"
+            className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
+          >
+            Board name
+          </label>
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeRename}
-                  disabled={renameMutation.isPending}
-                  className="rounded-xl border px-4 py-2.5 text-sm font-medium transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{
-                    borderColor: "var(--color-border)",
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  Cancel
-                </button>
+          <input
+            id="rename-board-name"
+            type="text"
+            data-autofocus
+            value={nameDraft}
+            disabled={renameMutation.isPending}
+            aria-invalid={Boolean(nameError)}
+            aria-describedby="rename-board-hint"
+            onChange={(event) => {
+              setNameDraft(event.target.value);
+              setNameError("");
+            }}
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-active-bg)] disabled:opacity-60 aria-[invalid=true]:border-[var(--color-priority-high)]"
+          />
 
-                <button
-                  type="submit"
-                  disabled={
-                    renameMutation.isPending ||
-                    nameDraft.trim() === boardName ||
-                    !nameDraft.trim()
-                  }
-                  className="inline-flex items-center rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {renameMutation.isPending && (
-                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  )}
-                  {renameMutation.isPending ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>,
-          document.body,
-        )}
+          <p
+            id="rename-board-hint"
+            role={nameError ? "alert" : undefined}
+            className={`mt-2 text-xs ${
+              nameError
+                ? "text-[var(--color-tag-red-text)]"
+                : "text-[var(--color-text-muted)]"
+            }`}
+          >
+            {nameError || "3–50 characters."}
+          </p>
+        </form>
+      </Modal>
 
       {/* =====================================================
           DELETE BOARD MODAL

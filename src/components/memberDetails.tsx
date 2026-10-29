@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useModalBehavior } from "@/components/ui/Modal";
 
 type MemberRole = "owner" | "admin" | "manager" | "member";
 type BoardStatus = "ACTIVE" | "DEACTIVATED";
@@ -506,6 +508,107 @@ export default function WorkspaceMember({
 
   const confirmingMember = confirmation?.member;
 
+
+  // Esc, focus handling and scroll lock for the assign/remove board dialog.
+  const boardDialogRef = useRef<HTMLElement>(null);
+  useModalBehavior({
+    isOpen: Boolean(activeMember),
+    onClose: closeBoardDialog,
+    dismissible: !savingBoard && !confirming,
+    panelRef: boardDialogRef,
+  });
+
+
+  // Joined date, same format as the invitation list ("Sep 1, 2026").
+  const formatJoined = (value: string) => {
+    const date = new Date(value);
+    return value && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—";
+  };
+
+  // Row actions, shared by the desktop table and the mobile list. The menu
+  // opens downward so it is never cut off above the first rows.
+  const renderMemberActions = (member: Member) => (
+    <>
+      {member.role === "owner" ? (
+        <span className="text-xs text-[var(--color-text-muted)]">
+          Workspace owner
+        </span>
+      ) : (
+        <div
+          className="relative inline-block text-left"
+          data-member-menu
+        >
+          <button
+            type="button"
+            aria-label={`Actions for ${member.name}`}
+            aria-expanded={openMenuId === member.userId}
+            onClick={() =>
+              setOpenMenuId((current) =>
+                current === member.userId
+                  ? null
+                  : member.userId,
+              )
+            }
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-xl text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+          >
+            <span aria-hidden="true">⋮</span>
+          </button>
+          {openMenuId === member.userId && (
+            <div className="absolute right-0 top-11 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
+              <button
+                type="button"
+                onClick={() =>
+                  void openBoardDialog(member, "assign")
+                }
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+              >
+                Assign to board
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  void openBoardDialog(member, "remove-board")
+                }
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
+              >
+                Remove from board
+              </button>
+              <button
+                type="button"
+                disabled={
+                  deactivatingMemberId === member.userId ||
+                  confirming
+                }
+                onClick={() => requestWorkspaceRemoval(member)}
+                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:opacity-50"
+              >
+                Remove from workspace
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const memberAvatar = (member: Member) => (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-semibold text-[var(--color-primary)]">
+      {member.name?.charAt(0).toUpperCase() || "U"}
+    </div>
+  );
+
+  const roleBadge = (member: Member) => (
+    <span className="inline-flex rounded-full bg-[var(--color-tag-neutral-bg)] px-2.5 py-1 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
+      {member.role}
+    </span>
+  );
+
   return (
     <section className="relative w-full overflow-visible rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
       {/* HEADER */}
@@ -531,10 +634,7 @@ export default function WorkspaceMember({
           </div>
 
           <div>
-            <h2
-              className="text-xl font-medium tracking-tight text-[var(--color-text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Workspace members
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">
@@ -650,124 +750,85 @@ export default function WorkspaceMember({
           </div>
         )}
 
-        {/* WORKSPACE MEMBERS TABLE */}
+        {/* WORKSPACE MEMBERS: table from md up (no scroll wrapper, so the
+            actions menu is not clipped), a stacked list on phones. */}
         {!loading && !error && members.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
-            <table className="w-full min-w-[720px] border-collapse text-left">
-              <thead className="bg-[var(--color-app-bg)]">
-                <tr className="border-b border-[var(--color-border)]">
-                  {(["Member", "Role", "Joined", "Actions"] as const).map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        scope="col"
-                        className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] ${heading === "Actions" ? "text-right" : ""}`}
-                      >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {members.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="hover:bg-[var(--color-app-bg)]"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-active-bg)] text-sm font-semibold text-[var(--color-primary)]">
-                          {member.name?.charAt(0).toUpperCase() || "U"}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="max-w-[240px] truncate text-sm font-medium text-[var(--color-text-primary)]">
-                            {member.name}
-                          </p>
-                          <p className="max-w-[240px] truncate text-xs text-[var(--color-text-muted)]">
-                            {member.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex rounded-full bg-[var(--color-tag-neutral-bg)] px-3 py-1.5 text-xs font-medium capitalize text-[var(--color-tag-neutral-text)]">
-                        {member.role}
-                      </span>
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4 text-xs text-[var(--color-text-muted)]">
-                      {member.createdAt &&
-                      !Number.isNaN(new Date(member.createdAt).getTime())
-                        ? new Date(member.createdAt).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      {member.role === "owner" ? (
-                        <span className="text-xs text-[var(--color-text-muted)]">
-                          Workspace owner
-                        </span>
-                      ) : (
-                        <div
-                          className="relative inline-block text-left"
-                          data-member-menu
+          <>
+            <div className="hidden rounded-xl border border-[var(--color-border)] md:block">
+              <table className="w-full border-collapse text-left">
+                <thead className="bg-[var(--color-app-bg)]">
+                  <tr className="border-b border-[var(--color-border)]">
+                    {(["Member", "Role", "Joined", "Actions"] as const).map(
+                      (heading) => (
+                        <th
+                          key={heading}
+                          scope="col"
+                          className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] first:rounded-tl-xl last:rounded-tr-xl ${heading === "Actions" ? "text-right" : ""}`}
                         >
-                          <button
-                            type="button"
-                            aria-label={`Actions for ${member.name}`}
-                            aria-expanded={openMenuId === member.userId}
-                            onClick={() =>
-                              setOpenMenuId((current) =>
-                                current === member.userId
-                                  ? null
-                                  : member.userId,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card-bg)] text-xl text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                          >
-                            <span aria-hidden="true">⋮</span>
-                          </button>
-                          {openMenuId === member.userId && (
-                            <div className="absolute bottom-11 right-0 z-30 w-52 rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-1 text-left shadow-lg">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void openBoardDialog(member, "assign")
-                                }
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                              >
-                                Assign to board
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void openBoardDialog(member, "remove-board")
-                                }
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-app-bg)]"
-                              >
-                                Remove from board
-                              </button>
-                              <button
-                                type="button"
-                                disabled={
-                                  deactivatingMemberId === member.userId ||
-                                  confirming
-                                }
-                                onClick={() => requestWorkspaceRemoval(member)}
-                                className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[var(--color-priority-high)] hover:bg-[var(--color-tag-red-bg)] disabled:opacity-50"
-                              >
-                                Remove from workspace
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                          {heading}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {members.map((member) => (
+                    <tr
+                      key={member.id}
+                      className="hover:bg-[var(--color-app-bg)]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {memberAvatar(member)}
+                          <div className="min-w-0">
+                            <p className="max-w-[240px] truncate text-sm font-medium text-[var(--color-text-primary)]">
+                              {member.name}
+                            </p>
+                            <p className="max-w-[240px] truncate text-xs text-[var(--color-text-muted)]">
+                              {member.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">{roleBadge(member)}</td>
+                      <td className="whitespace-nowrap px-5 py-4 text-xs text-[var(--color-text-muted)]">
+                        {formatJoined(member.createdAt)}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {renderMemberActions(member)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] md:hidden">
+              {members.map((member) => (
+                <li key={member.id} className="flex items-start gap-3 p-4">
+                  {memberAvatar(member)}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                      {member.name}
+                    </p>
+                    <p className="truncate text-xs text-[var(--color-text-muted)]">
+                      {member.email}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                      {roleBadge(member)}
+                      <span>Joined {formatJoined(member.createdAt)}</span>
+                    </div>
+                  </div>
+                  {/* The Owner badge already says it; skip the owner label. */}
+                  {member.role !== "owner" && (
+                    <div className="shrink-0 text-right">
+                      {renderMemberActions(member)}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
 
         {/* PAGINATION */}
@@ -820,10 +881,12 @@ export default function WorkspaceMember({
           }}
         >
           <section
+            ref={boardDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="board-dialog-title"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
+            tabIndex={-1}
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto outline-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-2xl"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-6 py-5">
               <div>
@@ -1011,109 +1074,48 @@ export default function WorkspaceMember({
       )}
 
       {/* CUSTOM CONFIRMATION MODAL */}
-      {confirmation && confirmingMember && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !confirming) {
-              setConfirmation(null);
-            }
-          }}
-        >
-          <section
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="remove-confirmation-title"
-            aria-describedby="remove-confirmation-description"
-            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] p-6 shadow-2xl"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-tag-red-bg)] text-[var(--color-priority-high)]">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                  <path d="M10.3 3.86 1.82 18.5A2 2 0 0 0 3.55 21h16.9a2 2 0 0 0 1.73-2.5L13.7 3.86a2 2 0 0 0-3.4 0Z" />
-                </svg>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h3
-                  id="remove-confirmation-title"
-                  className="text-lg font-semibold text-[var(--color-text-primary)]"
-                >
-                  {confirmation.type === "workspace"
-                    ? "Remove workspace member?"
-                    : "Remove member from board?"}
-                </h3>
-
-                <p
-                  id="remove-confirmation-description"
-                  className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]"
-                >
-                  {confirmation.type === "workspace" ? (
-                    <>
-                      Are you sure you want to remove{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {confirmingMember.name}
-                      </span>{" "}
-                      from this workspace? Their workspace membership will be
-                      deactivated.
-                    </>
-                  ) : (
-                    <>
-                      Are you sure you want to remove{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {confirmingMember.name}
-                      </span>{" "}
-                      from{" "}
-                      <span className="font-semibold text-[var(--color-text-primary)]">
-                        {boards.find(
-                          (board) => board.id === confirmation.boardId,
-                        )?.boardName ?? "this board"}
-                      </span>
-                      ? They will lose access through this board membership.
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                disabled={confirming}
-                onClick={() => setConfirmation(null)}
-                className={secondaryButtonClass}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={confirming}
-                onClick={() => void handleConfirmRemoval()}
-                className={dangerButtonClass}
-              >
-                {confirming
-                  ? "Removing..."
-                  : confirmation.type === "workspace"
-                    ? "Remove member"
-                    : "Remove from board"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={Boolean(confirmation && confirmingMember)}
+        title={
+          confirmation?.type === "workspace"
+            ? "Remove workspace member?"
+            : "Remove member from board?"
+        }
+        description={
+          confirmation?.type === "workspace" ? (
+            <>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {confirmingMember?.name}
+              </span>{" "}
+              from this workspace? Their workspace membership will be
+              deactivated.
+            </>
+          ) : (
+            <>
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {confirmingMember?.name}
+              </span>{" "}
+              from{" "}
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                {boards.find((board) => board.id === confirmation?.boardId)
+                  ?.boardName ?? "this board"}
+              </span>
+              ? They will lose access through this board membership.
+            </>
+          )
+        }
+        confirmLabel={
+          confirmation?.type === "workspace"
+            ? "Remove member"
+            : "Remove from board"
+        }
+        pendingLabel="Removing..."
+        isPending={confirming}
+        onConfirm={() => void handleConfirmRemoval()}
+        onCancel={() => setConfirmation(null)}
+      />
     </section>
   );
 }

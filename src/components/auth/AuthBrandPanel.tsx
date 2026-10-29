@@ -17,15 +17,18 @@ export default function AuthBrandPanel({
   return (
     <section className="auth-brand-panel">
       {/* Logo */}
-      <div className="auth-brand-header ml-[-460px]">
-        <Link href="/" className="brand-logo">
-          <BrandLogo
-            className="brand-logo"
-            markClassName="brand-logo-mark"
-            nameClassName="brand-logo-name"
-            size={28}
-          />
-        </Link>
+      <div className="auth-brand-header">
+        {/* Same width as the copy below, so the logo lines up with it. */}
+        <div className="w-full max-w-[610px]">
+          <Link href="/" className="brand-logo inline-flex">
+            <BrandLogo
+              className="brand-logo"
+              markClassName="brand-logo-mark"
+              nameClassName="brand-logo-name"
+              size={28}
+            />
+          </Link>
+        </div>
       </div>
 
       {/* Content */}

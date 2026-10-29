@@ -94,12 +94,10 @@ export default function ResetPasswordPage() {
       <main>
         <section>
           {/* Heading */}
-          <div className="reset-heading">
-            <h1 style={{ color: "var(--color-text-primary)" }}>
-              Reset your password
-            </h1>
+          <div className="mb-6">
+            <h1 className="auth-title">Reset your password</h1>
 
-            <p className=" text-[var(--color-text-secondary)]">
+            <p className="auth-subtitle">
               Choose a new password for your Flowboard account.
             </p>
           </div>
@@ -130,8 +128,7 @@ export default function ResetPasswordPage() {
             <div className="form-field">
               <label
                 htmlFor="password"
-                className="form-label"
-                style={{ color: "var(--color-text-primary)" }}
+                className="fb-label"
               >
                 New password
               </label>
@@ -143,16 +140,9 @@ export default function ResetPasswordPage() {
                   {...register("password")}
                   placeholder="Enter your new password"
                   autoComplete="new-password"
-                  className={`form-input ${
-                    errors.password ? "input-error" : ""
+                  className={`fb-input pr-11 ${
+                    errors.password ? "fb-input-error" : ""
                   }`}
-                  style={{
-                    backgroundColor: "var(--color-card-bg)",
-                    color: "var(--color-text-primary)",
-                    borderColor: errors.password
-                      ? "var(--color-priority-high)"
-                      : "var(--color-border)",
-                  }}
                 />
 
                 <button
@@ -172,7 +162,7 @@ export default function ResetPasswordPage() {
 
               {errors.password && (
                 <p
-                  className="form-error"
+                  className="fb-error"
                   style={{ color: "var(--color-priority-high)" }}
                 >
                   {errors.password.message}
@@ -184,8 +174,7 @@ export default function ResetPasswordPage() {
             <div className="form-field">
               <label
                 htmlFor="confirmPassword"
-                className="form-label"
-                style={{ color: "var(--color-text-primary)" }}
+                className="fb-label"
               >
                 Confirm password
               </label>
@@ -197,16 +186,9 @@ export default function ResetPasswordPage() {
                   {...register("confirmPassword")}
                   placeholder="Enter your password again"
                   autoComplete="new-password"
-                  className={`form-input ${
-                    errors.confirmPassword ? "input-error" : ""
+                  className={`fb-input pr-11 ${
+                    errors.confirmPassword ? "fb-input-error" : ""
                   }`}
-                  style={{
-                    backgroundColor: "var(--color-card-bg)",
-                    color: "var(--color-text-primary)",
-                    borderColor: errors.confirmPassword
-                      ? "var(--color-priority-high)"
-                      : "var(--color-border)",
-                  }}
                 />
 
                 <button
@@ -230,7 +212,7 @@ export default function ResetPasswordPage() {
 
               {errors.confirmPassword && (
                 <p
-                  className="form-error"
+                  className="fb-error"
                   style={{ color: "var(--color-priority-high)" }}
                 >
                   {errors.confirmPassword.message}
@@ -242,11 +224,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={mutation.isPending || !token}
-              className="reset-submit"
-              style={{
-                backgroundColor: "var(--color-primary)",
-                color: "#ffffff",
-              }}
+              className="btn-brand mt-2 gap-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {mutation.isPending ? (
                 <>
@@ -259,18 +237,13 @@ export default function ResetPasswordPage() {
             </button>
 
             {/* Login */}
-            <p
-              className="reset-footer"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
+            <p className="mt-5 text-center text-sm text-[var(--color-text-secondary)]">
               Remember your password?{" "}
               <a
                 href="/auth/login"
-                style={{
-                  color: "var(--color-primary)",
-                }}
+                className="font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
               >
-                Sign in
+                Log in
               </a>
             </p>
           </form>
