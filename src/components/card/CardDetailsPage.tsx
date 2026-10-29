@@ -2275,8 +2275,9 @@ export default function CardDetailsPage({
                               ? "Estimated time"
                               : "Spent time"
                           }
-                          className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
-                          style={inputStyle}
+                          // Border colour in classes (not inputStyle) so focus can
+                          // change it; replaces the browser's light focus outline.
+                          className="w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-input-bg)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-text-muted)] focus:ring-2 focus:ring-[var(--color-tag-neutral-bg)]"
                           value={timeDraft}
                           onChange={(event) => setTimeDraft(event.target.value)}
                           placeholder="e.g. 120"
