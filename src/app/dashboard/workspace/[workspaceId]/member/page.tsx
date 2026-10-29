@@ -1,72 +1,13 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useState } from "react";
-import Modal from "@/components/ui/Modal";
 import PageHeader, { pageContainerClass } from "@/components/ui/PageHeader";
-import WorkspaceMemberCard from "@/components/workspaceMemberCard";
-import InvitationStatusCard from "@/components/invitationStatusCard";
-import InviteMemberCard from "@/components/inviteMemberCard";
+import PeopleTable from "@/components/members/PeopleTable";
 import DeleteWorkspaceCard from "@/components/deleteWorkspaceCard";
-import WorkspaceMember from "@/components/memberDetails";
-type PanelType = "members" | "invite" | "invitations" | "delete";
-
-const panels = [
-  {
-    id: "members" as const,
-    number: "01",
-    title: "Workspace members",
-    description: "Manage your team and control access to boards.",
-    action: "Manage members",
-    icon: "users",
-  },
-  {
-    id: "invite" as const,
-    number: "02",
-    title: "Invite members",
-    description: "Bring teammates into your workspace.",
-    action: "Invite teammates",
-    icon: "user-plus",
-  },
-  {
-    id: "invitations" as const,
-    number: "03",
-    title: "Invitation status",
-    description: "Review pending, accepted, and revoked invitations.",
-    action: "View invitations",
-    icon: "mail",
-  },
-  {
-    id: "delete" as const,
-    number: "04",
-    title: "Delete workspace",
-    description: "Permanently remove this workspace and its data.",
-    action: "Manage deletion",
-    icon: "trash",
-  },
-];
 
 export default function MembersPage() {
-  const [activePanel, setActivePanel] = useState<PanelType | null>(null);
   const params = useParams<{ workspaceId: string }>();
 
   const workspaceId = params.workspaceId;
-
-  const activeItem = panels.find((item) => item.id === activePanel);
-
-  function renderPanel() {
-    switch (activePanel) {
-      case "members":
-        return <WorkspaceMemberCard />;
-      case "invite":
-        return <InviteMemberCard />;
-      case "invitations":
-        return <InvitationStatusCard />;
-      case "delete":
-        return <DeleteWorkspaceCard />;
-      default:
-        return null;
-    }
-  }
 
   return (
     <main className="min-h-screen w-full bg-[var(--color-app-bg)] text-[var(--color-text-primary)]">
@@ -75,24 +16,15 @@ export default function MembersPage() {
         <PageHeader
           workspaceId={workspaceId}
           title="Members & access"
-          description="Everything you need to manage your team, invite collaborators, review invitations, and control your workspace in one place."
+          description="See who's in this workspace, invite teammates and manage pending invitations."
         />
 
-        {/* INTRODUCTION */}
+        {/* MEMBERS AND INVITATIONS, WITH INVITE IN ITS TOOLBAR */}
+        <PeopleTable workspaceId={workspaceId} />
 
-        <div className="mt-4 mb-10">
-          <WorkspaceMember workspaceId={workspaceId} />
-        </div>
-        <div className="mt-4 mb-10">
-          <InviteMemberCard />
-        </div>
-        <div className="mt-4 mb-10">
-          <InvitationStatusCard workspaceId={workspaceId} />
-        </div>
-        <div className="mt-4 mb-10">
+        <div className="mt-10">
           <DeleteWorkspaceCard />
         </div>
-        {/* CLICKABLE MANAGEMENT OPTIONS */}
 
         {/* FOOTER NOTE */}
         <p className="mt-6 text-xs leading-6 text-[var(--color-text-muted)]">
@@ -100,17 +32,6 @@ export default function MembersPage() {
           the permissions enforced by the server.
         </p>
       </div>
-
-      {/* LARGE, CENTERED MODAL */}
-      <Modal
-        isOpen={Boolean(activePanel && activeItem)}
-        onClose={() => setActivePanel(null)}
-        title={activeItem?.title ?? ""}
-        description={activeItem?.description}
-        size="lg"
-      >
-        <div className="mx-auto w-full">{renderPanel()}</div>
-      </Modal>
     </main>
   );
 }
