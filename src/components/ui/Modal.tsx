@@ -105,6 +105,9 @@ export function useModalBehavior({
       if (modalStack.at(-1) !== id) return;
 
       if (event.key === "Escape") {
+        // Already handled inside the dialog (e.g. a dropdown or calendar
+        // closing itself), so only that inner layer closes.
+        if (event.defaultPrevented) return;
         if (dismissibleRef.current) {
           event.stopPropagation();
           onCloseRef.current();

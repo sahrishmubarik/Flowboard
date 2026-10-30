@@ -1495,15 +1495,17 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Bug,
   CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
+  CheckCircle2,
+  Clock3,
   File,
   FileImage,
   FileText,
   Paperclip,
   Plus,
+  Sparkles,
   X,
 } from "lucide-react";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
@@ -1511,6 +1513,7 @@ import CardDescriptionViewer from "./CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useModalBehavior } from "@/components/ui/Modal";
 import { getPriorityColor } from "@/components/card/priority";
+import { DateField, FieldSelect } from "@/components/card/FieldControls";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1631,11 +1634,26 @@ function formatCardDate(date: string | null) {
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function taskTypeIcon(type: TaskType) {
+  switch (type) {
+    case "bug":
+      return <Bug size={14} />;
+    case "feature":
+      return <Sparkles size={14} />;
+    case "tbd":
+      return <Clock3 size={14} />;
+    default:
+      return <CheckCircle2 size={14} />;
+  }
+}
+function PriorityDot({ priority }: { priority: CardPriority }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-2.5 w-2.5 shrink-0 rounded-full"
+      style={{ backgroundColor: getPriorityColor(priority) }}
+    />
+  );
 }
 function formatDateLabel(date: string) {
   if (!date) return "Select date";
@@ -1691,13 +1709,6 @@ export default function CreateCard({
   const [fileError, setFileError] = useState("");
   const [attachmentError, setAttachmentError] = useState("");
   const [cardCreated, setCardCreated] = useState(false);
-  const [calendarField, setCalendarField] = useState<"start" | "due" | null>(
-    null,
-  );
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
   /* sprint  */
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprintId, setSelectedSprintId] = useState(
@@ -1885,32 +1896,7 @@ export default function CreateCard({
     setFileError("");
     setAttachmentError("");
     setCardCreated(false);
-    setCalendarField(null);
     setSelectedAssigneeId("");
-  };
-  const toggleDateCalendar = (field: "start" | "due") => {
-    if (calendarField === field) {
-      setCalendarField(null);
-      return;
-    }
-    // Open on the month of the field's date (or the start date for due).
-    const shownDate =
-      field === "start" ? cardStartDate : cardEndDate || cardStartDate;
-    if (shownDate) {
-      const date = new Date(`${shownDate}T12:00:00`);
-      setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-    }
-    setCalendarField(field);
-  };
-  const selectDate = (field: "start" | "due", key: string) => {
-    if (field === "start") {
-      setCardStartDate(key);
-      // A later start date makes the existing due date invalid.
-      if (cardEndDate && cardEndDate < key) setCardEndDate("");
-    } else {
-      setCardEndDate(key);
-    }
-    setCalendarField(null);
   };
   const openCreateCardModal = () => {
     createCardMutation.reset();
@@ -2357,7 +2343,7 @@ export default function CreateCard({
                   }}
                 >
                   <div
-                    className="flex items-center justify-between gap-3 border-b pb-3"
+                    className="-mx-5 flex items-center justify-between gap-3 border-b px-5 pb-3 sm:-mx-7 sm:px-7"
                     style={{ borderColor: "var(--color-border)" }}
                   >
                     <h3
@@ -2398,35 +2384,21 @@ export default function CreateCard({
                         Type
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-type-${listId}`}
+                          label="type"
                           value={cardType}
                           disabled={cardCreated || createCardMutation.isPending}
-                          onChange={(event) =>
-                            setCardType(event.target.value as TaskType)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={taskTypes.map((item) => ({
+                            value: item.value,
+                            label: item.label,
+                            marker: taskTypeIcon(item.value),
+                          }))}
+                          onChange={setCardType}
                         >
-                          {taskTypes.map((item) => {
-                            return (
-                              <option
-                                key={item.value}
-                                value={item.value}
-                                style={{
-                                  backgroundColor: "var(--color-card-bg)",
-                                  color: "var(--color-text-primary)",
-                                }}
-                              >
-                                {item.label}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          {taskTypes.find((item) => item.value === cardType)
+                            ?.label ?? capitalize(cardType)}
+                        </FieldSelect>
                       </div>
                     </div>
                     <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
@@ -2438,33 +2410,23 @@ export default function CreateCard({
                         Priority
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-priority-${listId}`}
+                          label="priority"
                           value={cardPriority}
                           disabled={cardCreated || createCardMutation.isPending}
-                          onChange={(event) =>
-                            setCardPriority(event.target.value as CardPriority)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={priorities.map((priority) => ({
+                            value: priority,
+                            label: capitalize(priority),
+                            marker: <PriorityDot priority={priority} />,
+                          }))}
+                          onChange={setCardPriority}
                         >
-                          {priorities.map((priority) => (
-                            <option
-                              key={priority}
-                              value={priority}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {capitalize(priority)}
-                            </option>
-                          ))}
-                        </select>
+                          <span className="inline-flex items-center gap-2">
+                            <PriorityDot priority={cardPriority} />
+                            {capitalize(cardPriority)}
+                          </span>
+                        </FieldSelect>
                       </div>
                     </div>
                     <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
@@ -2476,47 +2438,29 @@ export default function CreateCard({
                         Assignee
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-assignee-${listId}`}
+                          label="assignee"
                           value={selectedAssigneeId}
-                          onChange={(event) =>
-                            setSelectedAssigneeId(event.target.value)
-                          }
                           disabled={
                             isLoadingMembers ||
                             cardCreated ||
                             createCardMutation.isPending
                           }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={[
+                            { value: "", label: "Unassigned" },
+                            ...boardMembers.map((member) => ({
+                              value: member.userId,
+                              label: member.name,
+                              description: member.email || undefined,
+                            })),
+                          ]}
+                          onChange={setSelectedAssigneeId}
                         >
-                          <option
-                            value=""
-                            style={{
-                              backgroundColor: "var(--color-card-bg)",
-                              color: "var(--color-text-primary)",
-                            }}
-                          >
-                            Unassigned
-                          </option>
-                          {boardMembers.map((member) => (
-                            <option
-                              key={member.userId}
-                              value={member.userId}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {member.name}
-                              {member.email ? ` (${member.email})` : ""}
-                            </option>
-                          ))}
-                        </select>
+                          {boardMembers.find(
+                            (member) => member.userId === selectedAssigneeId,
+                          )?.name ?? "Unassigned"}
+                        </FieldSelect>
                         {isLoadingMembers && (
                           <p
                             className="mt-1 text-xs"
@@ -2541,46 +2485,29 @@ export default function CreateCard({
                         Sprint
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-sprint-${listId}`}
+                          label="sprint"
                           value={selectedSprintId}
                           disabled={
                             isLoadingSprints ||
                             cardCreated ||
                             createCardMutation.isPending
                           }
-                          onChange={(event) =>
-                            setSelectedSprintId(event.target.value)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={[
+                            { value: "", label: "No sprint" },
+                            ...sprints.map((sprint) => ({
+                              value: sprint.id,
+                              label: sprint.name,
+                              description: capitalize(sprint.status),
+                            })),
+                          ]}
+                          onChange={setSelectedSprintId}
                         >
-                          <option
-                            value=""
-                            style={{
-                              backgroundColor: "var(--color-card-bg)",
-                              color: "var(--color-text-primary)",
-                            }}
-                          >
-                            No sprint
-                          </option>
-                          {sprints.map((sprint) => (
-                            <option
-                              key={sprint.id}
-                              value={sprint.id}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {sprint.name} ({sprint.status})
-                            </option>
-                          ))}
-                        </select>
+                          {sprints.find(
+                            (sprint) => sprint.id === selectedSprintId,
+                          )?.name ?? "No sprint"}
+                        </FieldSelect>
                         {sprintError && (
                           <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {sprintError}
@@ -2588,227 +2515,60 @@ export default function CreateCard({
                         )}
                       </div>
                     </div>
-                    {(
-                      [
-                        {
-                          field: "start",
-                          label: "Start date",
-                          value: cardStartDate,
-                          placeholder: "Set start date",
-                        },
-                        {
-                          field: "due",
-                          label: "Due date",
-                          value: cardEndDate,
-                          placeholder: "Set due date",
-                        },
-                      ] as const
-                    ).map(({ field, label, value, placeholder }) => (
-                      <div key={field} className="min-w-0 space-y-3">
-                        <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
-                          <span
-                            className="text-xs font-medium"
-                            style={{ color: "var(--color-text-secondary)" }}
-                          >
-                            {label}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={cardCreated || createCardMutation.isPending}
-                            onClick={() => toggleDateCalendar(field)}
-                            aria-expanded={calendarField === field}
-                            className="flex min-h-9 min-w-0 w-full cursor-pointer items-center justify-between gap-2 rounded-md border px-2 text-left text-sm transition hover:bg-[var(--color-card-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{
-                              borderColor:
-                                calendarField === field
-                                  ? "var(--color-primary)"
-                                  : "var(--color-border)",
-                              backgroundColor: "var(--color-app-bg)",
-                              color: value
-                                ? "var(--color-text-primary)"
-                                : "var(--color-text-muted)",
-                            }}
-                          >
-                            <span className="min-w-0 truncate">
-                              {value ? formatDateLabel(value) : placeholder}
-                            </span>
-                            <CalendarDays size={15} className="shrink-0" />
-                          </button>
-                        </div>
-                        {calendarField === field && (
-                          <div
-                            className="mx-auto w-full max-w-xs rounded-xl border p-3"
-                            style={{
-                              borderColor: "var(--color-border)",
-                              backgroundColor: "var(--color-card-bg)",
-                            }}
-                          >
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setCalendarMonth(
-                                    (month) =>
-                                      new Date(
-                                        month.getFullYear(),
-                                        month.getMonth() - 1,
-                                        1,
-                                      ),
-                                  )
-                                }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border hover:bg-[var(--color-card-hover)]"
-                                style={{
-                                  borderColor: "var(--color-border)",
-                                  color: "var(--color-text-secondary)",
-                                }}
-                                aria-label="Previous month"
-                              >
-                                <ChevronLeft size={17} />
-                              </button>
-                              <span
-                                className="text-sm font-semibold"
-                                style={{ color: "var(--color-text-primary)" }}
-                              >
-                                {calendarMonth.toLocaleDateString("en-US", {
-                                  month: "long",
-                                  year: "numeric",
-                                })}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setCalendarMonth(
-                                    (month) =>
-                                      new Date(
-                                        month.getFullYear(),
-                                        month.getMonth() + 1,
-                                        1,
-                                      ),
-                                  )
-                                }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border hover:bg-[var(--color-card-hover)]"
-                                style={{
-                                  borderColor: "var(--color-border)",
-                                  color: "var(--color-text-secondary)",
-                                }}
-                                aria-label="Next month"
-                              >
-                                <ChevronRight size={17} />
-                              </button>
-                            </div>
-                            <div className="mb-2 grid grid-cols-7 gap-1">
-                              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(
-                                (day) => (
-                                  <div
-                                    key={day}
-                                    className="py-1 text-center text-[11px] font-medium"
-                                    style={{ color: "var(--color-text-muted)" }}
-                                  >
-                                    {day}
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                              {Array.from({
-                                length: calendarMonth.getDay(),
-                              }).map((_, index) => (
-                                <div key={`empty-${index}`} />
-                              ))}
-                              {Array.from(
-                                {
-                                  length: new Date(
-                                    calendarMonth.getFullYear(),
-                                    calendarMonth.getMonth() + 1,
-                                    0,
-                                  ).getDate(),
-                                },
-                                (_, index) =>
-                                  new Date(
-                                    calendarMonth.getFullYear(),
-                                    calendarMonth.getMonth(),
-                                    index + 1,
-                                  ),
-                              ).map((date) => {
-                                const key = toDateKey(date);
-                                const isSelected = key === value;
-                                const isOtherDate =
-                                  key ===
-                                  (field === "start" ? cardEndDate : cardStartDate);
-                                const inRange =
-                                  !!cardStartDate &&
-                                  !!cardEndDate &&
-                                  key > cardStartDate &&
-                                  key < cardEndDate;
-                                // A due date cannot be before the start date.
-                                const isDisabled =
-                                  field === "due" &&
-                                  !!cardStartDate &&
-                                  key < cardStartDate;
-                                const isToday = key === toDateKey(new Date());
-                                return (
-                                  <button
-                                    key={key}
-                                    type="button"
-                                    disabled={isDisabled}
-                                    onClick={() => selectDate(field, key)}
-                                    className="relative flex aspect-square cursor-pointer items-center justify-center rounded-lg text-xs transition disabled:cursor-not-allowed disabled:opacity-35"
-                                    style={{
-                                      backgroundColor: isSelected
-                                        ? "var(--color-primary)"
-                                        : inRange || isOtherDate
-                                          ? "var(--color-column-bg)"
-                                          : "transparent",
-                                      color: isSelected
-                                        ? "#ffffff"
-                                        : "var(--color-text-primary)",
-                                      outline:
-                                        isToday && !isSelected
-                                          ? "1px solid var(--color-primary)"
-                                          : "none",
-                                      fontWeight: isSelected ? 700 : 400,
-                                    }}
-                                    aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}${isSelected ? `, ${label.toLowerCase()}` : ""}`}
-                                  >
-                                    {date.getDate()}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div
-                              className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3"
-                              style={{ borderColor: "var(--color-border)" }}
-                            >
-                              <p
-                                className="text-xs"
-                                style={{ color: "var(--color-text-muted)" }}
-                              >
-                                {field === "due" && cardStartDate
-                                  ? `On or after ${formatDateLabel(cardStartDate)}`
-                                  : `Choose a ${label.toLowerCase()}`}
-                              </p>
-                              {value && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (field === "start") setCardStartDate("");
-                                    else setCardEndDate("");
-                                  }}
-                                  className="cursor-pointer text-xs font-medium hover:underline"
-                                  style={{ color: "var(--color-primary)" }}
-                                >
-                                  Clear {label.toLowerCase()}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                      <label
+                        htmlFor={`card-start-${listId}`}
+                        className="text-xs font-medium"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        Start date
+                      </label>
+                      <div className="min-w-0">
+                        <DateField
+                          id={`card-start-${listId}`}
+                          label="start date"
+                          value={cardStartDate}
+                          max={cardEndDate || undefined}
+                          disabled={cardCreated || createCardMutation.isPending}
+                          onChange={(date) => setCardStartDate(date ?? "")}
+                        >
+                          {cardStartDate
+                            ? formatDateLabel(cardStartDate)
+                            : "Set start date"}
+                        </DateField>
                       </div>
-                    ))}
+                    </div>
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                      <label
+                        htmlFor={`card-due-${listId}`}
+                        className="text-xs font-medium"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        Due date
+                      </label>
+                      <div className="min-w-0">
+                        <DateField
+                          id={`card-due-${listId}`}
+                          label="due date"
+                          value={cardEndDate}
+                          min={cardStartDate || undefined}
+                          disabled={cardCreated || createCardMutation.isPending}
+                          onChange={(date) => setCardEndDate(date ?? "")}
+                        >
+                          {cardEndDate
+                            ? formatDateLabel(cardEndDate)
+                            : "Set due date"}
+                        </DateField>
+                      </div>
+                    </div>
                   </div>
                 </aside>
               </div>
-              <div className="space-y-2 px-5 py-2 sm:px-8" aria-live="polite">
+              {/* No padding while empty, so Details meets the footer border. */}
+              <div
+                className="space-y-2 px-5 py-2 empty:p-0 sm:px-8"
+                aria-live="polite"
+              >
                 {/* Errors */}
                 {createCardMutation.isError && (
                   <div
