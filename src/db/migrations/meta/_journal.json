@@ -246,6 +246,13 @@
       "when": 1793090429871,
       "tag": "20261027084029_cooing_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793357083324,
+      "tag": "20261030104443_calm_thundra",
+      "breakpoints": true
     }
   ]
 }
