@@ -43,10 +43,10 @@ export const payments = pgTable(
 
     plan: billingPlanEnum("plan").notNull(),
 
-    // In the lowest currency unit (paisa for PKR): 150000 = PKR 1,500.
+    // In the lowest currency unit (cents for USD): 1000 = $10.00.
     amount: integer("amount").notNull(),
 
-    // Lowercase ISO code, as Stripe uses it: "pkr", "usd".
+    // Lowercase ISO code, as Stripe uses it: "usd".
     currency: varchar("currency", { length: 3 }).notNull(),
 
     // Stripe Checkout Session id (cs_...): links this row to the payment on

@@ -10,6 +10,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  CreditCard,
   History,
   KanbanSquare,
   LayoutGrid,
@@ -758,6 +759,25 @@ export default function DashboardSidebar() {
                 <History size={16} aria-hidden="true" />
                 Activity
               </Link>
+
+              {/* Billing is owner only; the API enforces the same rule. */}
+              {selectedWorkspace.role === "owner" && (
+                <Link
+                  href={`${workspaceBase}/billing`}
+                  onClick={handleNavigate}
+                  aria-current={
+                    pathname.startsWith(`${workspaceBase}/billing`)
+                      ? "page"
+                      : undefined
+                  }
+                  className={navItemClass(
+                    pathname.startsWith(`${workspaceBase}/billing`),
+                  )}
+                >
+                  <CreditCard size={16} aria-hidden="true" />
+                  Billing
+                </Link>
+              )}
             </nav>
           )}
         </div>

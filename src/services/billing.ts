@@ -31,7 +31,7 @@ export async function startCheckout(workspaceId: string, body: unknown) {
 
   const planKey = validation.data.plan;
   const plan = PAID_PLANS[planKey];
-  const workspaceUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/workspace/${workspaceId}`;
+  const billingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/workspace/${workspaceId}/billing`;
 
   let session: Stripe.Checkout.Session;
 
@@ -52,8 +52,8 @@ export async function startCheckout(workspaceId: string, body: unknown) {
       client_reference_id: workspaceId,
       metadata: { workspaceId, plan: planKey },
       // Stripe fills in {CHECKOUT_SESSION_ID} itself.
-      success_url: `${workspaceUrl}?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${workspaceUrl}?billing=cancelled`,
+      success_url: `${billingUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${billingUrl}?checkout=cancelled`,
     });
   } catch (error) {
     if (error instanceof AppError) throw error;
@@ -77,4 +77,28 @@ export async function startCheckout(workspaceId: string, body: unknown) {
   });
 
   return NextResponse.json({ checkoutUrl: session.url }, { status: 201 });
+}
+
+// GET /api/workspace/[workspaceId]/billing
+// Plans for sale and the workspace's payment history. Owner only: payment
+// details are not shared with other members.
+export async function getBillingOverview(workspaceId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user.", 401);
+  }
+
+  await requireWorkspaceRole(user.userId, workspaceId, ["owner"]);
+
+  const payments = await paymentRepo.listByWorkspace(workspaceId);
+
+  const plans = Object.entries(PAID_PLANS).map(([key, plan]) => ({
+    key,
+    name: plan.name,
+    amount: plan.amount,
+    currency: plan.currency,
+  }));
+
+  return NextResponse.json({ plans, payments }, { status: 200 });
 }
