@@ -1495,15 +1495,17 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Bug,
   CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
+  CheckCircle2,
+  Clock3,
   File,
   FileImage,
   FileText,
   Paperclip,
   Plus,
+  Sparkles,
   X,
 } from "lucide-react";
 import CardDescriptionEditor from "@/components/card/CardDescriptionEditor";
@@ -1511,6 +1513,7 @@ import CardDescriptionViewer from "./CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useModalBehavior } from "@/components/ui/Modal";
 import { getPriorityColor } from "@/components/card/priority";
+import { DateField, FieldSelect } from "@/components/card/FieldControls";
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 type TaskType = "bug" | "feature" | "task" | "tbd";
 type CardType = {
@@ -1631,11 +1634,26 @@ function formatCardDate(date: string | null) {
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function taskTypeIcon(type: TaskType) {
+  switch (type) {
+    case "bug":
+      return <Bug size={14} />;
+    case "feature":
+      return <Sparkles size={14} />;
+    case "tbd":
+      return <Clock3 size={14} />;
+    default:
+      return <CheckCircle2 size={14} />;
+  }
+}
+function PriorityDot({ priority }: { priority: CardPriority }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-2.5 w-2.5 shrink-0 rounded-full"
+      style={{ backgroundColor: getPriorityColor(priority) }}
+    />
+  );
 }
 function formatDateLabel(date: string) {
   if (!date) return "Select date";
@@ -1691,13 +1709,6 @@ export default function CreateCard({
   const [fileError, setFileError] = useState("");
   const [attachmentError, setAttachmentError] = useState("");
   const [cardCreated, setCardCreated] = useState(false);
-  const [calendarField, setCalendarField] = useState<"start" | "due" | null>(
-    null,
-  );
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
   /* sprint  */
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [selectedSprintId, setSelectedSprintId] = useState(
@@ -1885,32 +1896,7 @@ export default function CreateCard({
     setFileError("");
     setAttachmentError("");
     setCardCreated(false);
-    setCalendarField(null);
     setSelectedAssigneeId("");
-  };
-  const toggleDateCalendar = (field: "start" | "due") => {
-    if (calendarField === field) {
-      setCalendarField(null);
-      return;
-    }
-    // Open on the month of the field's date (or the start date for due).
-    const shownDate =
-      field === "start" ? cardStartDate : cardEndDate || cardStartDate;
-    if (shownDate) {
-      const date = new Date(`${shownDate}T12:00:00`);
-      setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-    }
-    setCalendarField(field);
-  };
-  const selectDate = (field: "start" | "due", key: string) => {
-    if (field === "start") {
-      setCardStartDate(key);
-      // A later start date makes the existing due date invalid.
-      if (cardEndDate && cardEndDate < key) setCardEndDate("");
-    } else {
-      setCardEndDate(key);
-    }
-    setCalendarField(null);
   };
   const openCreateCardModal = () => {
     createCardMutation.reset();
@@ -2131,106 +2117,94 @@ export default function CreateCard({
                 borderColor: "var(--color-border)",
               }}
             >
-              {/* Modal header */}
-              <div
-                className="z-10 flex shrink-0 items-start justify-between gap-4 border-b px-5 py-4 sm:px-8"
-                style={{
-                  backgroundColor: "var(--color-card-bg)",
-                  borderColor: "var(--color-border)",
-                }}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="flex h-9 w-9 items-center justify-center rounded-xl"
-                      style={{
-                        backgroundColor: "var(--color-column-bg)",
-                        color: "var(--color-primary)",
-                      }}
-                    >
-                      <Plus size={18} />
-                    </span>
-                    <div>
-                      <h2
-                        id={`create-card-title-${listId}`}
-                        className="text-lg font-semibold"
-                        style={{ color: "var(--color-text-primary)" }}
-                      >
-                        Create ticket
-                      </h2>
-                      <p
-                        className="mt-0.5 text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Describe the work and assign the details.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <span style={{ color: "var(--color-text-muted)" }}>
-                      Adding to
-                    </span>
-                    <span
-                      className="rounded-md border px-2 py-1 font-medium"
-                      style={{
-                        backgroundColor: "var(--color-column-bg)",
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-primary)",
-                      }}
-                    >
-                      {listName}
-                    </span>
-                    <p
-                      className="text-xs leading-5"
-                      style={{ color: "var(--color-text-secondary)" }}
-                    >
-                      {selectedSprintId
-                        ? `This card will be added to ${
-                            sprints.find(
-                              (sprint) => sprint.id === selectedSprintId,
-                            )?.name ?? "the selected sprint"
-                          }.`
-                        : "This card will be created without a sprint."}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={createCardMutation.isPending}
-                  onClick={closeCreateCardModal}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5"
-                  style={{ color: "var(--color-text-muted)" }}
-                  aria-label="Close create card form"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_385px] lg:overflow-hidden">
+              <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_315px] lg:overflow-hidden">
                 {/* Main ticket content: title, rich editor and attachments */}
                 <main className="card-scroll min-w-0 space-y-7 overflow-y-visible px-5 py-6 sm:px-8 lg:overflow-y-auto lg:px-10">
-                  {/* Title */}
-                  <section>
-                    <label
-                      htmlFor={`card-title-${listId}`}
-                      className="mb-2 block text-sm font-semibold"
-                      style={{ color: "var(--color-text-primary)" }}
+                  {/* Header: in the left column so Details runs full height */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex h-9 w-9 items-center justify-center rounded-xl"
+                          style={{
+                            backgroundColor: "var(--color-column-bg)",
+                            color: "var(--color-primary)",
+                          }}
+                        >
+                          <Plus size={18} />
+                        </span>
+                        <div>
+                          <h2
+                            id={`create-card-title-${listId}`}
+                            className="text-lg font-semibold"
+                            style={{ color: "var(--color-text-primary)" }}
+                          >
+                            Create ticket
+                          </h2>
+                          <p
+                            className="mt-0.5 text-xs"
+                            style={{ color: "var(--color-text-muted)" }}
+                          >
+                            Describe the work and assign the details.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        <span style={{ color: "var(--color-text-muted)" }}>
+                          Adding to
+                        </span>
+                        <span
+                          className="rounded-md border px-2 py-1 font-medium"
+                          style={{
+                            backgroundColor: "var(--color-column-bg)",
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-text-primary)",
+                          }}
+                        >
+                          {listName}
+                        </span>
+                        <p
+                          className="text-xs leading-5"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        >
+                          {selectedSprintId
+                            ? `This card will be added to ${
+                                sprints.find(
+                                  (sprint) => sprint.id === selectedSprintId,
+                                )?.name ?? "the selected sprint"
+                              }.`
+                            : "This card will be created without a sprint."}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={createCardMutation.isPending}
+                      onClick={closeCreateCardModal}
+                      // Phones only; on desktop it sits at the top of Details.
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 lg:hidden dark:hover:bg-white/5"
+                      style={{ color: "var(--color-text-muted)" }}
+                      aria-label="Close create card form"
                     >
-                      Summary <span className="text-[var(--color-tag-red-text)]">*</span>
-                    </label>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  {/* Title: one underlined line; "Summary" is the placeholder. */}
+                  <section>
                     <input
                       id={`card-title-${listId}`}
                       type="text"
                       value={cardTitle}
                       onChange={(event) => setCardTitle(event.target.value)}
-                      placeholder="What needs to be done?"
+                      placeholder="Summary"
+                      aria-label="Summary"
+                      aria-required="true"
+                      // No browser suggestions: hovering one previews it in
+                      // light autofill colours, which flashes white in dark mode.
+                      autoComplete="off"
                       data-autofocus
                       disabled={cardCreated || createCardMutation.isPending}
-                      className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition focus:ring-2 focus:ring-blue-500/20"
-                      style={{
-                        backgroundColor: "var(--color-input-bg)",
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-primary)",
-                      }}
+                      className="h-12 w-full border-0 border-b-2 border-[var(--color-border)] bg-transparent px-0 text-xl font-semibold text-[var(--color-text-primary)] outline-none transition-colors placeholder:font-medium placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] disabled:opacity-60 autofill:shadow-[inset_0_0_0_1000px_var(--color-card-bg)] autofill:[-webkit-text-fill-color:var(--color-text-primary)]"
                     />
                   </section>
                   {/* Description */}
@@ -2244,6 +2218,7 @@ export default function CreateCard({
                     <CardDescriptionEditor
                       value={cardDescription}
                       onChange={setCardDescription}
+                      toolbarOnFocus
                       toolbarAction={
                         <label
                           className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5 ${
@@ -2368,7 +2343,7 @@ export default function CreateCard({
                   }}
                 >
                   <div
-                    className="flex items-center justify-between gap-3 border-b pb-3"
+                    className="-mx-5 flex items-center justify-between gap-3 border-b px-5 pb-3 sm:-mx-7 sm:px-7"
                     style={{ borderColor: "var(--color-border)" }}
                   >
                     <h3
@@ -2377,18 +2352,30 @@ export default function CreateCard({
                     >
                       Details
                     </h3>
-                    <span
-                      className="rounded-md border px-2 py-1 text-xs"
-                      style={{
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-muted)",
-                      }}
-                    >
-                      {listName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="rounded-md border px-2 py-1 text-xs"
+                        style={{
+                          borderColor: "var(--color-border)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        {listName}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={createCardMutation.isPending}
+                        onClick={closeCreateCardModal}
+                        className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-black/5 disabled:opacity-50 lg:flex dark:hover:bg-white/5"
+                        style={{ color: "var(--color-text-muted)" }}
+                        aria-label="Close create card form"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-type-${listId}`}
                         className="text-xs font-medium"
@@ -2397,38 +2384,24 @@ export default function CreateCard({
                         Type
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-type-${listId}`}
+                          label="type"
                           value={cardType}
                           disabled={cardCreated || createCardMutation.isPending}
-                          onChange={(event) =>
-                            setCardType(event.target.value as TaskType)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={taskTypes.map((item) => ({
+                            value: item.value,
+                            label: item.label,
+                            marker: taskTypeIcon(item.value),
+                          }))}
+                          onChange={setCardType}
                         >
-                          {taskTypes.map((item) => {
-                            return (
-                              <option
-                                key={item.value}
-                                value={item.value}
-                                style={{
-                                  backgroundColor: "var(--color-card-bg)",
-                                  color: "var(--color-text-primary)",
-                                }}
-                              >
-                                {item.label}
-                              </option>
-                            );
-                          })}
-                        </select>
+                          {taskTypes.find((item) => item.value === cardType)
+                            ?.label ?? capitalize(cardType)}
+                        </FieldSelect>
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-priority-${listId}`}
                         className="text-xs font-medium"
@@ -2437,36 +2410,26 @@ export default function CreateCard({
                         Priority
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-priority-${listId}`}
+                          label="priority"
                           value={cardPriority}
                           disabled={cardCreated || createCardMutation.isPending}
-                          onChange={(event) =>
-                            setCardPriority(event.target.value as CardPriority)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={priorities.map((priority) => ({
+                            value: priority,
+                            label: capitalize(priority),
+                            marker: <PriorityDot priority={priority} />,
+                          }))}
+                          onChange={setCardPriority}
                         >
-                          {priorities.map((priority) => (
-                            <option
-                              key={priority}
-                              value={priority}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {capitalize(priority)}
-                            </option>
-                          ))}
-                        </select>
+                          <span className="inline-flex items-center gap-2">
+                            <PriorityDot priority={cardPriority} />
+                            {capitalize(cardPriority)}
+                          </span>
+                        </FieldSelect>
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-assignee-${listId}`}
                         className="text-xs font-medium"
@@ -2475,47 +2438,29 @@ export default function CreateCard({
                         Assignee
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-assignee-${listId}`}
+                          label="assignee"
                           value={selectedAssigneeId}
-                          onChange={(event) =>
-                            setSelectedAssigneeId(event.target.value)
-                          }
                           disabled={
                             isLoadingMembers ||
                             cardCreated ||
                             createCardMutation.isPending
                           }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={[
+                            { value: "", label: "Unassigned" },
+                            ...boardMembers.map((member) => ({
+                              value: member.userId,
+                              label: member.name,
+                              description: member.email || undefined,
+                            })),
+                          ]}
+                          onChange={setSelectedAssigneeId}
                         >
-                          <option
-                            value=""
-                            style={{
-                              backgroundColor: "var(--color-card-bg)",
-                              color: "var(--color-text-primary)",
-                            }}
-                          >
-                            Unassigned
-                          </option>
-                          {boardMembers.map((member) => (
-                            <option
-                              key={member.userId}
-                              value={member.userId}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {member.name}
-                              {member.email ? ` (${member.email})` : ""}
-                            </option>
-                          ))}
-                        </select>
+                          {boardMembers.find(
+                            (member) => member.userId === selectedAssigneeId,
+                          )?.name ?? "Unassigned"}
+                        </FieldSelect>
                         {isLoadingMembers && (
                           <p
                             className="mt-1 text-xs"
@@ -2531,7 +2476,7 @@ export default function CreateCard({
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
                       <label
                         htmlFor={`card-sprint-${listId}`}
                         className="text-xs font-medium"
@@ -2540,46 +2485,29 @@ export default function CreateCard({
                         Sprint
                       </label>
                       <div className="min-w-0">
-                        <select
+                        <FieldSelect
                           id={`card-sprint-${listId}`}
+                          label="sprint"
                           value={selectedSprintId}
                           disabled={
                             isLoadingSprints ||
                             cardCreated ||
                             createCardMutation.isPending
                           }
-                          onChange={(event) =>
-                            setSelectedSprintId(event.target.value)
-                          }
-                          className="h-9 min-w-0 w-full cursor-pointer rounded-md border px-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
-                          style={{
-                            backgroundColor: "var(--color-input-bg)",
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)",
-                          }}
+                          options={[
+                            { value: "", label: "No sprint" },
+                            ...sprints.map((sprint) => ({
+                              value: sprint.id,
+                              label: sprint.name,
+                              description: capitalize(sprint.status),
+                            })),
+                          ]}
+                          onChange={setSelectedSprintId}
                         >
-                          <option
-                            value=""
-                            style={{
-                              backgroundColor: "var(--color-card-bg)",
-                              color: "var(--color-text-primary)",
-                            }}
-                          >
-                            No sprint
-                          </option>
-                          {sprints.map((sprint) => (
-                            <option
-                              key={sprint.id}
-                              value={sprint.id}
-                              style={{
-                                backgroundColor: "var(--color-card-bg)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              {sprint.name} ({sprint.status})
-                            </option>
-                          ))}
-                        </select>
+                          {sprints.find(
+                            (sprint) => sprint.id === selectedSprintId,
+                          )?.name ?? "No sprint"}
+                        </FieldSelect>
                         {sprintError && (
                           <p className="mt-1 text-xs text-[var(--color-tag-red-text)]">
                             {sprintError}
@@ -2587,227 +2515,60 @@ export default function CreateCard({
                         )}
                       </div>
                     </div>
-                    {(
-                      [
-                        {
-                          field: "start",
-                          label: "Start date",
-                          value: cardStartDate,
-                          placeholder: "Set start date",
-                        },
-                        {
-                          field: "due",
-                          label: "Due date",
-                          value: cardEndDate,
-                          placeholder: "Set due date",
-                        },
-                      ] as const
-                    ).map(({ field, label, value, placeholder }) => (
-                      <div key={field} className="min-w-0 space-y-3">
-                        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
-                          <span
-                            className="text-xs font-medium"
-                            style={{ color: "var(--color-text-secondary)" }}
-                          >
-                            {label}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={cardCreated || createCardMutation.isPending}
-                            onClick={() => toggleDateCalendar(field)}
-                            aria-expanded={calendarField === field}
-                            className="flex min-h-9 min-w-0 w-full cursor-pointer items-center justify-between gap-2 rounded-md border px-2 text-left text-sm transition hover:bg-[var(--color-card-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                            style={{
-                              borderColor:
-                                calendarField === field
-                                  ? "var(--color-primary)"
-                                  : "var(--color-border)",
-                              backgroundColor: "var(--color-app-bg)",
-                              color: value
-                                ? "var(--color-text-primary)"
-                                : "var(--color-text-muted)",
-                            }}
-                          >
-                            <span className="min-w-0 truncate">
-                              {value ? formatDateLabel(value) : placeholder}
-                            </span>
-                            <CalendarDays size={15} className="shrink-0" />
-                          </button>
-                        </div>
-                        {calendarField === field && (
-                          <div
-                            className="mx-auto w-full max-w-xs rounded-xl border p-3"
-                            style={{
-                              borderColor: "var(--color-border)",
-                              backgroundColor: "var(--color-card-bg)",
-                            }}
-                          >
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setCalendarMonth(
-                                    (month) =>
-                                      new Date(
-                                        month.getFullYear(),
-                                        month.getMonth() - 1,
-                                        1,
-                                      ),
-                                  )
-                                }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border hover:bg-[var(--color-card-hover)]"
-                                style={{
-                                  borderColor: "var(--color-border)",
-                                  color: "var(--color-text-secondary)",
-                                }}
-                                aria-label="Previous month"
-                              >
-                                <ChevronLeft size={17} />
-                              </button>
-                              <span
-                                className="text-sm font-semibold"
-                                style={{ color: "var(--color-text-primary)" }}
-                              >
-                                {calendarMonth.toLocaleDateString("en-US", {
-                                  month: "long",
-                                  year: "numeric",
-                                })}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setCalendarMonth(
-                                    (month) =>
-                                      new Date(
-                                        month.getFullYear(),
-                                        month.getMonth() + 1,
-                                        1,
-                                      ),
-                                  )
-                                }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border hover:bg-[var(--color-card-hover)]"
-                                style={{
-                                  borderColor: "var(--color-border)",
-                                  color: "var(--color-text-secondary)",
-                                }}
-                                aria-label="Next month"
-                              >
-                                <ChevronRight size={17} />
-                              </button>
-                            </div>
-                            <div className="mb-2 grid grid-cols-7 gap-1">
-                              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(
-                                (day) => (
-                                  <div
-                                    key={day}
-                                    className="py-1 text-center text-[11px] font-medium"
-                                    style={{ color: "var(--color-text-muted)" }}
-                                  >
-                                    {day}
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                              {Array.from({
-                                length: calendarMonth.getDay(),
-                              }).map((_, index) => (
-                                <div key={`empty-${index}`} />
-                              ))}
-                              {Array.from(
-                                {
-                                  length: new Date(
-                                    calendarMonth.getFullYear(),
-                                    calendarMonth.getMonth() + 1,
-                                    0,
-                                  ).getDate(),
-                                },
-                                (_, index) =>
-                                  new Date(
-                                    calendarMonth.getFullYear(),
-                                    calendarMonth.getMonth(),
-                                    index + 1,
-                                  ),
-                              ).map((date) => {
-                                const key = toDateKey(date);
-                                const isSelected = key === value;
-                                const isOtherDate =
-                                  key ===
-                                  (field === "start" ? cardEndDate : cardStartDate);
-                                const inRange =
-                                  !!cardStartDate &&
-                                  !!cardEndDate &&
-                                  key > cardStartDate &&
-                                  key < cardEndDate;
-                                // A due date cannot be before the start date.
-                                const isDisabled =
-                                  field === "due" &&
-                                  !!cardStartDate &&
-                                  key < cardStartDate;
-                                const isToday = key === toDateKey(new Date());
-                                return (
-                                  <button
-                                    key={key}
-                                    type="button"
-                                    disabled={isDisabled}
-                                    onClick={() => selectDate(field, key)}
-                                    className="relative flex aspect-square cursor-pointer items-center justify-center rounded-lg text-xs transition disabled:cursor-not-allowed disabled:opacity-35"
-                                    style={{
-                                      backgroundColor: isSelected
-                                        ? "var(--color-primary)"
-                                        : inRange || isOtherDate
-                                          ? "var(--color-column-bg)"
-                                          : "transparent",
-                                      color: isSelected
-                                        ? "#ffffff"
-                                        : "var(--color-text-primary)",
-                                      outline:
-                                        isToday && !isSelected
-                                          ? "1px solid var(--color-primary)"
-                                          : "none",
-                                      fontWeight: isSelected ? 700 : 400,
-                                    }}
-                                    aria-label={`${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}${isSelected ? `, ${label.toLowerCase()}` : ""}`}
-                                  >
-                                    {date.getDate()}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div
-                              className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3"
-                              style={{ borderColor: "var(--color-border)" }}
-                            >
-                              <p
-                                className="text-xs"
-                                style={{ color: "var(--color-text-muted)" }}
-                              >
-                                {field === "due" && cardStartDate
-                                  ? `On or after ${formatDateLabel(cardStartDate)}`
-                                  : `Choose a ${label.toLowerCase()}`}
-                              </p>
-                              {value && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (field === "start") setCardStartDate("");
-                                    else setCardEndDate("");
-                                  }}
-                                  className="cursor-pointer text-xs font-medium hover:underline"
-                                  style={{ color: "var(--color-primary)" }}
-                                >
-                                  Clear {label.toLowerCase()}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                      <label
+                        htmlFor={`card-start-${listId}`}
+                        className="text-xs font-medium"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        Start date
+                      </label>
+                      <div className="min-w-0">
+                        <DateField
+                          id={`card-start-${listId}`}
+                          label="start date"
+                          value={cardStartDate}
+                          max={cardEndDate || undefined}
+                          disabled={cardCreated || createCardMutation.isPending}
+                          onChange={(date) => setCardStartDate(date ?? "")}
+                        >
+                          {cardStartDate
+                            ? formatDateLabel(cardStartDate)
+                            : "Set start date"}
+                        </DateField>
                       </div>
-                    ))}
+                    </div>
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
+                      <label
+                        htmlFor={`card-due-${listId}`}
+                        className="text-xs font-medium"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        Due date
+                      </label>
+                      <div className="min-w-0">
+                        <DateField
+                          id={`card-due-${listId}`}
+                          label="due date"
+                          value={cardEndDate}
+                          min={cardStartDate || undefined}
+                          disabled={cardCreated || createCardMutation.isPending}
+                          onChange={(date) => setCardEndDate(date ?? "")}
+                        >
+                          {cardEndDate
+                            ? formatDateLabel(cardEndDate)
+                            : "Set due date"}
+                        </DateField>
+                      </div>
+                    </div>
                   </div>
                 </aside>
               </div>
-              <div className="space-y-2 px-5 py-2 sm:px-8" aria-live="polite">
+              {/* No padding while empty, so Details meets the footer border. */}
+              <div
+                className="space-y-2 px-5 py-2 empty:p-0 sm:px-8"
+                aria-live="polite"
+              >
                 {/* Errors */}
                 {createCardMutation.isError && (
                   <div

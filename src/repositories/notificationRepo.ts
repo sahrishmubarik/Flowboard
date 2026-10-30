@@ -51,6 +51,7 @@ export const NotificationRepo = {
     userId: string,
     limit: number,
     cursor?: NotificationCursor,
+    unreadOnly = false,
   ) {
     const rows = await db
       .select({
@@ -72,6 +73,7 @@ export const NotificationRepo = {
       .where(
         and(
           eq(notifications.recipientId, userId),
+          unreadOnly ? isNull(notifications.readAt) : undefined,
           cursor
             ? or(
                 lt(notifications.createdAt, cursor.createdAt),

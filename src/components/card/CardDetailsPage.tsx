@@ -1159,7 +1159,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -1188,6 +1188,13 @@ import CardDescriptionViewer from "@/components/card/CardDescriptionViewer";
 import { useToast } from "@/components/ui/ToastProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { getPriorityColor } from "@/components/card/priority";
+import {
+  DateField,
+  FieldSelect,
+  choosePlacement,
+  placementClass,
+  type Placement,
+} from "@/components/card/FieldControls";
 
 type CardPriority = "normal" | "show stopper" | "critical" | "major" | "minor";
 
@@ -1298,11 +1305,6 @@ const inputStyle = {
   color: "var(--color-text-primary)",
 };
 
-const optionStyle = {
-  backgroundColor: "var(--color-card-bg)",
-  color: "var(--color-text-primary)",
-};
-
 const surface = {
   backgroundColor: "var(--color-card-bg)",
   borderColor: "var(--color-border)",
@@ -1330,12 +1332,11 @@ export default function CardDetailsPage({
     "estimateTime" | "spentTime" | null
   >(null);
 
-  const [editingField, setEditingField] = useState<
-    "type" | "priority" | "assignee" | "sprint" | null
-  >(null);
+  const [editingField, setEditingField] = useState<"sprint" | null>(null);
+  const [sprintPlacement, setSprintPlacement] = useState<Placement>("below");
 
   const [editingCardField, setEditingCardField] = useState<
-    "title" | "description" | "startDate" | "dueDate" | null
+    "title" | "description" | null
   >(null);
 
   const [cardFieldDraft, setCardFieldDraft] = useState("");
@@ -1607,7 +1608,7 @@ export default function CardDetailsPage({
   const update = (payload: EditableAction) => updateMutation.mutate(payload);
 
   const startCardFieldEdit = (
-    field: "title" | "description" | "startDate" | "dueDate",
+    field: "title" | "description",
     value: string,
   ) => {
     skipBlurSaveRef.current = false;
@@ -1620,7 +1621,7 @@ export default function CardDetailsPage({
     setEditingCardField(null);
   };
 
-  // Saves the open title/description/date editor; unchanged values send no
+  // Saves the open title/description editor; unchanged values send no
   // request.
   const saveCardField = () => {
     const currentCard = data?.card;
@@ -1642,22 +1643,9 @@ export default function CardDetailsPage({
       return;
     }
 
-    if (field === "description") {
-      if (value !== (currentCard.description ?? "")) {
-        update({ action: "description", description: value });
-      }
-      return;
+    if (value !== (currentCard.description ?? "")) {
+      update({ action: "description", description: value });
     }
-
-    const previous = currentCard[field]?.slice(0, 10) ?? "";
-    if (value === previous) return;
-
-    if (field === "startDate") {
-      update({ action: "startDate", startDate: value || null });
-      return;
-    }
-
-    update({ action: "dueDate", dueDate: value || null });
   };
 
   // Description: save when focus really leaves the editor. Checked on the
@@ -1756,7 +1744,8 @@ export default function CardDetailsPage({
 
   return (
     <main
-      className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+      // Native controls (e.g. the time fields' spin buttons) follow the theme.
+      className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 dark:[color-scheme:dark]"
       style={{ backgroundColor: "var(--color-column-bg)" }}
     >
       <div className="mx-auto w-full max-w-7xl">
@@ -2185,153 +2174,89 @@ export default function CardDetailsPage({
                     label="Type"
                     icon={<TaskTypeIcon type={card.type} />}
                   >
-                    {editingField === "type" ? (
-                      <select
-                        autoFocus
-                        aria-label="Change type"
-                        value={card.type}
-                        onBlur={() => setEditingField(null)}
-                        onChange={(event) => {
-                          update({
-                            action: "taskType",
-                            type: event.target.value as TaskType,
-                          });
-                          setEditingField(null);
-                        }}
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
-                        style={inputStyle}
-                      >
-                        {(["task", "bug", "feature", "tbd"] as TaskType[]).map(
-                          (type) => (
-                            <option
-                              key={type}
-                              value={type}
-                              style={optionStyle}
-                            >
-                              {formatLabel(type)}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    ) : (
-                      <InlineValue
-                        onClick={() => setEditingField("type")}
-                      >
-                        {formatLabel(card.type)}
-                      </InlineValue>
-                    )}
+                    <FieldSelect
+                      label="type"
+                      value={card.type}
+                      options={(["task", "bug", "feature", "tbd"] as TaskType[]).map(
+                        (type) => ({
+                          value: type,
+                          label: formatLabel(type),
+                          marker: <TaskTypeIcon type={type} />,
+                        }),
+                      )}
+                      onChange={(type) => update({ action: "taskType", type })}
+                    >
+                      {formatLabel(card.type)}
+                    </FieldSelect>
                   </Property>
 
                   <Property label="Priority" icon={<CircleDot size={15} />}>
-                    {editingField === "priority" ? (
-                      <select
-                        autoFocus
-                        aria-label="Change priority"
-                        value={card.priority}
-                        onBlur={() => setEditingField(null)}
-                        onChange={(event) => {
-                          update({
-                            action: "priority",
-                            priority: event.target.value as CardPriority,
-                          });
-                          setEditingField(null);
-                        }}
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
-                        style={inputStyle}
-                      >
-                        {(
-                          [
-                            "normal",
-                            "show stopper",
-                            "critical",
-                            "major",
-                            "minor",
-                          ] as CardPriority[]
-                        ).map((value) => (
-                          <option
-                            key={value}
-                            value={value}
-                            style={optionStyle}
-                          >
-                            {formatLabel(value)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <InlineValue
-                        onClick={() => setEditingField("priority")}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{
-                              backgroundColor: getPriorityColor(card.priority),
-                            }}
-                          />
-                          {formatLabel(card.priority)}
-                        </span>
-                      </InlineValue>
-                    )}
+                    <FieldSelect
+                      label="priority"
+                      value={card.priority}
+                      options={(
+                        [
+                          "normal",
+                          "show stopper",
+                          "critical",
+                          "major",
+                          "minor",
+                        ] as CardPriority[]
+                      ).map((priority) => ({
+                        value: priority,
+                        label: formatLabel(priority),
+                        marker: <PriorityDot priority={priority} />,
+                      }))}
+                      onChange={(priority) =>
+                        update({ action: "priority", priority })
+                      }
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <PriorityDot priority={card.priority} />
+                        {formatLabel(card.priority)}
+                      </span>
+                    </FieldSelect>
                   </Property>
 
                   <Property label="Assignee" icon={<Target size={15} />}>
-                    {editingField === "assignee" ? (
-                      <select
-                        autoFocus
-                        aria-label="Change assignee"
-                        value={card.assignedTo ?? ""}
-                        onBlur={() => setEditingField(null)}
-                        onChange={(event) => {
-                          update({
-                            action: "assignedTo",
-                            assignedTo: event.target.value || null,
-                          });
-                          setEditingField(null);
-                        }}
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
-                        style={inputStyle}
-                      >
-                        <option value="" style={optionStyle}>
-                          Unassigned
-                        </option>
-
-                        {card.assignedTo &&
-                          !members.some(
-                            (member) => member.userId === card.assignedTo,
-                          ) && (
-                            <option
-                              value={card.assignedTo}
-                              style={optionStyle}
-                            >
-                              {card.assigneeName ?? card.assignedTo}
-                            </option>
-                          )}
-
-                        {members.map((member) => (
-                          <option
-                            key={member.userId}
-                            value={member.userId}
-                            style={optionStyle}
-                          >
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <InlineValue
-                        onClick={() => setEditingField("assignee")}
-                      >
-                        {members.find(
+                    <FieldSelect
+                      label="assignee"
+                      value={card.assignedTo ?? ""}
+                      options={[
+                        { value: "", label: "Unassigned" },
+                        // Keep a current assignee who is no longer a member.
+                        ...(card.assignedTo &&
+                        !members.some(
                           (member) => member.userId === card.assignedTo,
-                        )?.name ??
-                          card.assigneeName ??
-                          card.assignedToName ??
-                          card.assignee ??
-                          card.assignedTo ??
-                          "Unassigned"}
-                      </InlineValue>
-                    )}
+                        )
+                          ? [
+                              {
+                                value: card.assignedTo,
+                                label: card.assigneeName ?? card.assignedTo,
+                              },
+                            ]
+                          : []),
+                        ...members.map((member) => ({
+                          value: member.userId,
+                          label: member.name,
+                        })),
+                      ]}
+                      onChange={(assignedTo) =>
+                        update({
+                          action: "assignedTo",
+                          assignedTo: assignedTo || null,
+                        })
+                      }
+                    >
+                      {members.find(
+                        (member) => member.userId === card.assignedTo,
+                      )?.name ??
+                        card.assigneeName ??
+                        card.assignedToName ??
+                        card.assignee ??
+                        card.assignedTo ??
+                        "Unassigned"}
+                    </FieldSelect>
                   </Property>
 
                   {(["estimateTime", "spentTime"] as const).map((field) => (
@@ -2353,8 +2278,9 @@ export default function CardDetailsPage({
                               ? "Estimated time"
                               : "Spent time"
                           }
-                          className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
-                          style={inputStyle}
+                          // Border colour in classes (not inputStyle) so focus can
+                          // change it; replaces the browser's light focus outline.
+                          className="w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-input-bg)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-text-muted)] focus:ring-2 focus:ring-[var(--color-tag-neutral-bg)]"
                           value={timeDraft}
                           onChange={(event) => setTimeDraft(event.target.value)}
                           placeholder="e.g. 120"
@@ -2402,68 +2328,32 @@ export default function CardDetailsPage({
                     label="Start date"
                     icon={<CalendarDays size={15} />}
                   >
-                    {editingCardField === "startDate" ? (
-                      <DateEditor
-                        value={cardFieldDraft}
-                        onChange={setCardFieldDraft}
-                        onSave={saveCardField}
-                        onCancel={closeCardFieldEditor}
-                        onClear={() => {
-                          closeCardFieldEditor();
-                          update({
-                            action: "startDate",
-                            startDate: null,
-                          });
-                        }}
-                        canClear={Boolean(card.startDate)}
-                      />
-                    ) : (
-                      <InlineValue
-                        onClick={() =>
-                          startCardFieldEdit(
-                            "startDate",
-                            card.startDate?.slice(0, 10) ?? "",
-                          )
-                        }
-                      >
-                        {card.startDate
-                          ? formatCardDate(card.startDate)
-                          : "Set start date"}
-                      </InlineValue>
-                    )}
+                    <DateField
+                      label="start date"
+                      value={card.startDate?.slice(0, 10) ?? ""}
+                      max={card.dueDate?.slice(0, 10)}
+                      onChange={(startDate) =>
+                        update({ action: "startDate", startDate })
+                      }
+                    >
+                      {card.startDate
+                        ? formatCardDate(card.startDate)
+                        : "Set start date"}
+                    </DateField>
                   </Property>
 
                   {/* Editable due date */}
                   <Property label="Due date" icon={<Clock3 size={15} />}>
-                    {editingCardField === "dueDate" ? (
-                      <DateEditor
-                        value={cardFieldDraft}
-                        onChange={setCardFieldDraft}
-                        onSave={saveCardField}
-                        onCancel={closeCardFieldEditor}
-                        onClear={() => {
-                          closeCardFieldEditor();
-                          update({
-                            action: "dueDate",
-                            dueDate: null,
-                          });
-                        }}
-                        canClear={Boolean(card.dueDate)}
-                      />
-                    ) : (
-                      <InlineValue
-                        onClick={() =>
-                          startCardFieldEdit(
-                            "dueDate",
-                            card.dueDate?.slice(0, 10) ?? "",
-                          )
-                        }
-                      >
-                        {card.dueDate
-                          ? formatCardDate(card.dueDate)
-                          : "Set due date"}
-                      </InlineValue>
-                    )}
+                    <DateField
+                      label="due date"
+                      value={card.dueDate?.slice(0, 10) ?? ""}
+                      min={card.startDate?.slice(0, 10)}
+                      onChange={(dueDate) => update({ action: "dueDate", dueDate })}
+                    >
+                      {card.dueDate
+                        ? formatCardDate(card.dueDate)
+                        : "Set due date"}
+                    </DateField>
                   </Property>
 
                   {card.completedAt && (
@@ -2510,7 +2400,7 @@ export default function CardDetailsPage({
                         </button>
                         <div
                           id={`sprint-options-${cardId}`}
-                          className="absolute left-0 top-full z-30 mt-1 w-full rounded-md border p-2 shadow-lg"
+                          className={`absolute right-0 z-30 w-[max(100%,15rem)] rounded-lg border p-2 shadow-lg ${placementClass[sprintPlacement]}`}
                           style={{
                             backgroundColor: "var(--color-card-bg)",
                             borderColor: "var(--color-border)",
@@ -2581,7 +2471,16 @@ export default function CardDetailsPage({
                       </div>
                     ) : (
                       <InlineValue
-                        onClick={() => setEditingField("sprint")}
+                        onClick={(event) => {
+                          // Options plus the Done row; capped like the lists.
+                          setSprintPlacement(
+                            choosePlacement(
+                              event.currentTarget,
+                              Math.min(sprints.length * 36 + 72, 340),
+                            ),
+                          );
+                          setEditingField("sprint");
+                        }}
                       >
                         {(card.sprintId ?? [])
                           .map(
@@ -2647,66 +2546,13 @@ export default function CardDetailsPage({
   );
 }
 
-function DateEditor({
-  value,
-  onChange,
-  onSave,
-  onCancel,
-  onClear,
-  canClear,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onClear: () => void;
-  canClear: boolean;
-}) {
+function PriorityDot({ priority }: { priority: CardPriority }) {
   return (
-    <div className="min-w-0 space-y-2">
-      <input
-        autoFocus
-        type="date"
-        aria-label="Edit date"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full min-w-0 rounded-md border px-2 py-1.5 text-sm"
-        style={inputStyle}
-      />
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onSave}
-            className="rounded-md px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-          style={{ backgroundColor: "var(--color-primary)" }}
-        >
-          Save
-        </button>
-
-        <button
-          type="button"
-          onClick={onCancel}
-            className="rounded-md border px-2 py-1 text-xs disabled:opacity-50"
-          style={{
-            borderColor: "var(--color-border)",
-            ...secondary,
-          }}
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={!canClear}
-          className="rounded-md px-1 py-1 text-xs underline disabled:opacity-50"
-          style={secondary}
-        >
-          Clear
-        </button>
-      </div>
-    </div>
+    <span
+      aria-hidden="true"
+      className="h-2.5 w-2.5 shrink-0 rounded-full"
+      style={{ backgroundColor: getPriorityColor(priority) }}
+    />
   );
 }
 
@@ -2716,7 +2562,7 @@ function InlineValue({
   disabled = false,
 }: {
   children: ReactNode;
-  onClick: () => void;
+  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
 }) {
   return (

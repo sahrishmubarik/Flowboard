@@ -4,6 +4,45 @@
    not the operating-system preference. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Tailwind v4 no longer gives buttons a pointer cursor. Restore it for
+   everything clickable, and show not-allowed when disabled. In the base
+   layer, so a cursor-* class on an element (e.g. cursor-text on
+   click-to-edit text) still wins. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary,
+  input:is(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="color"],
+      [type="range"],
+      [type="submit"],
+      [type="button"],
+      [type="reset"]
+    ):not(:disabled),
+  label:has(
+      input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled)
+    ) {
+    cursor: pointer;
+  }
+
+  :is(button, select, input):disabled,
+  [aria-disabled="true"]:is(
+      [role="button"],
+      [role="option"],
+      [role="menuitem"],
+      [role="tab"]
+    ) {
+    cursor: not-allowed;
+  }
+}
+
 /* =========================================================
    FLOWBOARD COLOR SYSTEM
    ========================================================= */

@@ -3,6 +3,11 @@ import { z } from "zod";
 export const listNotificationsValidation = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().min(1).optional(),
+  // "true" lists only notifications that have not been read yet.
+  unread: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export const notificationIdValidation = z

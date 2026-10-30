@@ -1,6 +1,6 @@
 "use client";
 import { ExternalLink } from "lucide-react";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MessageSquareText,
@@ -125,6 +125,92 @@ function formatCommitDate(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// First line of a comment with "Show more" at its end. It shows when the
+// comment has more lines or attachments, or when this line is cut off.
+function CommitFirstLine({
+  text,
+  hasDetails,
+  isExpanded,
+  detailsId,
+  onToggle,
+  onEdit,
+}: {
+  text: string;
+  hasDetails: boolean;
+  isExpanded: boolean;
+  detailsId: string;
+  onToggle: () => void;
+  onEdit?: () => void;
+}) {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isCutOff, setIsCutOff] = useState(false);
+
+  // Measured only while collapsed, so "Show less" stays after expanding.
+  useEffect(() => {
+    const element = textRef.current;
+    if (!element || isExpanded) return;
+
+    const measure = () =>
+      setIsCutOff(element.scrollWidth > element.clientWidth + 1);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [text, isExpanded]);
+
+  const canExpand = hasDetails || isCutOff;
+  const textClass = isExpanded
+    ? "block whitespace-pre-wrap break-words"
+    : "block truncate";
+
+  return (
+    <div className="flex min-w-0 items-start gap-3">
+      {text &&
+        (onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            title="Click to edit"
+            className="-mx-1 min-w-0 flex-1 cursor-text rounded px-1 text-left text-sm leading-5 transition-colors hover:bg-[var(--color-card-hover)]"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            <span ref={textRef} className={textClass}>
+              {text}
+            </span>
+          </button>
+        ) : (
+          <span
+            className="min-w-0 flex-1 text-sm leading-5"
+            title={isExpanded ? undefined : text}
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            <span ref={textRef} className={textClass}>
+              {text}
+            </span>
+          </span>
+        ))}
+
+      {canExpand && (
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-controls={detailsId}
+          onClick={onToggle}
+          className={`inline-flex shrink-0 items-center gap-1 text-xs font-medium leading-5 hover:underline ${
+            text ? "" : "-ml-0.5"
+          }`}
+          style={{ color: "var(--color-primary)" }}
+        >
+          {isExpanded ? "Show less" : "Show more"}
+          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function CardCommits({
@@ -880,10 +966,10 @@ export default function CardCommits({
                 className={`min-w-0 rounded-lg ${isSending ? "opacity-60" : ""}`}
                 aria-busy={isSending}
               >
-                {/* Compact Jira-style single-line summary */}
-                <div className="flex min-w-0 items-center gap-2 px-3 py-1.5">
+                {/* Name, 20px, time; the comment's first line below */}
+                <div className="flex min-w-0 gap-3 px-3 py-1">
                   <div
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
                     style={{
                       backgroundColor: "var(--color-column-bg)",
                       color: "var(--color-text-primary)",
@@ -893,71 +979,47 @@ export default function CardCommits({
                     {initials(author)}
                   </div>
 
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <span
-                      className="shrink-0 truncate text-xs font-semibold"
-                      title={author}
-                      style={{ color: "var(--color-text-primary)" }}
-                    >
-                      {author}
-                    </span>
-                    {descriptionPreview && !isEditing && (
-                      canEdit ? (
-                        <button
-                          type="button"
-                          onClick={() => startEditing(item)}
-                          title="Click to edit"
-                          className="min-w-0 flex-1 cursor-text truncate rounded px-1 text-left text-sm transition-colors hover:bg-[var(--color-card-hover)]"
-                          style={{ color: "var(--color-text-secondary)" }}
-                        >
-                          {descriptionPreview}
-                        </button>
-                      ) : (
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-5">
+                      <span
+                        className="min-w-0 truncate text-sm font-semibold leading-5"
+                        title={author}
+                        style={{ color: "var(--color-primary)" }}
+                      >
+                        {author}
+                      </span>
+                      <time
+                        dateTime={item.createdAt}
+                        className="shrink-0 text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        {isSending
+                          ? "Sending..."
+                          : formatCommitDate(item.createdAt)}
+                      </time>
+                      {commitAttachments.length > 0 && (
                         <span
-                          className="min-w-0 flex-1 truncate text-sm"
-                          title={descriptionPreview}
-                          style={{ color: "var(--color-text-secondary)" }}
+                          className="inline-flex shrink-0 items-center gap-1 text-xs"
+                          style={{ color: "var(--color-text-muted)" }}
+                          title={`${commitAttachments.length} attachment(s)`}
                         >
-                          {descriptionPreview}
+                          <Paperclip size={13} />
+                          {commitAttachments.length}
                         </span>
-                      )
+                      )}
+                    </div>
+
+                    {!isEditing && (
+                      <CommitFirstLine
+                        text={descriptionPreview}
+                        hasDetails={hasDetails}
+                        isExpanded={isExpanded}
+                        detailsId={detailsId}
+                        onToggle={() => toggleDescription(item.id)}
+                        onEdit={canEdit ? () => startEditing(item) : undefined}
+                      />
                     )}
                   </div>
-
-                  {commitAttachments.length > 0 && (
-                    <span
-                      className="inline-flex shrink-0 items-center gap-1 text-xs"
-                      style={{ color: "var(--color-text-muted)" }}
-                      title={`${commitAttachments.length} attachment(s)`}
-                    >
-                      <Paperclip size={13} />
-                      {commitAttachments.length}
-                    </span>
-                  )}
-                  <time
-                    dateTime={item.createdAt}
-                    className="hidden shrink-0 text-[11px] sm:block"
-                    style={{ color: "var(--color-text-muted)" }}
-                  >
-                    {isSending ? "Sending..." : formatCommitDate(item.createdAt)}
-                  </time>
-                  {hasDetails && !isEditing && (
-                    <button
-                      type="button"
-                      aria-expanded={isExpanded}
-                      aria-controls={detailsId}
-                      onClick={() => toggleDescription(item.id)}
-                      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium hover:underline"
-                      style={{ color: "var(--color-primary)" }}
-                    >
-                      {isExpanded ? "Show less" : "Show more"}
-                      {isExpanded ? (
-                        <ChevronUp size={14} />
-                      ) : (
-                        <ChevronDown size={14} />
-                      )}
-                    </button>
-                  )}
                 </div>
 
                 {isEditing && (
@@ -965,7 +1027,7 @@ export default function CardCommits({
                   // Esc cancels.
                   <div
                     ref={editEditorRef}
-                    className="space-y-1.5 px-3 pb-2"
+                    className="space-y-1.5 pb-2 pl-[3.25rem] pr-3"
                     onBlur={() => handleEditBlur(item)}
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
@@ -996,7 +1058,7 @@ export default function CardCommits({
                 )}
 
                 {isExpanded && !isEditing && (
-                  <div id={detailsId} className="space-y-1.5 px-3 pb-2">
+                  <div id={detailsId} className="space-y-1.5 pb-2 pl-[3.25rem] pr-3">
                     {descriptionDetails &&
                       (canEdit ? (
                         <div

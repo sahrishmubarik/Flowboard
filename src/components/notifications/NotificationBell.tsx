@@ -108,7 +108,8 @@ export default function NotificationBell() {
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       const page = await request<NotificationPage>(
-        `/api/notifications?limit=20${
+        // Read notifications are not listed; the bell shows what's new.
+        `/api/notifications?unread=true&limit=20${
           pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""
         }`,
       );
@@ -133,9 +134,9 @@ export default function NotificationBell() {
       queryClient.invalidateQueries({ queryKey: LIST_KEY }),
     ]);
 
-  // Show the change immediately; the server result follows on refresh.
+  // Read notifications leave the list right away; the server result
+  // follows on refresh.
   const markLocallyAsRead = (ids: Set<string> | "all") => {
-    const now = new Date().toISOString();
     let changed = 0;
 
     queryClient.setQueryData<InfiniteData<NotificationPage>>(
@@ -145,12 +146,12 @@ export default function NotificationBell() {
           ...data,
           pages: data.pages.map((page) => ({
             ...page,
-            notifications: page.notifications.map((item) => {
+            notifications: page.notifications.filter((item) => {
               if (item.readAt || (ids !== "all" && !ids.has(item.id))) {
-                return item;
+                return true;
               }
               changed += 1;
-              return { ...item, readAt: now };
+              return false;
             }),
           })),
         },
@@ -211,6 +212,22 @@ export default function NotificationBell() {
   const openNotification = (notification: NotificationItem) => {
     if (!notification.readAt) markReadMutation.mutate(notification.id);
     setIsOpen(false);
+
+    // A board-level link (e.g. a new sprint) can point at the board that is
+    // already open, where navigating does not reload it. Refetch its data so
+    // the change shows either way.
+    const { workspaceId, boardId } = notification;
+    for (const key of [
+      "sprints",
+      "board-cards",
+      "board-lists",
+      "board-header-lists",
+      "board-members",
+      "board-members-all",
+    ]) {
+      queryClient.invalidateQueries({ queryKey: [key, workspaceId, boardId] });
+    }
+
     router.push(getLink(notification));
   };
 
