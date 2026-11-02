@@ -114,7 +114,6 @@ export async function startCheckout(workspaceId: string, body: unknown) {
 // invoices or cancels. Changes come back to us as webhooks.
 export async function openBillingPortal(workspaceId: string) {
   await requireOwner(workspaceId);
-
   const subscription = await subscriptionRepo.findByWorkspace(workspaceId);
 
   if (!subscription) {
