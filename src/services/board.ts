@@ -105,11 +105,8 @@ export async function getBoardByWorkspaceId(workspaceId: string) {
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  console.log(workspaceId);
   const user_id = user.userId;
   const boardDetails = await BoardRepo.getBoards(workspaceId, user_id);
-  console.log("See here board response");
-  console.log(boardDetails);
   return Response.json(
     {
       message: "Fetch boards successfully",

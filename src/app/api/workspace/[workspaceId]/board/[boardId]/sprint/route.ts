@@ -6,7 +6,7 @@ import {
   updateSprintDetails,
   deleteSprint,
 } from "@/services/sprint";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 type sprintBody = {
   sprintName: string;
   goal: string;
@@ -33,19 +33,7 @@ export async function POST(
       carryUnresolvedTickets,
     );
   } catch (error) {
-    console.error("CREATE_SPRINT_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "CREATE_SPRINT_ERROR:");
   }
 }
 export async function GET(
@@ -56,19 +44,7 @@ export async function GET(
     const { boardId } = await params;
     return await getBoardSprint(boardId);
   } catch (error) {
-    console.error("GET_BOARD_SPRINT_LIST_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_BOARD_SPRINT_LIST_ERROR:");
   }
 }
 type UpdateSprintStatusBody = {
@@ -84,19 +60,7 @@ export async function PATCH(
     const { sprintId } = body;
     return await updateSprintStatus(boardId, sprintId);
   } catch (error) {
-    console.error("UPDATE_SPRINT_STATUS_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "UPDATE_SPRINT_STATUS_ERROR:");
   }
 }
 type UpdateSprintDetailsBody = {
@@ -145,19 +109,7 @@ export async function PUT(
       carryUnresolvedTickets,
     });
   } catch (error) {
-    console.error("UPDATE_SPRINT_DETAILS_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "UPDATE_SPRINT_DETAILS_ERROR:");
   }
 }
 export async function DELETE(
@@ -177,18 +129,6 @@ export async function DELETE(
 
     return await deleteSprint(boardId, body.sprintId);
   } catch (error) {
-    console.error("DELETE_SPRINT_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "DELETE_SPRINT_ERROR:");
   }
 }

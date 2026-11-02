@@ -7,6 +7,7 @@ import {
   getInvitationStatus,
   getInvitationPreview,
 } from "@/services/invitation";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function POST(
   request: Request,
@@ -49,23 +50,7 @@ export async function POST(
         );
     }
   } catch (error) {
-    console.error("INVITATION_POST_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "INVITATION_POST_API_ERROR:");
   }
 }
 export async function PATCH(
@@ -79,23 +64,7 @@ export async function PATCH(
 
     return await revokeInvitation(workspaceId, body);
   } catch (error) {
-    console.error("REVOKE_INVITATION_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "REVOKE_INVITATION_API_ERROR:");
   }
 }
 // export async function GET(
@@ -171,16 +140,6 @@ export async function GET(
 
     return await getInvitationStatus(workspaceId, page, limit, status);
   } catch (error) {
-    console.error("GET_INVITATION_STATUS_API_ERROR:", error);
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_INVITATION_STATUS_API_ERROR:");
   }
 }

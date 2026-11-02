@@ -73,7 +73,7 @@ export async function getCardComments(boardId: string, cardId: string) {
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
   const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
 
@@ -111,7 +111,7 @@ export async function getCardCommentByCommitId(
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
   const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
 
@@ -214,7 +214,7 @@ export async function deleteCardCommentByCommitId(
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
   const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
 

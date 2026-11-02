@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { createCardComment, getCardComments } from "@/services/CardComments";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 type commitBody = {
   description: string;
@@ -18,19 +17,7 @@ export async function POST(
 
     return await createCardComment(boardId, cardId, description);
   } catch (error) {
-    console.error("CREATE_CARD_COMMIT_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "CREATE_CARD_COMMIT_ERROR:");
   }
 }
 
@@ -51,26 +38,6 @@ export async function GET(
 
     return await getCardComments(boardId, cardId);
   } catch (error) {
-    console.error("GET_CARD_COMMENTS_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleRouteError(error, "GET_CARD_COMMENTS_ERROR:");
   }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createCard, getBoardCard } from "@/services/card";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 type cardBody = {
   title: string;
@@ -33,9 +33,6 @@ export async function POST(
       listId,
       assigneeId,
     } = body;
-    console.log(type);
-    console.log(priority);
-    console.log(title);
     return await createCard(
       boardId,
       title,
@@ -49,19 +46,7 @@ export async function POST(
       assigneeId,
     );
   } catch (error) {
-    console.error("CREATE_CARD_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "CREATE_CARD_ERROR:");
   }
 }
 
@@ -102,26 +87,6 @@ export async function GET(
 
     return await getBoardCard(boardId, sprintId);
   } catch (error) {
-    console.error("GET_BOARD_SPRINT_CARD_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleRouteError(error, "GET_BOARD_SPRINT_CARD_ERROR:");
   }
 }

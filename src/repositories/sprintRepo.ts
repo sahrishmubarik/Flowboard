@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/errors/AppError";
 import { db } from "@/db";
 import { sprint } from "@/db/boardSchema";
 import { card } from "@/db/cardSchema";
@@ -68,7 +69,7 @@ export const SprintRepo = {
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       const auditLog = await AuditLogService.record(
@@ -181,7 +182,7 @@ export const SprintRepo = {
         .limit(1);
 
       if (!destinationSprint) {
-        throw new Error("Sprint not found");
+        throw new AppError("Sprint not found", 404);
       }
 
       // 2. Find the outgoing active sprint and its carry-forward setting.
@@ -289,7 +290,7 @@ export const SprintRepo = {
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       // Audit the outgoing sprint transition.
@@ -374,7 +375,7 @@ export const SprintRepo = {
         .limit(1);
 
       if (!previousSprint) {
-        throw new Error("Sprint not found");
+        throw new AppError("Sprint not found", 404);
       }
 
       const [updatedSprint] = await tx
@@ -393,7 +394,7 @@ export const SprintRepo = {
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       await AuditLogService.record(
@@ -437,13 +438,13 @@ export const SprintRepo = {
         .limit(1);
 
       if (!existingSprint) {
-        throw new Error("Sprint not found");
+        throw new AppError("Sprint not found", 404);
       }
 
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       await AuditLogService.record(

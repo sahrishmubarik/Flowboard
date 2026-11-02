@@ -1,40 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { AppError } from "@/lib/errors/AppError";
 import {
   getMyNotifications,
   markAllNotificationsRead,
 } from "@/services/notificationService";
-
-function errorResponse(error: unknown, label: string) {
-  if (error instanceof AppError) {
-    return NextResponse.json(
-      { message: error.message },
-      { status: error.statusCode },
-    );
-  }
-
-  if (error instanceof SyntaxError) {
-    return NextResponse.json(
-      { message: "Invalid JSON request body" },
-      { status: 400 },
-    );
-  }
-
-  console.error(label, error);
-
-  return NextResponse.json(
-    { message: "Internal server error. Please try again." },
-    { status: 500 },
-  );
-}
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 // GET /api/notifications?limit=20&cursor=...&unread=true — the current user's notifications
 export async function GET(request: NextRequest) {
   try {
     return await getMyNotifications(request.nextUrl.searchParams);
   } catch (error) {
-    return errorResponse(error, "GET_NOTIFICATIONS_ERROR:");
+    return handleRouteError(error, "GET_NOTIFICATIONS_ERROR:");
   }
 }
 
@@ -45,6 +22,6 @@ export async function PATCH(request: NextRequest) {
 
     return await markAllNotificationsRead(body);
   } catch (error) {
-    return errorResponse(error, "MARK_ALL_NOTIFICATIONS_READ_ERROR:");
+    return handleRouteError(error, "MARK_ALL_NOTIFICATIONS_READ_ERROR:");
   }
 }
