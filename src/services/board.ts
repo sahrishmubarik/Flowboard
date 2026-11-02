@@ -9,6 +9,7 @@ import { SprintRepo } from "@/repositories/sprintRepo";
 import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { db } from "@/db";
 import { AuditLogService } from "@/services/auditLogService";
+import { assertCanCreateBoard } from "@/services/planLimits";
 /* create board */
 
 /* create board */
@@ -28,6 +29,8 @@ export async function createBoard(workspaceId: string, boardName: string) {
   await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
 
   const newBoard = await db.transaction(async (tx) => {
+    await assertCanCreateBoard(tx, workspaceId);
+
     const createdBoard = await BoardRepo.create(
       tx as unknown as typeof db,
       workspaceId,
@@ -102,11 +105,8 @@ export async function getBoardByWorkspaceId(workspaceId: string) {
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  console.log(workspaceId);
   const user_id = user.userId;
   const boardDetails = await BoardRepo.getBoards(workspaceId, user_id);
-  console.log("See here board response");
-  console.log(boardDetails);
   return Response.json(
     {
       message: "Fetch boards successfully",

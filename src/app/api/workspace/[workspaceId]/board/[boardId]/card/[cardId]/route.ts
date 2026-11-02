@@ -5,8 +5,8 @@ import {
   deleteCardById,
 } from "@/services/card";
 
-import { AppError } from "@/lib/errors/AppError";
 import { NextResponse } from "next/server";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 type RouteParams = {
   params: Promise<{
     workspaceId: string;
@@ -28,19 +28,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return await getBoardCardDetail(boardId, cardId);
   } catch (error) {
-    console.error("GET_BOARD_CARD_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_BOARD_CARD_ERROR:");
   }
 }
 
@@ -74,26 +62,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     return await moveBoardCard(boardId, cardId, destinationListId, position);
   } catch (error) {
-    console.error("PATCH_MOVE_BOARD_CARD_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { message: "Invalid JSON request body" },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "PATCH_MOVE_BOARD_CARD_ERROR:");
   }
 }
 
@@ -119,26 +88,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Update_Card_Error:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { message: "Invalid JSON request body" },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "Update_Card_Error:");
   }
 }
 
@@ -157,18 +107,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("DELETE_Card_Error:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "DELETE_Card_Error:");
   }
 }

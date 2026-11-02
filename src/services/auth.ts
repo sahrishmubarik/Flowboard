@@ -43,6 +43,17 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 import { getCurrentUser } from "@/lib/middleware/auth";
+// Undoes a sign-up that could not be finished (e.g. the verification email
+// failed), so the person can register again instead of being told the email
+// is already taken. The verification token is removed with the user.
+async function removeUnverifiedUser(userId: string) {
+  try {
+    await db.delete(users).where(eq(users.id, userId));
+  } catch (cleanupError) {
+    console.error("REGISTER_CLEANUP_ERROR:", cleanupError);
+  }
+}
+
 export async function registerUser(body: RegisterBody) {
   // 1. Validate
   const validation = validateData(registerRequestSchema, body);
@@ -83,11 +94,16 @@ export async function registerUser(body: RegisterBody) {
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
   // 8. Store token
-  await db.insert(emailVerificationTokens).values({
-    userId: newUser.id,
-    token: tokenHash,
-    expiresAt,
-  });
+  try {
+    await db.insert(emailVerificationTokens).values({
+      userId: newUser.id,
+      token: tokenHash,
+      expiresAt,
+    });
+  } catch (error) {
+    await removeUnverifiedUser(newUser.id);
+    throw error;
+  }
 
   // 9. Verification URL
   // const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
@@ -95,11 +111,20 @@ export async function registerUser(body: RegisterBody) {
     ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}&redirect=${encodeURIComponent(redirect)}`
     : `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
   // 10. Send email
-  await sendVerificationEmail({
-    email: newUser.email,
-    verificationUrl,
-  });
-  console.log("Verification email send in your gmail.", verificationUrl);
+  try {
+    await sendVerificationEmail({
+      email: newUser.email,
+      verificationUrl,
+    });
+  } catch (error) {
+    console.error("REGISTER_VERIFICATION_EMAIL_ERROR:", error);
+    await removeUnverifiedUser(newUser.id);
+
+    throw new AppError(
+      "We couldn't send the verification email. Please try registering again.",
+      502,
+    );
+  }
   // 11. Return result
   return Response.json(
     {

@@ -285,7 +285,6 @@ export default function CardCommits({
 
       const result: unknown = await response.json();
 
-      console.log("ATTACHMENTS_API_RESPONSE:", result);
 
       if (Array.isArray(result)) {
         return result;

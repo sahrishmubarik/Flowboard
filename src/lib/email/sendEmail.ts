@@ -23,7 +23,6 @@ export async function sendEmail({
     mailOptions
   );
 
-  console.log("Mailgun response:", result);
 
   return result;
 }

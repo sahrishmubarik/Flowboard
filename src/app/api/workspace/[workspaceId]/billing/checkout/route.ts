@@ -1,7 +1,5 @@
-import { NextResponse } from "next/server";
-
-import { AppError } from "@/lib/errors/AppError";
 import { startCheckout } from "@/services/billing";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function POST(
   request: Request,
@@ -14,25 +12,6 @@ export async function POST(
 
     return await startCheckout(workspaceId, body);
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { message: "Invalid JSON request body" },
-        { status: 400 },
-      );
-    }
-
-    console.error("BILLING_CHECKOUT_API_ERROR:", error);
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "BILLING_CHECKOUT_API_ERROR:");
   }
 }

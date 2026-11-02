@@ -1,18 +1,21 @@
-import { NextResponse } from "next/server";
 import {
   getWorkspaceById,
   updateWorkspaceName,
   deleteWorkspace,
 } from "@/services/workspace";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ workspaceId: string }> },
 ) {
-  const { workspaceId } = await params;
+  try {
+    const { workspaceId } = await params;
 
-  return getWorkspaceById(workspaceId);
+    return await getWorkspaceById(workspaceId);
+  } catch (error) {
+    return handleRouteError(error, "GET_WORKSPACE_ERROR:");
+  }
 }
 type UpdateWorkspaceBody = {
   workspaceName: string;
@@ -31,19 +34,7 @@ export async function PATCH(
 
     return await updateWorkspaceName(workspaceId, workspaceName);
   } catch (error) {
-    console.error("WORKSPACE_UPDATE_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "WORKSPACE_UPDATE_ERROR:");
   }
 }
 export async function DELETE(
@@ -55,18 +46,6 @@ export async function DELETE(
 
     return await deleteWorkspace(workspaceId);
   } catch (error) {
-    console.error("WORKSPACE_UPDATE_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "WORKSPACE_UPDATE_ERROR:");
   }
 }

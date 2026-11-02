@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { getBoardStats } from "@/services/board";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function GET(
   request: Request,
@@ -11,18 +10,6 @@ export async function GET(
 
     return await getBoardStats(boardId);
   } catch (error) {
-    console.error("GET_BOARD_STATS_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_BOARD_STATS_ERROR:");
   }
 }

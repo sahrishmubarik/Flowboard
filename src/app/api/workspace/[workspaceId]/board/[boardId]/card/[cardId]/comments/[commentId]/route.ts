@@ -1,11 +1,9 @@
-import { NextResponse } from "next/server";
-
 import {
   getCardCommentByCommitId,
   deleteCardCommentByCommitId,
   updateCardCommentByCommitId,
 } from "@/services/CardComments";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function GET(
   request: Request,
@@ -25,27 +23,7 @@ export async function GET(
 
     return await getCardCommentByCommitId(boardId, cardId, commitId);
   } catch (error) {
-    console.error("GET_CARD_COMMENT_COMMITID_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleRouteError(error, "GET_CARD_COMMENT_COMMITID_ERROR:");
   }
 }
 
@@ -67,27 +45,7 @@ export async function DELETE(
 
     return await deleteCardCommentByCommitId(boardId, cardId, commitId);
   } catch (error) {
-    console.error("DELETE_CARD_COMMENT_COMMITID_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleRouteError(error, "DELETE_CARD_COMMENT_COMMITID_ERROR:");
   }
 }
 
@@ -115,16 +73,10 @@ export async function PUT(
       body.description,
     );
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Failed to update commit description." },
-      { status: 500 },
+    return handleRouteError(
+      error,
+      "UPDATE_COMMENT_ERROR:",
+      "Failed to update commit description.",
     );
   }
 }

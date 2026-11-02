@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/errors/AppError";
 // import { db } from "@/db";
 // import { sprint } from "@/db/boardSchema";
 // import { card } from "@/db/cardSchema";
@@ -665,7 +666,7 @@ function parsePriority(
   value: string,
 ): NonNullable<CardDetailUpdate["priority"]> {
   if (!priorities.some((p) => p === value))
-    throw new Error("Invalid card priority");
+    throw new AppError("Invalid card priority", 400);
   return value as NonNullable<CardDetailUpdate["priority"]>;
 }
 
@@ -673,18 +674,18 @@ function parseTaskType(
   value: string,
 ): NonNullable<CardDetailUpdate["taskType"]> {
   if (!taskTypes.some((t) => t === value))
-    throw new Error("Invalid card task type");
+    throw new AppError("Invalid card task type", 400);
   return value as NonNullable<CardDetailUpdate["taskType"]>;
 }
 
 function ensureUuid(value: string, field: string): void {
-  if (!uuidPattern.test(value)) throw new Error(`Invalid ${field}`);
+  if (!uuidPattern.test(value)) throw new AppError(`Invalid ${field}`, 400);
 }
 
 function parseOptionalDate(value: string): Date | null {
   if (!value) return null;
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) throw new Error("Invalid card date");
+  if (Number.isNaN(parsed.getTime())) throw new AppError("Invalid card date", 400);
   return parsed;
 }
 
@@ -722,7 +723,7 @@ export const CardRepo = {
     const safeType = parseTaskType(type);
     const safeStart = parseOptionalDate(startDate);
     const safeDue = parseOptionalDate(dueDate);
-    if (!Array.isArray(sprintId)) throw new Error("sprintId must be an array");
+    if (!Array.isArray(sprintId)) throw new AppError("sprintId must be an array", 400);
     for (const id of sprintId) ensureUuid(id, "sprint ID");
 
     const insert = async (executor: AuditLogTransaction) => {
@@ -752,7 +753,7 @@ export const CardRepo = {
         .limit(1);
 
       if (!boardData) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       const workspaceId = boardData.workspaceId;
@@ -974,7 +975,7 @@ export const CardRepo = {
     performedBy: string,
   ) {
     if (!Number.isInteger(requestedPosition) || requestedPosition < 1) {
-      throw new Error("requestedPosition must be a positive integer");
+      throw new AppError("requestedPosition must be a positive integer", 400);
     }
 
     return db.transaction(async (tx) => {
@@ -1135,7 +1136,7 @@ export const CardRepo = {
     tx?: AuditLogTransaction,
   ) {
     if (!Array.isArray(sprintIds))
-      throw new Error("sprintIds must be an array");
+      throw new AppError("sprintIds must be an array", 400);
     for (const id of sprintIds) ensureUuid(id, "sprint ID");
     if (sprintIds.length === 0)
       return CardRepo.getCardSnapshot(boardId, cardId, tx);

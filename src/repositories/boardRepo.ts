@@ -37,8 +37,6 @@ export const BoardRepo = {
   },
 
   async getBoards(workspaceId: string, userId: string) {
-    console.log("Workspace Id in getBoards:", workspaceId);
-    console.log("User Id in getBoards:", userId);
     const boards = await db
       .select({
         id: board.id,
@@ -60,7 +58,6 @@ export const BoardRepo = {
       // Stable order: the first board is the workspace's default board.
       .orderBy(asc(board.createdAt), asc(board.id));
 
-    console.log("BOARDS FROM DB:", boards);
 
     return { boards };
   },

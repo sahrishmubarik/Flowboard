@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { AppError } from "@/lib/errors/AppError";
 
 import {
   registerUser,
@@ -11,6 +10,7 @@ import {
   getCurrentUserDetails,
   changePassword,
 } from "@/services/auth";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function POST(request: Request) {
   try {
@@ -47,23 +47,7 @@ export async function POST(request: Request) {
         );
     }
   } catch (error) {
-    console.error("AUTH_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "AUTH_API_ERROR:");
   }
 }
 
@@ -79,24 +63,6 @@ export async function GET() {
       { status: 200 },
     );
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        {
-          status: error.statusCode,
-        },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleRouteError(error, "AUTH_API_ERROR:", "Internal server error");
   }
 }

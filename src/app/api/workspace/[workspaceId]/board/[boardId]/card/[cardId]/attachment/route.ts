@@ -6,7 +6,7 @@ import {
   removeCardAttachment,
 } from "@/services/cardAttachmentService";
 
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 type RouteContext = {
   params: Promise<{
@@ -51,18 +51,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       { status: 200 },
     );
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    console.error("GET card attachments error:", error);
-
-    return NextResponse.json(
-      { message: "Failed to fetch attachments." },
-      { status: 500 },
+    return handleRouteError(
+      error,
+      "GET card attachments error:",
+      "Failed to fetch attachments.",
     );
   }
 }
@@ -149,18 +141,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    console.error("POST attachment error:", error);
-
-    return NextResponse.json(
-      { message: "Failed to upload attachment." },
-      { status: 500 },
+    return handleRouteError(
+      error,
+      "POST attachment error:",
+      "Failed to upload attachment.",
     );
   }
 }
@@ -193,18 +177,10 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       { status: 200 },
     );
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    console.error("DELETE card attachment error:", error);
-
-    return NextResponse.json(
-      { message: "Failed to delete attachment." },
-      { status: 500 },
+    return handleRouteError(
+      error,
+      "DELETE card attachment error:",
+      "Failed to delete attachment.",
     );
   }
 }

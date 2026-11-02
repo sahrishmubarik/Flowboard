@@ -111,26 +111,31 @@ export async function inviteMemberInBoard(
     boardName: boardData?.[0]?.boardName,
   };
 
-  // 6. Send the invitation email for a new board membership.
-  const boardInviteUrl =
-    `${process.env.NEXT_PUBLIC_APP_URL}` +
-    `/dashboard/workspace/${workspaceId}/board`;
-
-  await sendBoardInvitationEmail({
-    email,
-    organizationName: details.organizationName,
-    boardName: details.boardName,
-    role,
-    boardInviteUrl,
-  });
-
-  // 7. Create the new board membership.
+  // 6. Create the new board membership.
   const newBoardMember = await boardMemberRepo.create(
     userId,
     boardId,
     role,
     currentUserId,
   );
+
+  // 7. Tell the member by email. They are already a workspace member and
+  // will see the board in the app, so a failed email must not undo the add.
+  const boardInviteUrl =
+    `${process.env.NEXT_PUBLIC_APP_URL}` +
+    `/dashboard/workspace/${workspaceId}/board`;
+
+  try {
+    await sendBoardInvitationEmail({
+      email,
+      organizationName: details.organizationName,
+      boardName: details.boardName,
+      role,
+      boardInviteUrl,
+    });
+  } catch (error) {
+    console.error("BOARD_MEMBER_EMAIL_ERROR:", error);
+  }
 
   return Response.json(
     {

@@ -2218,7 +2218,6 @@ export default function CreateCard({
                     <CardDescriptionEditor
                       value={cardDescription}
                       onChange={setCardDescription}
-                      toolbarOnFocus
                       toolbarAction={
                         <label
                           className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-black/5 dark:hover:bg-white/5 ${

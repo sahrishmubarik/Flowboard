@@ -102,7 +102,7 @@ export async function createCard(
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
   /* check sprint exists */
   // const sprintDetails = await SprintRepo.getSprintById(sprintId);
@@ -128,7 +128,7 @@ export async function createCard(
   /* check board list exists */
   const boardListDetails = await BoardListRepo.getListByListId(boardId, listId);
   if (boardListDetails.length === 0) {
-    throw new Error("Board list not found");
+    throw new AppError("Board list not found", 404);
   }
 
   if (assigneeId) {
@@ -186,12 +186,12 @@ export async function getBoardCard(boardId: string, sprintId: string) {
   const boardDetails = await BoardRepo.getBoardById(boardId);
 
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
   /* check sprint exists */
   const sprintDetails = await SprintRepo.getSprintById(sprintId);
   if (sprintDetails.length === 0) {
-    throw new Error("Sprint not found");
+    throw new AppError("Sprint not found", 404);
   }
   const boardCardDetails = await CardRepo.getBoardCardBySprintId(
     boardId,
@@ -225,14 +225,13 @@ export async function getBoardCardDetail(boardId: string, cardId: string) {
 
   const boardDetails = await BoardRepo.getBoardById(boardId);
   if (boardDetails.length === 0) {
-    throw new Error("Board not found");
+    throw new AppError("Board not found", 404);
   }
 
   const cardDetails = await CardRepo.getBoardCardDetail(boardId, cardId);
   if (cardDetails.length === 0) {
-    throw new Error("Card not found");
+    throw new AppError("Card not found", 404);
   }
-  console.log("cardDetails:", cardDetails);
   return NextResponse.json(
     {
       message: "Card details retrieved successfully!",
@@ -415,11 +414,6 @@ export async function updateCardDetail(
       { status: 200 },
     );
   }
-  console.log("Received card update:", {
-    action: input.action,
-    body,
-  });
-
   // 5. Perform requested update.
   switch (input.action) {
     case "title": {

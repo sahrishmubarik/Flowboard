@@ -70,6 +70,8 @@ export const AuditLogRepo = {
           entityType: auditLogs.entityType,
           entityId: auditLogs.entityId,
           action: auditLogs.action,
+          // Names and old/new values, used to describe the change.
+          details: auditLogs.details,
           createdAt: auditLogs.createdAt,
         })
         .from(auditLogs)

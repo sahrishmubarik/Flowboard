@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/errors/AppError";
 import { db } from "@/db";
 import { card, commit } from "@/db/cardSchema";
 import { eq, and } from "drizzle-orm";
@@ -43,7 +44,7 @@ export const CommitRepo = {
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       const auditLog = await AuditLogService.record(
@@ -146,13 +147,13 @@ export const CommitRepo = {
         .limit(1);
 
       if (!existingCommit) {
-        throw new Error("Commit not found");
+        throw new AppError("Commit not found", 404);
       }
 
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       await AuditLogService.record(
@@ -193,7 +194,7 @@ export const CommitRepo = {
         .limit(1);
 
       if (!previousCommit) {
-        throw new Error("Commit not found");
+        throw new AppError("Commit not found", 404);
       }
 
       const [updatedCommit] = await tx
@@ -205,7 +206,7 @@ export const CommitRepo = {
       const boardDetails = await BoardRepo.findById(boardId, tx);
 
       if (!boardDetails) {
-        throw new Error("Board not found");
+        throw new AppError("Board not found", 404);
       }
 
       await AuditLogService.record(

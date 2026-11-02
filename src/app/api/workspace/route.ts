@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AppError } from "@/lib/errors/AppError";
 import { createWorkspace, getWorkspace } from "@/services/workspace";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function POST(request: Request) {
   try {
@@ -21,39 +21,13 @@ export async function POST(request: Request) {
         );
     }
   } catch (error) {
-    console.error("AUTH_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "AUTH_API_ERROR:");
   }
 }
 export async function GET() {
   try {
     return await getWorkspace();
   } catch (error) {
-    console.error("WORKSPACE_GET_API_ERROR:", error);
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "WORKSPACE_GET_API_ERROR:");
   }
 }

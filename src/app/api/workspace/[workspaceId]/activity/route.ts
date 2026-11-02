@@ -4,6 +4,7 @@ import { AppError } from "@/lib/errors/AppError";
 import { getCurrentUser } from "@/lib/middleware/auth";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { AuditLogService } from "@/services/auditLogService";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function GET(
   request: Request,
@@ -69,18 +70,6 @@ export async function GET(
       { status: 200 },
     );
   } catch (error) {
-    console.error("GET_ACTIVITY_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_ACTIVITY_API_ERROR:");
   }
 }

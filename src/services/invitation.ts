@@ -16,6 +16,51 @@ import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
 import { db } from "@/db";
 import { AuditLogService } from "@/services/auditLogService";
+import {
+  assertCanAcceptInvitation,
+  assertCanInviteMember,
+} from "@/services/planLimits";
+// The invitation was saved but its email never left. Revoke it so the owner
+// can invite again (no "already pending" error) and it stops using a member
+// slot of the plan. Recorded in the audit log with the reason.
+async function cancelUnsentInvitation(
+  workspaceId: string,
+  invitation: { email: string; role: string },
+  userId: string,
+) {
+  try {
+    await db.transaction(async (tx) => {
+      const revoked = await invitationRepo.revokeInvitation(
+        workspaceId,
+        invitation.email,
+        tx,
+      );
+
+      if (!revoked) return;
+
+      await AuditLogService.record(
+        {
+          performedBy: userId,
+          workspaceId,
+          entityType: "workspace_invitation",
+          entityId: revoked.id,
+          action: "WORKSPACE_INVITATION_REVOKED",
+          details: {
+            email: revoked.email,
+            role: revoked.role,
+            previousStatus: "PENDING",
+            newStatus: revoked.status,
+            reason: "EMAIL_NOT_SENT",
+          },
+        },
+        tx,
+      );
+    });
+  } catch (cleanupError) {
+    console.error("INVITATION_CLEANUP_ERROR:", cleanupError);
+  }
+}
+
 export async function inviteMember(
   workspaceId: string,
   body: {
@@ -64,6 +109,8 @@ export async function inviteMember(
   //   createdBy: user_id,
   // });
   const invitation = await db.transaction(async (tx) => {
+    await assertCanInviteMember(tx, workspaceId);
+
     const createdInvitation = await invitationRepo.create(
       {
         workspaceId,
@@ -105,12 +152,22 @@ export async function inviteMember(
     `/dashboard/workspace/${workspaceId}/invitation/accept` +
     `?token=${token}`;
 
-  await sendInvitationEmail({
-    email,
-    assignRole,
-    organizationName,
-    invitationUrl,
-  });
+  try {
+    await sendInvitationEmail({
+      email,
+      assignRole,
+      organizationName,
+      invitationUrl,
+    });
+  } catch (error) {
+    console.error("INVITATION_EMAIL_ERROR:", error);
+    await cancelUnsentInvitation(workspaceId, invitation, user_id);
+
+    throw new AppError(
+      "The invitation email could not be sent, so the invitation was cancelled. Please try again.",
+      502,
+    );
+  }
 
   return Response.json(
     {
@@ -201,6 +258,8 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
   }
 
   return db.transaction(async (tx) => {
+    await assertCanAcceptInvitation(tx, workspaceId);
+
     await organizationMemberRepo.create(tx, {
       userId: user_id,
       organizationId: workspaceId,

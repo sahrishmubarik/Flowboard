@@ -23,7 +23,6 @@ export async function createWorkspace(body: { name: string }) {
   const { workspaceName } = validation.data;
 
   const userId = user.userId;
-  console.log("Workspace user id ", userId);
 
   // const result = await db.transaction(async (tx) => {
   //   const newWorkspace = await workspaceRepo.create(tx, {

@@ -181,7 +181,6 @@ export default function BoardHeader() {
 
       const data = await response.json();
 
-      console.log("BOARD MEMBERS:", data);
 
       return data;
     },
