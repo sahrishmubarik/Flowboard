@@ -49,8 +49,19 @@ export function getEffectivePlan(
 // Lowest to highest, used to tell which plans are already included.
 export const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "BUSINESS"];
 
-// What each plan offers, shown on the billing page.
-// TODO: keep in line with the backend limits once plan entitlements exist.
+// Hard limits per workspace, enforced on the server. null means unlimited.
+// Members count active members plus pending invitations.
+export const PLAN_LIMITS: Record<
+  PlanKey,
+  { boards: number | null; members: number | null }
+> = {
+  FREE: { boards: 3, members: 5 },
+  PRO: { boards: null, members: 25 },
+  BUSINESS: { boards: null, members: null },
+};
+
+// What each plan offers, shown on the home page and the billing page.
+// The board and member lines must match PLAN_LIMITS above.
 export const PLAN_DETAILS: Record<
   PlanKey,
   { name: string; tagline: string; features: string[] }

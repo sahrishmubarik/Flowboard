@@ -16,6 +16,10 @@ import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
 import { db } from "@/db";
 import { AuditLogService } from "@/services/auditLogService";
+import {
+  assertCanAcceptInvitation,
+  assertCanInviteMember,
+} from "@/services/planLimits";
 export async function inviteMember(
   workspaceId: string,
   body: {
@@ -64,6 +68,8 @@ export async function inviteMember(
   //   createdBy: user_id,
   // });
   const invitation = await db.transaction(async (tx) => {
+    await assertCanInviteMember(tx, workspaceId);
+
     const createdInvitation = await invitationRepo.create(
       {
         workspaceId,
@@ -201,6 +207,8 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
   }
 
   return db.transaction(async (tx) => {
+    await assertCanAcceptInvitation(tx, workspaceId);
+
     await organizationMemberRepo.create(tx, {
       userId: user_id,
       organizationId: workspaceId,

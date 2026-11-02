@@ -7,9 +7,11 @@ import {
   Check,
   CheckCircle2,
   Clock3,
+  KanbanSquare,
   Loader2,
   Lock,
   Receipt,
+  Users,
   XCircle,
 } from "lucide-react";
 
@@ -48,11 +50,18 @@ type Subscription = {
   cancelAtPeriodEnd: boolean;
 };
 
+// null limit means unlimited.
+type Usage = {
+  boards: { used: number; limit: number | null };
+  members: { used: number; limit: number | null; pendingInvitations: number };
+};
+
 type BillingResponse = {
   message?: string;
   plans: Plan[];
   // Worked out on the server, including the grace period.
   currentPlan: PlanKey;
+  usage: Usage;
   subscription: Subscription | null;
   payments: Payment[];
 };
@@ -276,6 +285,36 @@ export default function WorkspaceBilling({
         />
       )}
 
+      {/* Usage against the plan's limits */}
+      {data && (
+        <section
+          aria-label="Plan usage"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+        >
+          <UsageMeter
+            icon={KanbanSquare}
+            label="Boards"
+            used={data.usage.boards.used}
+            limit={data.usage.boards.limit}
+          />
+          <UsageMeter
+            icon={Users}
+            label="Members"
+            used={data.usage.members.used}
+            limit={data.usage.members.limit}
+            note={
+              data.usage.members.pendingInvitations > 0
+                ? `Includes ${data.usage.members.pendingInvitations} pending ${
+                    data.usage.members.pendingInvitations === 1
+                      ? "invitation"
+                      : "invitations"
+                  }`
+                : undefined
+            }
+          />
+        </section>
+      )}
+
       {/* Plans */}
       <section aria-labelledby="billing-plans-heading">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
@@ -339,6 +378,82 @@ export default function WorkspaceBilling({
         payments={data?.payments ?? []}
         plans={data?.plans ?? []}
       />
+    </div>
+  );
+}
+
+// One limit, e.g. "Boards 2 of 3", with a bar that turns yellow near the
+// limit and red when it is reached.
+function UsageMeter({
+  icon: Icon,
+  label,
+  used,
+  limit,
+  note,
+}: {
+  icon: ComponentType<{ size?: number }>;
+  label: string;
+  used: number;
+  limit: number | null;
+  note?: string;
+}) {
+  const ratio = limit === null ? 0 : Math.min(1, used / limit);
+  const full = limit !== null && used >= limit;
+  const barColor = full
+    ? "bg-[var(--color-danger)]"
+    : ratio >= 0.8
+      ? "bg-[var(--color-priority-medium)]"
+      : "bg-[var(--color-primary)]";
+
+  return (
+    <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+          <span aria-hidden="true" className="text-[var(--color-text-muted)]">
+            <Icon size={16} />
+          </span>
+          {label}
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+          {used}
+          <span className="font-normal text-[var(--color-text-muted)]">
+            {limit === null ? " · Unlimited" : ` of ${limit}`}
+          </span>
+        </span>
+      </div>
+
+      {limit !== null && (
+        <div
+          role="progressbar"
+          aria-label={`${label} used`}
+          aria-valuemin={0}
+          aria-valuemax={limit}
+          aria-valuenow={Math.min(used, limit)}
+          className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-app-bg)]"
+        >
+          <div
+            className={`h-full rounded-full transition-all ${barColor}`}
+            style={{ width: `${Math.max(ratio * 100, used > 0 ? 4 : 0)}%` }}
+          />
+        </div>
+      )}
+
+      <p
+        className={`mt-2 text-xs ${
+          full
+            ? "font-medium text-[var(--color-tag-red-text)]"
+            : "text-[var(--color-text-muted)]"
+        }`}
+      >
+        {limit !== null && used > limit
+          ? `Over your plan's limit. Nothing was removed; upgrade to add more ${label.toLowerCase()}.`
+          : full
+            ? `Limit reached. Upgrade to add more ${label.toLowerCase()}.`
+          : (note ??
+            (limit === null
+              ? `No limit on your plan.`
+              : `${limit - used} left on your plan.`))}
+      </p>
     </div>
   );
 }

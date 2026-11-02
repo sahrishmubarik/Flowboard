@@ -15,6 +15,7 @@ import { checkoutValidation } from "@/lib/validations/billing";
 import { validateData } from "@/lib/validations/workspace";
 import { paymentRepo } from "@/repositories/paymentRepo";
 import { subscriptionRepo } from "@/repositories/subscriptionRepo";
+import { getWorkspaceUsage } from "@/services/planLimits";
 
 function billingUrlFor(workspaceId: string) {
   return `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/workspace/${workspaceId}/billing`;
@@ -159,11 +160,13 @@ export async function getBillingOverview(workspaceId: string) {
   // Worked out on the server, including the grace period, so the browser
   // cannot claim a plan.
   const currentPlan = getEffectivePlan(subscription);
+  const usage = await getWorkspaceUsage(workspaceId, currentPlan);
 
   return NextResponse.json(
     {
       plans,
       currentPlan,
+      usage,
       subscription: subscription
         ? {
             plan: subscription.plan,
