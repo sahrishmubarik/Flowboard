@@ -29,7 +29,7 @@ export default async function BillingPage({
         <PageHeader
           workspaceId={workspaceId}
           title="Billing"
-          description="Choose a plan for this workspace and see its payment history."
+          description="Manage your workspace plan, upgrade when you need more, and keep track of payments."
         />
 
         <WorkspaceBilling

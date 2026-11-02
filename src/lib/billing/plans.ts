@@ -8,3 +8,76 @@ export const PAID_PLANS = {
 } as const;
 
 export type PaidPlan = keyof typeof PAID_PLANS;
+export type PlanKey = "FREE" | PaidPlan;
+
+export function isPaidPlan(value: unknown): value is PaidPlan {
+  return typeof value === "string" && value in PAID_PLANS;
+}
+
+// Days a workspace keeps its paid plan after a monthly payment fails, so the
+// owner can fix the card. Stripe's retry schedule should end within the
+// same window (Dashboard → Billing → Revenue recovery).
+export const GRACE_PERIOD_DAYS = 7;
+
+type SubscriptionState = {
+  plan: PlanKey;
+  status: "ACTIVE" | "PAST_DUE" | "CANCELED";
+  graceEndsAt: Date | null;
+};
+
+// The plan a workspace really has right now. Checks the grace date itself,
+// so paid features end on time even if Stripe's last webhook never arrives.
+export function getEffectivePlan(
+  subscription: SubscriptionState | undefined,
+  now = new Date(),
+): PlanKey {
+  if (!subscription) return "FREE";
+
+  if (subscription.status === "ACTIVE") return subscription.plan;
+
+  if (
+    subscription.status === "PAST_DUE" &&
+    subscription.graceEndsAt &&
+    subscription.graceEndsAt > now
+  ) {
+    return subscription.plan;
+  }
+
+  return "FREE";
+}
+
+// Lowest to highest, used to tell which plans are already included.
+export const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "BUSINESS"];
+
+// What each plan offers, shown on the billing page.
+// TODO: keep in line with the backend limits once plan entitlements exist.
+export const PLAN_DETAILS: Record<
+  PlanKey,
+  { name: string; tagline: string; features: string[] }
+> = {
+  FREE: {
+    name: "Free",
+    tagline: "For trying Flowboard with a small team.",
+    features: ["Up to 3 boards", "Up to 5 members", "Cards, lists and comments"],
+  },
+  PRO: {
+    name: "Pro",
+    tagline: "For growing teams that run sprints.",
+    features: [
+      "Unlimited boards",
+      "Up to 25 members",
+      "Sprints and time tracking",
+      "Workspace activity history",
+    ],
+  },
+  BUSINESS: {
+    name: "Business",
+    tagline: "For organisations that need control.",
+    features: [
+      "Everything in Pro",
+      "Unlimited members",
+      "Audit logs",
+      "Priority support",
+    ],
+  },
+};
