@@ -41,8 +41,6 @@ type CardDescriptionEditorProps = {
   onChange: (value: string) => void;
   toolbarAction?: ReactNode;
   footer?: ReactNode;
-  // Hide the toolbar until the editor is first focused; it then stays.
-  toolbarOnFocus?: boolean;
 };
 type MarkdownStorage = {
   markdown: {
@@ -55,9 +53,7 @@ export default function CardDescriptionEditor({
   onChange,
   toolbarAction,
   footer,
-  toolbarOnFocus = false,
 }: CardDescriptionEditorProps) {
-  const [showToolbar, setShowToolbar] = useState(!toolbarOnFocus || !!value);
   const getMarkdown = (editor: Editor): string => {
     const storage = editor.storage as typeof editor.storage & MarkdownStorage;
     return storage.markdown.getMarkdown();
@@ -109,8 +105,6 @@ export default function CardDescriptionEditor({
     onUpdate: ({ editor }) => {
       onChange(getMarkdown(editor));
     },
-
-    onFocus: () => setShowToolbar(true),
   });
 
   // Inline link bar. It renders inside the editor (not a portal) so focus
@@ -190,202 +184,200 @@ export default function CardDescriptionEditor({
     >
       {/* Toolbar */}
 
-      {showToolbar && (
-        <div
-          className="flex flex-wrap items-center gap-1 border-b p-2"
-          style={{
-            borderColor: "var(--color-border)",
-            backgroundColor: "var(--color-column-bg)",
-          }}
+      <div
+        className="flex flex-wrap items-center gap-1 border-b p-2"
+        style={{
+          borderColor: "var(--color-border)",
+          backgroundColor: "var(--color-column-bg)",
+        }}
+      >
+        {/* Bold */}
+
+        <EditorButton
+          title="Bold"
+          active={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          {/* Bold */}
+          <Bold size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Bold"
-            active={editor.isActive("bold")}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-          >
-            <Bold size={15} />
-          </EditorButton>
+        {/* Italic */}
 
-          {/* Italic */}
+        <EditorButton
+          title="Italic"
+          active={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+        >
+          <Italic size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Italic"
-            active={editor.isActive("italic")}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          >
-            <Italic size={15} />
-          </EditorButton>
+        {/* Underline */}
 
-          {/* Underline */}
+        <EditorButton
+          title="Underline"
+          active={editor.isActive("underline")}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <UnderlineIcon size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Underline"
-            active={editor.isActive("underline")}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          >
-            <UnderlineIcon size={15} />
-          </EditorButton>
+        <ToolbarDivider />
 
-          <ToolbarDivider />
+        {/* Heading 1 */}
 
-          {/* Heading 1 */}
+        <EditorButton
+          title="Heading 1"
+          active={editor.isActive("heading", { level: 1 })}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+        >
+          <Heading1 size={16} />
+        </EditorButton>
 
-          <EditorButton
-            title="Heading 1"
-            active={editor.isActive("heading", { level: 1 })}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-          >
-            <Heading1 size={16} />
-          </EditorButton>
+        {/* Heading 2 */}
 
-          {/* Heading 2 */}
+        <EditorButton
+          title="Heading 2"
+          active={editor.isActive("heading", { level: 2 })}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+        >
+          <Heading2 size={16} />
+        </EditorButton>
 
-          <EditorButton
-            title="Heading 2"
-            active={editor.isActive("heading", { level: 2 })}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-          >
-            <Heading2 size={16} />
-          </EditorButton>
+        <ToolbarDivider />
 
-          <ToolbarDivider />
+        {/* Bullet list */}
 
-          {/* Bullet list */}
+        <EditorButton
+          title="Bullet list"
+          active={editor.isActive("bulletList")}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+        >
+          <List size={16} />
+        </EditorButton>
 
-          <EditorButton
-            title="Bullet list"
-            active={editor.isActive("bulletList")}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-          >
-            <List size={16} />
-          </EditorButton>
+        {/* Numbered list */}
 
-          {/* Numbered list */}
+        <EditorButton
+          title="Numbered list"
+          active={editor.isActive("orderedList")}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          <ListOrdered size={16} />
+        </EditorButton>
 
-          <EditorButton
-            title="Numbered list"
-            active={editor.isActive("orderedList")}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          >
-            <ListOrdered size={16} />
-          </EditorButton>
+        {/* Checklist */}
 
-          {/* Checklist */}
+        <EditorButton
+          title="Checklist"
+          active={editor.isActive("taskList")}
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+        >
+          <ListChecks size={16} />
+        </EditorButton>
 
-          <EditorButton
-            title="Checklist"
-            active={editor.isActive("taskList")}
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-          >
-            <ListChecks size={16} />
-          </EditorButton>
+        <ToolbarDivider />
 
-          <ToolbarDivider />
+        {/* Link */}
 
-          {/* Link */}
+        <EditorButton
+          title="Add link"
+          active={editor.isActive("link")}
+          onClick={addLink}
+        >
+          <LinkIcon size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Add link"
-            active={editor.isActive("link")}
-            onClick={addLink}
-          >
-            <LinkIcon size={15} />
-          </EditorButton>
+        {/* Blockquote */}
 
-          {/* Blockquote */}
+        <EditorButton
+          title="Blockquote"
+          active={editor.isActive("blockquote")}
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        >
+          <Quote size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Blockquote"
-            active={editor.isActive("blockquote")}
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          >
-            <Quote size={15} />
-          </EditorButton>
+        {/* Code */}
 
-          {/* Code */}
+        <EditorButton
+          title="Inline code"
+          active={editor.isActive("code")}
+          onClick={() => editor.chain().focus().toggleCode().run()}
+        >
+          <Code size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Inline code"
-            active={editor.isActive("code")}
-            onClick={() => editor.chain().focus().toggleCode().run()}
-          >
-            <Code size={15} />
-          </EditorButton>
+        {/* Horizontal rule */}
 
-          {/* Horizontal rule */}
+        <EditorButton
+          title="Horizontal rule"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        >
+          <Minus size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Horizontal rule"
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          >
-            <Minus size={15} />
-          </EditorButton>
+        <ToolbarDivider />
 
-          <ToolbarDivider />
+        {/* Table */}
 
-          {/* Table */}
+        <EditorButton title="Insert table" onClick={addTable}>
+          <TableIcon size={15} />
+        </EditorButton>
 
-          <EditorButton title="Insert table" onClick={addTable}>
-            <TableIcon size={15} />
-          </EditorButton>
+        {/* Alignment */}
 
-          {/* Alignment */}
+        <EditorButton
+          title="Align left"
+          active={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        >
+          <AlignLeft size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Align left"
-            active={editor.isActive({ textAlign: "left" })}
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          >
-            <AlignLeft size={15} />
-          </EditorButton>
+        <ToolbarDivider />
 
-          <ToolbarDivider />
+        {/* Undo */}
 
-          {/* Undo */}
+        <EditorButton
+          title="Undo"
+          active={editor.can().chain().focus().undo().run()}
+          onClick={() => editor.chain().focus().undo().run()}
+        >
+          <Undo2 size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Undo"
-            active={editor.can().chain().focus().undo().run()}
-            onClick={() => editor.chain().focus().undo().run()}
-          >
-            <Undo2 size={15} />
-          </EditorButton>
+        {/* Redo */}
 
-          {/* Redo */}
+        <EditorButton
+          title="Redo"
+          active={editor.can().chain().focus().redo().run()}
+          onClick={() => editor.chain().focus().redo().run()}
+        >
+          <Redo2 size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Redo"
-            active={editor.can().chain().focus().redo().run()}
-            onClick={() => editor.chain().focus().redo().run()}
-          >
-            <Redo2 size={15} />
-          </EditorButton>
+        {/* Clear */}
 
-          {/* Clear */}
+        <EditorButton
+          title="Clear formatting"
+          onClick={() =>
+            editor.chain().focus().clearNodes().unsetAllMarks().run()
+          }
+        >
+          <Eraser size={15} />
+        </EditorButton>
 
-          <EditorButton
-            title="Clear formatting"
-            onClick={() =>
-              editor.chain().focus().clearNodes().unsetAllMarks().run()
-            }
-          >
-            <Eraser size={15} />
-          </EditorButton>
-
-          {toolbarAction && (
-            <>
-              <ToolbarDivider />
-              {toolbarAction}
-            </>
-          )}
-        </div>
-      )}
+        {toolbarAction && (
+          <>
+            <ToolbarDivider />
+            {toolbarAction}
+          </>
+        )}
+      </div>
 
       {/* Link bar */}
 
