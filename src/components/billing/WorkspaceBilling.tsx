@@ -4,21 +4,22 @@ import { useEffect, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Building2,
   Check,
   CheckCircle2,
   Clock3,
   Loader2,
   Lock,
   Receipt,
-  Sprout,
   XCircle,
-  Zap,
 } from "lucide-react";
 
+import {
+  FEATURED_PLAN,
+  formatAmount,
+  PLAN_STYLES,
+} from "@/components/billing/planDisplay";
 import { useToast } from "@/components/ui/ToastProvider";
-
-type PlanKey = "FREE" | "PRO" | "BUSINESS";
+import { PLAN_ORDER, type PlanKey } from "@/lib/billing/plans";
 
 type Plan = {
   key: PlanKey;
@@ -61,33 +62,9 @@ type WorkspaceBillingProps = {
   checkoutResult: "success" | "cancelled" | null;
 };
 
-const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "BUSINESS"];
-
 // After a successful checkout, keep checking for the webhook this long.
 const CONFIRM_TIMEOUT_MS = 30_000;
 const CONFIRM_POLL_MS = 2_500;
-
-// Look of each plan: icon, top stripe and icon tile colours.
-const PLAN_STYLES: Record<
-  PlanKey,
-  { icon: ComponentType<{ size?: number }>; stripe: string; tile: string }
-> = {
-  FREE: {
-    icon: Sprout,
-    stripe: "bg-[var(--color-text-muted)]",
-    tile: "bg-[var(--color-tag-neutral-bg)] text-[var(--color-tag-neutral-text)]",
-  },
-  PRO: {
-    icon: Zap,
-    stripe: "bg-[var(--color-primary)]",
-    tile: "bg-[var(--color-primary-soft)] text-[var(--color-primary)]",
-  },
-  BUSINESS: {
-    icon: Building2,
-    stripe: "bg-[var(--color-tag-purple-text)]",
-    tile: "bg-[var(--color-tag-purple-bg)] text-[var(--color-tag-purple-text)]",
-  },
-};
 
 const STATUS_STYLES: Record<
   Payment["status"],
@@ -115,15 +92,6 @@ const STATUS_STYLES: Record<
     className: "bg-[var(--color-tag-red-bg)] text-[var(--color-tag-red-text)]",
   },
 };
-
-// Amounts are stored in the lowest unit (cents): 1000 -> $10.00.
-function formatAmount(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
-  }).format(amount / 100);
-}
 
 function formatDate(value: string, withTime = false) {
   return new Intl.DateTimeFormat("en-US", {
@@ -349,7 +317,7 @@ export default function WorkspaceBilling({
                             ? "unavailable"
                             : "upgrade"
                     }
-                    featured={plan.key === "PRO"}
+                    featured={plan.key === FEATURED_PLAN}
                     starting={startingPlan === plan.key}
                     disabled={startingPlan !== null}
                     onUpgrade={() => startCheckout(plan.key)}

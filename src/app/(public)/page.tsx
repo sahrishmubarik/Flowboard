@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { Check, Lock } from "lucide-react";
+
 import BrandLogo from "@/components/BrandLogo";
+import {
+  FEATURED_PLAN,
+  formatAmount,
+  PLAN_STYLES,
+} from "@/components/billing/planDisplay";
+import { PAID_PLANS, PLAN_DETAILS, PLAN_ORDER } from "@/lib/billing/plans";
 
 const inboxItems = [
   {
@@ -456,87 +464,100 @@ export default function InboxPage() {
                 Start simple. Grow when your workflow does.
               </h2>
               <p className="fb-body mt-5 text-base leading-7">
-                Use Flowboard for personal capture today and add more workspace
-                capabilities as your team needs them.
+                Start on Free and upgrade your workspace when your team needs
+                more. One price per workspace, billed monthly, cancel any time.
               </p>
             </div>
 
-            <div className="mx-auto mt-12 grid max-w-[980px] gap-5 md:grid-cols-3">
-              {[
-                {
-                  name: "Free",
-                  price: "$0",
-                  description: "For personal ideas and lightweight work.",
-                  items: [
-                    "Personal inbox",
-                    "Boards and lists",
-                    "Basic task tracking",
-                  ],
-                },
-                {
-                  name: "Team",
-                  price: "$8",
-                  description: "For small teams organizing work together.",
-                  items: [
-                    "Shared workspaces",
-                    "Members and invites",
-                    "Board collaboration",
-                  ],
-                },
-                {
-                  name: "Scale",
-                  price: "$15",
-                  description:
-                    "For teams that need a more structured workflow.",
-                  items: [
-                    "Advanced permissions",
-                    "More workspace controls",
-                    "Team-ready workflows",
-                  ],
-                },
-              ].map((plan) => (
-                <article
-                  key={plan.name}
-                  className="fb-card fb-card-hover flex flex-col p-7"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="fb-heading text-2xl">{plan.name}</h3>
-                    {plan.name === "Team" && (
-                      <span className="rounded-full bg-[var(--color-primary-active-bg)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-primary)]">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-5">
-                    <span className="text-3xl font-semibold text-[var(--color-text-primary)]">
-                      {plan.price}
-                    </span>
-                    <span className="ml-1 text-sm text-[var(--color-text-muted)]">
-                      / user / month
-                    </span>
-                  </div>
-                  <p className="fb-body mt-3 min-h-12 text-sm leading-6">
-                    {plan.description}
-                  </p>
-                  <ul className="mt-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
-                    {plan.items.map((item) => (
-                      <li key={item} className="flex gap-2">
-                        <span className="text-[var(--color-status-done)]">
-                          ✓
-                        </span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/auth/register"
-                    className="fb-btn-primary mt-7 w-full"
+            {/* Same plans, prices and features as the billing page: both read
+                src/lib/billing/plans.ts. */}
+            <div className="mx-auto mt-12 grid max-w-[1080px] gap-5 md:grid-cols-3">
+              {PLAN_ORDER.map((key) => {
+                const plan = PLAN_DETAILS[key];
+                const style = PLAN_STYLES[key];
+                const Icon = style.icon;
+                const featured = key === FEATURED_PLAN;
+                const price =
+                  key === "FREE"
+                    ? formatAmount(0, "usd")
+                    : formatAmount(PAID_PLANS[key].amount, PAID_PLANS[key].currency);
+
+                return (
+                  <article
+                    key={key}
+                    className={`fb-card fb-card-hover relative flex flex-col overflow-hidden p-7 ${
+                      featured
+                        ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
+                        : ""
+                    }`}
                   >
-                    Start free
-                  </Link>
-                </article>
-              ))}
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-x-0 top-0 h-1 ${style.stripe}`}
+                    />
+
+                    <div className="flex items-start justify-between gap-3">
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] ${style.tile}`}
+                      >
+                        <Icon size={18} />
+                      </span>
+                      {featured && (
+                        <span className="rounded-full bg-[var(--color-primary)] px-2.5 py-1 text-xs font-semibold text-white">
+                          Most popular
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="fb-heading mt-4 text-2xl">{plan.name}</h3>
+                    <p className="fb-body mt-1 min-h-12 text-sm leading-6">
+                      {plan.tagline}
+                    </p>
+
+                    <div className="mt-4 flex items-baseline gap-1.5">
+                      <span className="fb-heading text-4xl font-semibold tracking-tight">
+                        {price}
+                      </span>
+                      <span className="text-sm text-[var(--color-text-muted)]">
+                        {key === "FREE" ? "forever" : "/ month"}
+                      </span>
+                    </div>
+
+                    <ul className="mt-6 flex-1 space-y-3 border-t border-[var(--color-border)] pt-6 text-sm text-[var(--color-text-primary)]">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2.5">
+                          <Check
+                            size={16}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 text-[var(--color-status-done)]"
+                          />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Paid plans are bought from the workspace's billing
+                        page, so every plan starts with a free account. */}
+                    <Link
+                      href="/auth/register"
+                      className={`mt-7 w-full ${
+                        featured ? "fb-btn-primary" : "fb-btn-secondary"
+                      }`}
+                    >
+                      {key === "FREE" ? "Start free" : `Get ${plan.name}`}
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
+
+            <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-[var(--color-text-muted)]">
+              <Lock size={13} aria-hidden="true" />
+              Prices in USD per workspace. Payments are processed securely by
+              Stripe. Upgrade or cancel any time from your workspace&apos;s
+              Billing page.
+            </p>
           </div>
         </section>
 
