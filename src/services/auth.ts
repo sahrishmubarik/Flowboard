@@ -7,7 +7,7 @@ import {
   resetPasswordTokens,
 } from "@/db/authSchema";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import bcrypt from "bcryptjs";
 
@@ -43,6 +43,17 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 import { getCurrentUser } from "@/lib/middleware/auth";
+// Undoes a sign-up that could not be finished (e.g. the verification email
+// failed), so the person can register again instead of being told the email
+// is already taken. The verification token is removed with the user.
+async function removeUnverifiedUser(userId: string) {
+  try {
+    await db.delete(users).where(eq(users.id, userId));
+  } catch (cleanupError) {
+    console.error("REGISTER_CLEANUP_ERROR:", cleanupError);
+  }
+}
+
 export async function registerUser(body: RegisterBody) {
   // 1. Validate
   const validation = validateData(registerRequestSchema, body);
@@ -83,11 +94,16 @@ export async function registerUser(body: RegisterBody) {
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
   // 8. Store token
-  await db.insert(emailVerificationTokens).values({
-    userId: newUser.id,
-    token: tokenHash,
-    expiresAt,
-  });
+  try {
+    await db.insert(emailVerificationTokens).values({
+      userId: newUser.id,
+      token: tokenHash,
+      expiresAt,
+    });
+  } catch (error) {
+    await removeUnverifiedUser(newUser.id);
+    throw error;
+  }
 
   // 9. Verification URL
   // const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
@@ -95,11 +111,20 @@ export async function registerUser(body: RegisterBody) {
     ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}&redirect=${encodeURIComponent(redirect)}`
     : `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email?token=${token}`;
   // 10. Send email
-  await sendVerificationEmail({
-    email: newUser.email,
-    verificationUrl,
-  });
-  console.log("Verification email send in your gmail.", verificationUrl);
+  try {
+    await sendVerificationEmail({
+      email: newUser.email,
+      verificationUrl,
+    });
+  } catch (error) {
+    console.error("REGISTER_VERIFICATION_EMAIL_ERROR:", error);
+    await removeUnverifiedUser(newUser.id);
+
+    throw new AppError(
+      "We couldn't send the verification email. Please try registering again.",
+      502,
+    );
+  }
   // 11. Return result
   return Response.json(
     {
@@ -215,6 +240,7 @@ export async function loginUser(body: LoginBody) {
     {
       userId: user.id,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     },
     process.env.JWT_SECRET!,
     {
@@ -376,7 +402,24 @@ export async function changePassword(body: changePasswordBody) {
     throw new AppError(validation.error, 400);
   }
 
-  const { password } = validation.data;
+  const { currentPassword, password } = validation.data;
+
+  // Verify the current password before allowing a change.
+  const account = await userRepo.findById(user.userId);
+
+  if (!account?.password) {
+    throw new AppError("Unable to change password for this account.", 400);
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(
+    currentPassword,
+    account.password,
+  );
+
+  if (!isCurrentPasswordValid) {
+    throw new AppError("Current password is incorrect.", 400);
+  }
+
   const hashedPassword = await passwordHashed(password);
   const user_id = user.userId;
 
@@ -396,15 +439,45 @@ export async function changePassword(body: changePasswordBody) {
   );
 }
 
+// export async function logoutSession() {
+
+//   const cookieStore = await cookies();
+
+//   cookieStore.delete("token");
+
+//   return Response.json({
+//     message: "Logged out successfully",
+//   });
+// }
+
 export async function logoutSession() {
+  const user = await getCurrentUser();
+
   const cookieStore = await cookies();
 
+  // Clear the browser cookie regardless of session validity.
   cookieStore.delete("token");
+
+  if (!user) {
+    return Response.json(
+      { message: "Unauthorized or already logged out" },
+      { status: 401 },
+    );
+  }
+
+  // Invalidate all JWTs issued with the previous tokenVersion.
+  await db
+    .update(users)
+    .set({
+      tokenVersion: sql`${users.tokenVersion} + 1`,
+    })
+    .where(eq(users.id, user.userId));
 
   return Response.json({
     message: "Logged out successfully",
   });
 }
+
 export async function getCurrentUserDetails() {
   const currentUser = await getCurrentUser();
 

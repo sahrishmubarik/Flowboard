@@ -130,7 +130,7 @@ export async function sendBoardInvitationEmail({
       </p>
 
       <a href="${boardInviteUrl}">
-      accept invite
+      open board
       </a>
     `,
   });

@@ -1,14 +1,17 @@
-import { NextResponse } from "next/server";
 import { getBoardById, updateBoardName, deleteBoard } from "@/services/board";
-import { AppError } from "@/lib/errors/AppError";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ boardId: string }> },
 ) {
-  const { boardId } = await params;
+  try {
+    const { boardId } = await params;
 
-  return getBoardById(boardId);
+    return await getBoardById(boardId);
+  } catch (error) {
+    return handleRouteError(error, "GET_BOARD_ERROR:");
+  }
 }
 type UpdateBoardBody = {
   boardName: string;
@@ -27,19 +30,7 @@ export async function PATCH(
 
     return await updateBoardName(boardId, boardName);
   } catch (error) {
-    console.error("BOARD_UPDATE_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "BOARD_UPDATE_ERROR:");
   }
 }
 export async function DELETE(
@@ -51,19 +42,7 @@ export async function DELETE(
 
     return await deleteBoard(boardId);
   } catch (error) {
-    console.error("BOARD_DELETE_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "BOARD_DELETE_ERROR:");
   }
 }
 // type InviteBoardMemberBody = {

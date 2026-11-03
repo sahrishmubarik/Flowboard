@@ -14,10 +14,10 @@ export default function BoardPage() {
   const { workspaceId, boardId } = params;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-[calc(100dvh-3rem)] flex-col overflow-hidden lg:h-screen">
       <BoardHeader />
 
-      <main className="min-h-0 flex-1 overflow-auto">
+      <main className="flex-1 overflow-y-auto bg-[var(--color-column-bg)] ">
         <BoardCanvas workspaceId={workspaceId} boardId={boardId} />
       </main>
     </div>

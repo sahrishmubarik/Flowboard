@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type CreateBoardCardProps = {
   onClose: () => void;
@@ -10,14 +12,14 @@ type CreateBoardCardProps = {
 export default function CreateBoard({ onClose }: CreateBoardCardProps) {
   const [boardName, setBoardName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const params = useParams();
   const workspaceId = params.workspaceId as string;
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const handleCreate = async () => {
-    setMessage("");
     setError("");
 
     if (!boardName.trim()) {
@@ -44,9 +46,21 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
         throw new Error(data.message || "Failed to create board.");
       }
 
-      setMessage("Created board successfully.");
+      // The modal closes right away, so confirm with a toast instead of
+      // inline text, and refresh every board list in the workspace.
+      showToast(data.message || "Board created successfully.", "success");
       setBoardName("");
       onClose();
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["workspace-boards", workspaceId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["assigned-task-boards", workspaceId],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["boards", workspaceId] }),
+      ]);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -110,7 +124,6 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
             onChange={(event) => {
               setBoardName(event.target.value);
               setError("");
-              setMessage("");
             }}
             placeholder="Enter workspace name"
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
@@ -122,16 +135,6 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
         </div>
 
         {/* Feedback */}
-        {message && (
-          <div className="flex items-start gap-3 rounded-xl border border-[var(--color-tag-green-text)] bg-[var(--color-tag-green-bg)] px-4 py-3">
-            <span className="mt-0.5 text-[var(--color-status-done)]">✓</span>
-
-            <p className="text-sm text-[var(--color-text-primary)]">
-              {message}
-            </p>
-          </div>
-        )}
-
         {error && (
           <div className="flex items-start gap-3 rounded-xl border border-[var(--color-tag-red-text)] bg-[var(--color-tag-red-bg)] px-4 py-3">
             <span className="mt-0.5 text-[var(--color-priority-high)]">!</span>

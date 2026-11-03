@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { BoardRepo } from "@/repositories/boardRepo";
 import { boardMemberRepo } from "@/repositories/boardMemberRepo";
 import { workspaceRepo } from "@/repositories/organizationRepo";
+import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
 import { sendBoardInvitationEmail } from "@/lib/email/verificationEmail";
 import { requireBoardRole } from "@/lib/middleware/boardPermission";
 
@@ -41,20 +42,65 @@ export async function inviteMemberInBoard(
   role: "owner" | "admin" | "manager" | "member",
 ) {
   const user = await getCurrentUser();
+
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  const user_id = user.userId;
-  await requireBoardRole(user_id, boardId, ["owner", "admin", "manager"]);
-  /* first check add person  already part of  member of that board */
-  const existingBoardMember = await boardMemberRepo.findByUserAndBoard(
+
+  const currentUserId = user.userId;
+
+  // 1. Check whether the current user can manage this board.
+  await requireBoardRole(currentUserId, boardId, ["owner", "admin", "manager"]);
+
+  // The target user must be an active member of the board's workspace.
+  const boardDetails = await BoardRepo.findById(boardId);
+
+  if (!boardDetails || boardDetails.organizationId !== workspaceId) {
+    throw new AppError("Board not found", 404);
+  }
+
+  const workspaceMember = await organizationMemberRepo.findByUserAndWorkspace(
+    userId,
+    boardDetails.organizationId,
+  );
+
+  if (!workspaceMember) {
+    throw new AppError(
+      "User must be an active member of this workspace to join the board.",
+      400,
+    );
+  }
+
+  // 2. Check whether the target user already has a membership record.
+  const existingMember = await boardMemberRepo.findByUserAndBoard(
     userId,
     boardId,
   );
-  if (existingBoardMember) {
-    throw new AppError("Member already exist in that board ", 404);
+
+  // 3. If the membership exists but was deactivated, reactivate it.
+  if (existingMember) {
+    if (existingMember.status === "DEACTIVATED") {
+      const reactivatedMember = await boardMemberRepo.reactivateMember(
+        userId,
+        boardId,
+        role,
+        currentUserId,
+      );
+
+      return Response.json(
+        {
+          message: "Board membership reactivated successfully",
+          Board: reactivatedMember,
+        },
+        { status: 200 },
+      );
+    }
+
+    // 4. If already active, return a conflict.
+    throw new AppError("Member already exists in that board", 409);
   }
-  /*get board name and organization name for that pass to email for user to know in which board add you */
+
+  // 5. Get workspace and board details for the invitation email.
   const [workspaceData, boardData] = await Promise.all([
     workspaceRepo.findById(workspaceId),
     BoardRepo.getBoardById(boardId),
@@ -64,33 +110,39 @@ export async function inviteMemberInBoard(
     organizationName: workspaceData?.workspaceName,
     boardName: boardData?.[0]?.boardName,
   };
+
+  // 6. Create the new board membership.
+  const newBoardMember = await boardMemberRepo.create(
+    userId,
+    boardId,
+    role,
+    currentUserId,
+  );
+
+  // 7. Tell the member by email. They are already a workspace member and
+  // will see the board in the app, so a failed email must not undo the add.
   const boardInviteUrl =
     `${process.env.NEXT_PUBLIC_APP_URL}` +
     `/dashboard/workspace/${workspaceId}/board`;
 
-  await sendBoardInvitationEmail({
-    email,
-    organizationName: details.organizationName,
-    boardName: details.boardName,
-    role,
-    boardInviteUrl,
-  });
-  const currentUserId = user_id;
-  /* add member to your board member table */
-  const newBoardMember = await boardMemberRepo.create(
-    userId, // invited user's ID
-    boardId,
-    role,
-    currentUserId, // admin/owner who is assigning them
-  );
+  try {
+    await sendBoardInvitationEmail({
+      email,
+      organizationName: details.organizationName,
+      boardName: details.boardName,
+      role,
+      boardInviteUrl,
+    });
+  } catch (error) {
+    console.error("BOARD_MEMBER_EMAIL_ERROR:", error);
+  }
+
   return Response.json(
     {
-      message: "Add member in Board successfully",
+      message: "Board member added successfully",
       Board: newBoardMember,
     },
-    {
-      status: 201,
-    },
+    { status: 201 },
   );
 }
 
@@ -112,4 +164,30 @@ export async function deleteMemberFormBoard(userId: string, boardId: string) {
       status: 200,
     },
   );
+}
+
+/* get all board member without pagination  */
+export async function getAllActiveBoardMembers(
+  workspaceId: string,
+  boardId: string,
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  // Check whether current user belongs to this board
+  const boardMember = await BoardRepo.getForUser(user.userId, boardId);
+
+  if (!boardMember) {
+    throw new AppError("You do not have access to this board", 403);
+  }
+
+  const result = await boardMemberRepo.getAllActiveBoardMember(boardId);
+
+  return Response.json({
+    message: "Board members fetched successfully",
+    data: result,
+  });
 }

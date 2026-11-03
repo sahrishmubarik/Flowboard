@@ -1,3 +1,5 @@
+import BrandLogo from "@/components/BrandLogo";
+
 const columns = [
   {
     title: "Open",
@@ -49,6 +51,12 @@ const columns = [
 export default function AuthBrandBoard() {
   return (
     <div className="auth-board">
+      <BrandLogo
+        className="mb-3 flex items-center gap-2"
+        markClassName="h-5 w-5 rounded"
+        nameClassName="text-xs font-semibold text-[var(--color-product-window-text)]"
+        size={20}
+      />
       <div className="auth-board-grid">
         {columns.map((column) => (
           <div key={column.title} className="auth-board-column">

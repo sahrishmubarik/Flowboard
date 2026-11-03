@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={null}>
@@ -22,6 +23,7 @@ export default function ResetPasswordPage() {
 
           <section className="auth-form-panel">
             <div className="auth-form-container">
+              <AuthMobileLogo />
               <ResetPasswordForm />
             </div>
           </section>

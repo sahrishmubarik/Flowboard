@@ -151,6 +151,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 import { Menu, Moon, Sun, X } from "lucide-react";
 
 const navLinks = [
@@ -197,8 +198,11 @@ export default function Header() {
     <header className="site-header">
       <div className="site-header-inner">
         <Link href="/" className="brand">
-          <span className="brand-mark">F</span>
-          <span className="brand-name">Flowboard</span>
+          <BrandLogo
+            className="brand"
+            markClassName="brand-mark"
+            nameClassName="brand-name"
+          />
         </Link>
 
         <nav className="font-serif hidden items-center gap-7 md:flex">

@@ -3,16 +3,17 @@ import {
   createSprint,
   getBoardSprint,
   updateSprintStatus,
+  updateSprintDetails,
+  deleteSprint,
 } from "@/services/sprint";
-import { AppError } from "@/lib/errors/AppError";
-
+import { handleRouteError } from "@/lib/errors/handleRouteError";
 type sprintBody = {
   sprintName: string;
   goal: string;
   startDate: string;
   endDate: string;
+  carryUnresolvedTickets: boolean;
 };
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ boardId: string }> },
@@ -21,22 +22,18 @@ export async function POST(
     const { boardId } = await params;
     const body: sprintBody = await request.json();
 
-    const { sprintName, startDate, endDate, goal } = body;
-    return await createSprint(boardId, sprintName, startDate, endDate, goal);
-  } catch (error) {
-    console.error("CREATE_SPRINT_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
+    const { sprintName, startDate, endDate, goal, carryUnresolvedTickets } =
+      body;
+    return await createSprint(
+      boardId,
+      sprintName,
+      startDate,
+      endDate,
+      goal,
+      carryUnresolvedTickets,
     );
+  } catch (error) {
+    return handleRouteError(error, "CREATE_SPRINT_ERROR:");
   }
 }
 export async function GET(
@@ -47,19 +44,7 @@ export async function GET(
     const { boardId } = await params;
     return await getBoardSprint(boardId);
   } catch (error) {
-    console.error("GET_BOARD_SPRINT_LIST_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_BOARD_SPRINT_LIST_ERROR:");
   }
 }
 type UpdateSprintStatusBody = {
@@ -75,18 +60,75 @@ export async function PATCH(
     const { sprintId } = body;
     return await updateSprintStatus(boardId, sprintId);
   } catch (error) {
-    console.error("UPDATE_SPRINT_STATUS_ERROR:", error);
+    return handleRouteError(error, "UPDATE_SPRINT_STATUS_ERROR:");
+  }
+}
+type UpdateSprintDetailsBody = {
+  sprintId: string;
+  sprintName: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  carryUnresolvedTickets: boolean;
+};
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
+) {
+  try {
+    const { boardId } = await params;
+    const body: UpdateSprintDetailsBody = await request.json();
+    const {
+      sprintId,
+      sprintName,
+      goal,
+      startDate,
+      endDate,
+      carryUnresolvedTickets,
+    } = body;
 
-    if (error instanceof AppError) {
+    if (
+      !sprintId ||
+      !sprintName?.trim() ||
+      !startDate ||
+      !endDate ||
+      typeof goal !== "string" ||
+      typeof carryUnresolvedTickets !== "boolean"
+    ) {
       return NextResponse.json(
-        { message: error.message },
-        { status: error.statusCode },
+        { message: "Invalid sprint details" },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json(
-      { message: "Internal server error. Please try again." },
-      { status: 500 },
-    );
+    return await updateSprintDetails(boardId, sprintId, {
+      sprintName: sprintName.trim(),
+      goal,
+      startDate,
+      endDate,
+      carryUnresolvedTickets,
+    });
+  } catch (error) {
+    return handleRouteError(error, "UPDATE_SPRINT_DETAILS_ERROR:");
+  }
+}
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
+) {
+  try {
+    const { boardId } = await params;
+    const body: { sprintId: string } = await request.json();
+
+    if (!body.sprintId) {
+      return NextResponse.json(
+        { message: "sprintId is required" },
+        { status: 400 },
+      );
+    }
+
+    return await deleteSprint(boardId, body.sprintId);
+  } catch (error) {
+    return handleRouteError(error, "DELETE_SPRINT_ERROR:");
   }
 }

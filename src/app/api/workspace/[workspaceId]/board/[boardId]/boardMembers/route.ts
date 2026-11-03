@@ -1,43 +1,67 @@
-import { NextResponse } from "next/server";
-import { AppError } from "@/lib/errors/AppError";
 import {
   deleteMemberFormBoard,
   getBoardMembers,
   inviteMemberInBoard,
+  getAllActiveBoardMembers,
 } from "@/services/boardMember";
+import { handleRouteError } from "@/lib/errors/handleRouteError";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
 ) {
   try {
-    const { boardId } = await params;
-
+    const { workspaceId, boardId } = await params;
     const { searchParams } = new URL(request.url);
 
-    const page = Number(searchParams.get("page") ?? "1");
-    const limit = Number(searchParams.get("limit") ?? "5");
+    const all = searchParams.get("all") === "true";
+
+    if (all) {
+      return await getAllActiveBoardMembers(workspaceId, boardId);
+    }
+
+    const page = Number(searchParams.get("page") ?? 1);
+    const limit = Number(searchParams.get("limit") ?? 5);
 
     return await getBoardMembers(boardId, page, limit);
   } catch (error) {
-    console.error("GET_BOARD_MEMBER_DETAIL_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "GET_BOARD_MEMBER_DETAIL_API_ERROR:");
   }
 }
+
+// export async function GET(
+//   request: Request,
+//   { params }: { params: Promise<{ workspaceId: string; boardId: string }> },
+// ) {
+//   try {
+//     const { boardId } = await params;
+
+//     const { searchParams } = new URL(request.url);
+
+//     const page = Number(searchParams.get("page") ?? "1");
+//     const limit = Number(searchParams.get("limit") ?? "5");
+
+//     return await getBoardMembers(boardId, page, limit);
+//   } catch (error) {
+//     console.error("GET_BOARD_MEMBER_DETAIL_API_ERROR:", error);
+
+//     if (error instanceof AppError) {
+//       return NextResponse.json(
+//         {
+//           message: error.message,
+//         },
+//         { status: error.statusCode },
+//       );
+//     }
+
+//     return NextResponse.json(
+//       {
+//         message: "Internal server error. Please try again.",
+//       },
+//       { status: 500 },
+//     );
+//   }
+// }
 /* invite member */
 type BoardMemberRole = "owner" | "admin" | "manager" | "member";
 
@@ -57,23 +81,7 @@ export async function POST(
 
     return await inviteMemberInBoard(workspaceId, boardId, userId, email, role);
   } catch (error) {
-    console.error("INVITE_BOARD_MEMBER_DETAIL_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "INVITE_BOARD_MEMBER_DETAIL_API_ERROR:");
   }
 }
 /* remove member in board */
@@ -91,22 +99,6 @@ export async function DELETE(
 
     return await deleteMemberFormBoard(userId, boardId);
   } catch (error) {
-    console.error("DELETE_BOARD_MEMBER_DETAIL_API_ERROR:", error);
-
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-        },
-        { status: error.statusCode },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        message: "Internal server error. Please try again.",
-      },
-      { status: 500 },
-    );
+    return handleRouteError(error, "DELETE_BOARD_MEMBER_DETAIL_API_ERROR:");
   }
 }

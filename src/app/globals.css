@@ -1,5 +1,48 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the app's theme toggle (data-theme on <html>),
+   not the operating-system preference. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Tailwind v4 no longer gives buttons a pointer cursor. Restore it for
+   everything clickable, and show not-allowed when disabled. In the base
+   layer, so a cursor-* class on an element (e.g. cursor-text on
+   click-to-edit text) still wins. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary,
+  input:is(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="color"],
+      [type="range"],
+      [type="submit"],
+      [type="button"],
+      [type="reset"]
+    ):not(:disabled),
+  label:has(
+      input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled)
+    ) {
+    cursor: pointer;
+  }
+
+  :is(button, select, input):disabled,
+  [aria-disabled="true"]:is(
+      [role="button"],
+      [role="option"],
+      [role="menuitem"],
+      [role="tab"]
+    ) {
+    cursor: not-allowed;
+  }
+}
+
 /* =========================================================
    FLOWBOARD COLOR SYSTEM
    ========================================================= */
@@ -38,6 +81,11 @@
   --color-priority-medium: #e2b203;
   --color-priority-low: #22a06b;
 
+  /* Destructive actions (button background + its text) */
+  --color-danger: #c9372c;
+  --color-danger-hover: #ae2e24;
+  --color-on-danger: #ffffff;
+
   /* Tags */
   --color-tag-blue-bg: #e9f2ff;
   --color-tag-blue-text: #0055cc;
@@ -50,6 +98,9 @@
 
   --color-tag-red-bg: #ffeceb;
   --color-tag-red-text: #ae2a19;
+
+  --color-tag-yellow-bg: #fff7d6;
+  --color-tag-yellow-text: #7f5f01;
 
   --color-tag-neutral-bg: #f1f2f4;
   --color-tag-neutral-text: #44546f;
@@ -72,10 +123,12 @@
      NON-COLOR DESIGN TOKENS
      ======================================================= */
 
-  --font-display: "Fraunces", serif;
+  /* --font-fraunces / --font-inter are loaded by next/font in app/layout.tsx */
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
 
   --font-body:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -87,6 +140,34 @@
 
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
+
+  /* =======================================================
+     ALIASES
+
+     Names used by components that were never defined. They
+     point at the semantic tokens above, so they follow the
+     light and dark themes automatically.
+     ======================================================= */
+
+  --color-input-bg: var(--color-card-bg);
+  --color-primary-soft: var(--color-primary-active-bg);
+  --color-card: var(--color-card-bg);
+
+  /* Legacy palette from the original Flowboard design */
+  --ink: var(--color-text-primary);
+  --ink-soft: var(--color-text-secondary);
+  --paper: var(--color-app-bg);
+  --paper-raised: var(--color-card-bg);
+  --mist: var(--color-border);
+  --indigo: var(--color-primary);
+  --indigo-deep: var(--color-primary-hover);
+  --sky: var(--color-status-progress);
+  --sage: var(--color-status-done);
+  --amber: var(--color-priority-medium);
+  --coral: var(--color-priority-high);
+  --board-ink: var(--color-product-window);
+  --board-panel: var(--color-product-window-panel);
+  --board-line: var(--color-product-window-line);
 }
 
 /* =========================================================
@@ -123,6 +204,11 @@
   --color-priority-medium: #f5cd47;
   --color-priority-low: #4bce97;
 
+  /* Destructive actions (button background + its text) */
+  --color-danger: #f87168;
+  --color-danger-hover: #fd9891;
+  --color-on-danger: #1d2125;
+
   /* Tags */
   --color-tag-blue-bg: #1c2b41;
   --color-tag-blue-text: #85b8ff;
@@ -135,6 +221,9 @@
 
   --color-tag-red-bg: #4a1d1f;
   --color-tag-red-text: #fd9891;
+
+  --color-tag-yellow-bg: #3d3008;
+  --color-tag-yellow-text: #f5cd47;
 
   --color-tag-neutral-bg: #2c333a;
   --color-tag-neutral-text: #b6c2cf;
@@ -155,8 +244,8 @@
 
 body {
   background: var(--color-app-bg);
-  color: var(--foreground);
-  font-family: "Fraunces", sans-serif;
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
 }
 @layer components {
   .nav-link {
@@ -1124,7 +1213,7 @@ body {
 
   .fb-input:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(53, 66, 204, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-active-bg);
   }
 
   /* =========================================================
@@ -1301,6 +1390,8 @@ body {
   .auth-form-panel {
     @apply flex min-h-screen items-center justify-center;
     background: var(--color-card-bg);
+    /* Keeps the form off the edges when the 40% column is narrow. */
+    padding: 32px clamp(20px, 4vw, 56px);
   }
 
   .auth-form-container {
@@ -1547,4 +1638,367 @@ body {
     background-color 200ms ease,
     border-color 200ms ease,
     color 200ms ease;
+}
+
+.card-description-editor .tiptap {
+  min-height: 180px;
+  padding: 12px;
+  outline: none;
+  color: var(--color-text-primary);
+}
+
+.card-description-editor .tiptap p {
+  margin: 0.35rem 0;
+}
+
+.card-description-editor .tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.75rem 0;
+}
+
+.card-description-editor .tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.65rem 0;
+}
+
+.card-description-editor .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.card-description-editor .tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.card-description-editor .tiptap li {
+  margin: 0.2rem 0;
+}
+
+.card-description-editor .tiptap blockquote {
+  border-left: 3px solid var(--color-border);
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.card-description-editor .tiptap code {
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--color-column-bg);
+  font-family: monospace;
+}
+
+.card-description-editor .tiptap hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.card-description-editor .tiptap a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/*
+ * ============================================================
+ * CHECKLIST
+ * ============================================================
+ */
+
+.card-description-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  margin-top: 2px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Checklist checkbox size: change this one value to resize it everywhere. */
+.card-description-viewer,
+.card-description-editor {
+  --task-checkbox-size: 0.75rem;
+}
+
+/* Read-only checklist: the checkbox sits in a hanging indent, centred on the
+   first line, so wrapped text lines up under the text, not the checkbox. */
+.card-description-viewer .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.card-description-viewer .contains-task-list .contains-task-list {
+  margin: 0.25rem 0 0;
+}
+
+.card-description-viewer .task-list-item {
+  position: relative;
+  padding-left: calc(var(--task-checkbox-size) + 0.5rem);
+}
+
+/* "Loose" lists (blank lines between items) wrap each item in a <p>;
+   keep them as compact as tight lists. */
+.card-description-viewer .task-list-item > p {
+  margin-bottom: 0;
+}
+
+/* Keep line breaks but drop the space after "[ ]", which would otherwise
+   indent the first line more than the wrapped lines. */
+.card-description-viewer .task-list-item > p {
+  white-space: pre-line;
+}
+
+.card-description-viewer .task-list-item > input.task-checkbox,
+.card-description-viewer .task-list-item > p > input.task-checkbox {
+  position: absolute;
+  left: 0;
+  top: calc((1lh - var(--task-checkbox-size)) / 2);
+  margin: 0;
+}
+
+/*
+ * ============================================================
+ * TABLE
+ * ============================================================
+ */
+
+.card-description-editor .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.card-description-editor .tiptap th,
+.card-description-editor .tiptap td {
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  min-width: 80px;
+  vertical-align: top;
+}
+
+.card-description-editor .tiptap th {
+  font-weight: 600;
+  background: var(--color-column-bg);
+}
+
+/* ============================================================
+   CARD DESCRIPTION EDITOR
+   ============================================================ */
+.card-scroll {
+  max-height: 660px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.card-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.card-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+.card-description-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Editor content */
+
+.card-description-editor .tiptap {
+  min-height: 140px;
+  padding: 12px;
+  outline: none;
+}
+
+/* Scrollbar */
+
+.card-description-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-description-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-description-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.card-description-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Firefox */
+
+.card-description-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Typography */
+
+.card-description-editor .tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.card-description-editor .tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.875rem 0 0.5rem;
+}
+
+.card-description-editor .tiptap p {
+  margin: 0.4rem 0;
+}
+
+.card-description-editor .tiptap ul,
+.card-description-editor .tiptap ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.card-description-editor .tiptap blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 12px;
+  margin: 12px 0;
+  color: var(--color-text-secondary);
+}
+
+.card-description-editor .tiptap code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background-color: var(--color-column-bg);
+  font-size: 0.875em;
+}
+
+.card-description-editor .tiptap hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.card-description-editor .tiptap a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* Checklist */
+
+.card-description-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  margin-top: 2px;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Checklist alignment: centre the checkbox on the first text line. */
+.card-description-editor .tiptap ul[data-type="taskList"] li {
+  padding-left: 0;
+  margin: 0.25rem 0;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > label {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 1lh;
+  margin-top: 0;
+  user-select: none;
+}
+
+.card-description-editor .tiptap ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}
+
+/* Checkbox look, shared by the editor and the read-only view. */
+.card-description-editor .tiptap ul[data-type="taskList"] input[type="checkbox"],
+.card-description-viewer input.task-checkbox {
+  width: var(--task-checkbox-size);
+  height: var(--task-checkbox-size);
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.card-description-viewer input.task-checkbox:disabled {
+  cursor: default;
+}
+
+/* Render native checkboxes dark in the dark theme. */
+[data-theme="dark"]
+  .card-description-editor
+  .tiptap
+  ul[data-type="taskList"]
+  input[type="checkbox"],
+[data-theme="dark"] .card-description-viewer input.task-checkbox {
+  color-scheme: dark;
+}
+
+/* Tables */
+
+.card-description-editor .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.card-description-editor .tiptap th,
+.card-description-editor .tiptap td {
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  text-align: left;
+}
+
+.card-description-editor .tiptap th {
+  background-color: var(--color-column-bg);
+  font-weight: 600;
+}
+
+/* Placeholder */
+
+.card-description-editor .tiptap p.is-editor-empty:first-child::before {
+  color: var(--color-text-secondary);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

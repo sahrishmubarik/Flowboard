@@ -273,6 +273,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 
 import { registerSchema, RegisterInput } from "@/lib/validations/auth";
+import { getSafeRedirect } from "@/lib/safeRedirect";
 
 import { useToast } from "@/components/ui/ToastProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -289,11 +290,12 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import AuthBrandPanel from "@/components/auth/AuthBrandPanel";
+import AuthMobileLogo from "@/components/auth/AuthMobileLogo";
 
 export default function RegisterCard() {
   const searchParams = useSearchParams();
 
-  const redirect = searchParams.get("redirect");
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
 
   const { showToast } = useToast();
 
@@ -363,11 +365,13 @@ export default function RegisterCard() {
         "success",
       );
 
-      if (redirect) {
-        router.replace(redirect);
-      } else {
-        router.replace("/auth/login");
-      }
+      // The new account is not verified or signed in yet, so send the user
+      // to login and keep the redirect for after they verify and sign in.
+      router.replace(
+        redirect
+          ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+          : "/auth/login",
+      );
     },
 
     onError: (error) => {
@@ -412,6 +416,8 @@ export default function RegisterCard() {
 
         <section className="auth-form-panel">
           <div className="auth-form-container">
+            <AuthMobileLogo />
+
             {/* -------------------------------------------------
                 Heading
             -------------------------------------------------- */}

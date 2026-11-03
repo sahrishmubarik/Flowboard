@@ -23,6 +23,7 @@ type ChangePasswordCardProps = {
 export default function ChangePasswordCard({
   onClose,
 }: ChangePasswordCardProps) {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -35,6 +36,7 @@ export default function ChangePasswordCard({
     resolver: zodResolver(changePasswordSchema),
     mode: "onBlur",
     defaultValues: {
+      currentPassword: "",
       password: "",
       confirmPassword: "",
     },
@@ -49,6 +51,7 @@ export default function ChangePasswordCard({
         },
         body: JSON.stringify({
           action: "change-password",
+          currentPassword: formData.currentPassword,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
         }),
@@ -97,7 +100,7 @@ export default function ChangePasswordCard({
             </h2>
 
             <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-              Choose a new password to keep your Flowboard account secure.
+              Enter your current password, then choose a new one.
             </p>
           </div>
         </div>
@@ -109,6 +112,55 @@ export default function ChangePasswordCard({
         noValidate
         className="space-y-6 p-6"
       >
+        {/* Current Password */}
+        <div>
+          <label
+            htmlFor="change-current-password"
+            className="mb-2 block text-sm font-medium text-[var(--ink)]"
+          >
+            Current password
+          </label>
+
+          <div className="relative">
+            <input
+              id="change-current-password"
+              type={showCurrentPassword ? "text" : "password"}
+              {...register("currentPassword")}
+              placeholder="Enter your current password"
+              autoComplete="current-password"
+              disabled={mutation.isPending}
+              className={`w-full rounded-xl border bg-[var(--paper)] px-4 py-3 pr-12 text-sm text-[var(--ink)] outline-none transition-all placeholder:text-[var(--ink-soft)]/70 focus:bg-white focus:ring-4 ${
+                errors.currentPassword
+                  ? "border-[var(--coral)] focus:border-[var(--coral)] focus:ring-[var(--coral)]/[0.08]"
+                  : "border-[var(--mist)] focus:border-[var(--indigo)] focus:ring-[var(--indigo)]/[0.08]"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword((previous) => !previous)}
+              disabled={mutation.isPending}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] disabled:cursor-not-allowed"
+              aria-label={
+                showCurrentPassword
+                  ? "Hide current password"
+                  : "Show current password"
+              }
+            >
+              <FontAwesomeIcon
+                icon={showCurrentPassword ? faEyeSlash : faEye}
+                className="h-4 w-4"
+              />
+            </button>
+          </div>
+
+          {errors.currentPassword && (
+            <p className="mt-1.5 text-xs font-medium text-[var(--coral)]">
+              {errors.currentPassword.message}
+            </p>
+          )}
+        </div>
+
         {/* New Password */}
         <div>
           <label

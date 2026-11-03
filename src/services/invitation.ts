@@ -11,9 +11,55 @@ import { sendInvitationEmail } from "@/lib/email/verificationEmail";
 import { organizationMemberRepo } from "@/repositories/organizationMemberRepo";
 import { workspaceRepo } from "@/repositories/organizationRepo";
 import { invitationRepo } from "@/repositories/invitationRepo";
+import { userRepo } from "@/repositories/userRepo";
 import { generateToken } from "@/lib/token/generateToken";
 import { hashToken } from "@/lib/token/hashToken";
 import { db } from "@/db";
+import { AuditLogService } from "@/services/auditLogService";
+import {
+  assertCanAcceptInvitation,
+  assertCanInviteMember,
+} from "@/services/planLimits";
+// The invitation was saved but its email never left. Revoke it so the owner
+// can invite again (no "already pending" error) and it stops using a member
+// slot of the plan. Recorded in the audit log with the reason.
+async function cancelUnsentInvitation(
+  workspaceId: string,
+  invitation: { email: string; role: string },
+  userId: string,
+) {
+  try {
+    await db.transaction(async (tx) => {
+      const revoked = await invitationRepo.revokeInvitation(
+        workspaceId,
+        invitation.email,
+        tx,
+      );
+
+      if (!revoked) return;
+
+      await AuditLogService.record(
+        {
+          performedBy: userId,
+          workspaceId,
+          entityType: "workspace_invitation",
+          entityId: revoked.id,
+          action: "WORKSPACE_INVITATION_REVOKED",
+          details: {
+            email: revoked.email,
+            role: revoked.role,
+            previousStatus: "PENDING",
+            newStatus: revoked.status,
+            reason: "EMAIL_NOT_SENT",
+          },
+        },
+        tx,
+      );
+    });
+  } catch (cleanupError) {
+    console.error("INVITATION_CLEANUP_ERROR:", cleanupError);
+  }
+}
 
 export async function inviteMember(
   workspaceId: string,
@@ -23,7 +69,6 @@ export async function inviteMember(
   },
 ) {
   const user = await getCurrentUser();
-  console.log(body.role);
   if (!user) {
     throw new AppError("Unauthorized user.", 401);
   }
@@ -55,16 +100,51 @@ export async function inviteMember(
   // 12 hours expiration
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
-  const invitation = await invitationRepo.create({
-    workspaceId,
-    email,
-    role,
-    token: tokenHash,
-    expiresAt,
-    createdBy: user_id,
+  // const invitation = await invitationRepo.create({
+  //   workspaceId,
+  //   email,
+  //   role,
+  //   token: tokenHash,
+  //   expiresAt,
+  //   createdBy: user_id,
+  // });
+  const invitation = await db.transaction(async (tx) => {
+    await assertCanInviteMember(tx, workspaceId);
+
+    const createdInvitation = await invitationRepo.create(
+      {
+        workspaceId,
+        email,
+        role,
+        token: tokenHash,
+        expiresAt,
+        createdBy: user_id,
+      },
+      tx,
+    );
+
+    await AuditLogService.record(
+      {
+        performedBy: user_id,
+        workspaceId,
+        entityType: "workspace_invitation",
+        entityId: createdInvitation.id,
+        action: "WORKSPACE_INVITATION_CREATED",
+        details: {
+          email: createdInvitation.email,
+          role: createdInvitation.role,
+          status: createdInvitation.status,
+          expiresAt: createdInvitation.expiresAt.toISOString(),
+        },
+      },
+      tx,
+    );
+
+    return createdInvitation;
   });
+
   const assignRole = invitation.role;
-  console.log(invitation);
+
   // 9. Verification URL
 
   const invitationUrl =
@@ -72,12 +152,22 @@ export async function inviteMember(
     `/dashboard/workspace/${workspaceId}/invitation/accept` +
     `?token=${token}`;
 
-  await sendInvitationEmail({
-    email,
-    assignRole,
-    organizationName,
-    invitationUrl,
-  });
+  try {
+    await sendInvitationEmail({
+      email,
+      assignRole,
+      organizationName,
+      invitationUrl,
+    });
+  } catch (error) {
+    console.error("INVITATION_EMAIL_ERROR:", error);
+    await cancelUnsentInvitation(workspaceId, invitation, user_id);
+
+    throw new AppError(
+      "The invitation email could not be sent, so the invitation was cancelled. Please try again.",
+      502,
+    );
+  }
 
   return Response.json(
     {
@@ -91,8 +181,6 @@ export async function inviteMember(
 }
 
 export async function acceptInvitation(workspaceId: string, body: unknown) {
-  // TEMPORARY TEST USER
-  // 1. Get currently logged-in user
   const user = await getCurrentUser();
 
   if (!user) {
@@ -100,11 +188,7 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
   }
   const user_id = user.userId;
 
-  // 2. Validate request body
-
   const validation = validateData(acceptInvitationValidation, body);
-
-  console.log("5. Validation:", validation);
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
@@ -112,11 +196,7 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
 
   const { token } = validation.data;
 
-  // 3. Hash token
-
   const tokenHash = hashToken(token);
-
-  // 4. Find invitation
 
   const invitation = await invitationRepo.findByToken(tokenHash);
 
@@ -124,15 +204,9 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
     throw new AppError("Invalid or expired invitation.", 404);
   }
 
-  // 5. Workspace check
-
   if (invitation.workspaceId !== workspaceId) {
     throw new AppError("Invalid invitation for this workspace.", 400);
   }
-
-  // 6. Status
-
-  // 6. Status
 
   if (invitation.status === "REVOKED") {
     throw new AppError(
@@ -148,14 +222,31 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
   if (invitation.status !== "PENDING") {
     throw new AppError("This invitation is no longer available.", 400);
   }
-  // 7. Expiry
-
   if (new Date() > invitation.expiresAt) {
     throw new AppError("This invitation has expired.", 400);
   }
 
-  // 8. Existing member
-  console.log("16. Checking existing membership...");
+  const account = await userRepo.getInvitationAccount(user_id);
+  if (!account) {
+    throw new AppError("Authenticated user was not found.", 401);
+  }
+
+  if (!account.emailVerified) {
+    throw new AppError(
+      "Please verify your email before accepting invitations.",
+      403,
+    );
+  }
+
+  if (
+    account.email.trim().toLowerCase() !==
+    invitation.email.trim().toLowerCase()
+  ) {
+    throw new AppError(
+      "Sign in with the email address that received this invitation.",
+      403,
+    );
+  }
 
   const existingMember = await organizationMemberRepo.findByUserAndWorkspace(
     user_id,
@@ -166,10 +257,8 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
     throw new AppError("You are already a member of this workspace.", 409);
   }
 
-  // 9. Transaction
-
-  await db.transaction(async (tx) => {
-    console.log("19. Transaction started");
+  return db.transaction(async (tx) => {
+    await assertCanAcceptInvitation(tx, workspaceId);
 
     await organizationMemberRepo.create(tx, {
       userId: user_id,
@@ -178,14 +267,93 @@ export async function acceptInvitation(workspaceId: string, body: unknown) {
       assignedBy: invitation.createdBy,
     });
 
-    await invitationRepo.updateStatus(tx, invitation.id);
+    const acceptedInvitation = await invitationRepo.updateStatus(
+      tx,
+      invitation.id,
+    );
+
+    if (!acceptedInvitation) {
+      throw new AppError(
+        "This invitation is no longer pending or has expired.",
+        409,
+      );
+    }
+
+    await AuditLogService.record(
+      {
+        performedBy: user_id,
+        workspaceId,
+        entityType: "workspace_invitation",
+        entityId: acceptedInvitation.id,
+        action: "WORKSPACE_INVITATION_ACCEPTED",
+        details: {
+          email: acceptedInvitation.email,
+          role: acceptedInvitation.role,
+          memberUserId: user_id,
+          previousStatus: "PENDING",
+          newStatus: acceptedInvitation.status,
+        },
+      },
+      tx,
+    );
+
+    return {
+      message: "Invitation accepted successfully.",
+      workspaceId,
+    };
   });
+}
+
+// Read-only details for the accept page: who the invitation is for and who is
+// signed in, so the page can explain what will happen before the user clicks.
+export async function getInvitationPreview(workspaceId: string, body: unknown) {
+  const validation = validateData(acceptInvitationValidation, body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error, 400);
+  }
+
+  const invitation = await invitationRepo.findByToken(
+    hashToken(validation.data.token),
+  );
+
+  if (!invitation || invitation.workspaceId !== workspaceId) {
+    throw new AppError("Invalid or expired invitation.", 404);
+  }
+
+  const workspaceData = await workspaceRepo.findById(workspaceId);
+
+  const user = await getCurrentUser();
+  const account = user
+    ? await userRepo.getInvitationAccount(user.userId)
+    : null;
+
+  const isExpired = new Date() > invitation.expiresAt;
+  const emailMatches =
+    !!account &&
+    account.email.trim().toLowerCase() ===
+      invitation.email.trim().toLowerCase();
 
   return {
-    message: "Invitation accepted successfully.",
-    workspaceId,
+    invitation: {
+      email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      isExpired,
+      workspaceName: workspaceData?.workspaceName ?? null,
+    },
+    signedInAs: account
+      ? { email: account.email, emailVerified: !!account.emailVerified }
+      : null,
+    emailMatches,
+    canAccept:
+      invitation.status === "PENDING" &&
+      !isExpired &&
+      emailMatches &&
+      !!account?.emailVerified,
   };
 }
+
 export async function revokeInvitation(
   workspaceId: string,
   body: {
@@ -217,10 +385,40 @@ export async function revokeInvitation(
 
   const { email } = validation.data;
 
-  const cancelInvitation = await invitationRepo.revokeInvitation(
-    workspaceId,
-    email,
-  );
+  // const cancelInvitation = await invitationRepo.revokeInvitation(
+  //   workspaceId,
+  //   email,
+  // );
+  const cancelInvitation = await db.transaction(async (tx) => {
+    const revokedInvitation = await invitationRepo.revokeInvitation(
+      workspaceId,
+      email,
+      tx,
+    );
+
+    if (!revokedInvitation) {
+      throw new AppError("Pending invitation not found.", 404);
+    }
+
+    await AuditLogService.record(
+      {
+        performedBy: user_id,
+        workspaceId,
+        entityType: "workspace_invitation",
+        entityId: revokedInvitation.id,
+        action: "WORKSPACE_INVITATION_REVOKED",
+        details: {
+          email: revokedInvitation.email,
+          role: revokedInvitation.role,
+          previousStatus: "PENDING",
+          newStatus: revokedInvitation.status,
+        },
+      },
+      tx,
+    );
+
+    return revokedInvitation;
+  });
 
   if (!cancelInvitation) {
     throw new AppError("Invitation not found.", 404);
@@ -237,38 +435,76 @@ export async function revokeInvitation(
   );
 }
 
+// export async function getInvitationStatus(
+//   workspaceId: string,
+//   page: number,
+//   limit: number,
+// ) {
+//   const user = await getCurrentUser();
+
+//   if (!user) {
+//     throw new AppError("Unauthorized user.", 401);
+//   }
+
+//   const user_id = user.userId;
+
+//   const workspaceData = await workspaceRepo.findById(workspaceId);
+
+//   if (!workspaceData) {
+//     throw new AppError("Workspace not found.", 404);
+//   }
+
+//   await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
+
+//   const result = await invitationRepo.getInvitationByWorkspaceId(
+//     workspaceId,
+//     page,
+//     limit,
+//   );
+//   console.log("INVITATION RESULT:", result);
+//   return Response.json(
+//     {
+//       message: "Invitation status fetched successfully",
+//       invitations: result.invitations,
+
+//       pagination: {
+//         page,
+//         limit,
+//         total: result.total,
+//         totalPages: Math.ceil(result.total / limit),
+//       },
+//     },
+//     {
+//       status: 200,
+//     },
+//   );
+// }
+
 export async function getInvitationStatus(
   workspaceId: string,
   page: number,
   limit: number,
+  status?: "PENDING" | "ACCEPTED" | "REVOKED",
 ) {
   const user = await getCurrentUser();
-
-  if (!user) {
-    throw new AppError("Unauthorized user.", 401);
-  }
-
-  const user_id = user.userId;
+  if (!user) throw new AppError("Unauthorized user.", 401);
 
   const workspaceData = await workspaceRepo.findById(workspaceId);
+  if (!workspaceData) throw new AppError("Workspace not found.", 404);
 
-  if (!workspaceData) {
-    throw new AppError("Workspace not found.", 404);
-  }
-
-  await requireWorkspaceRole(user_id, workspaceId, ["owner", "admin"]);
+  await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
 
   const result = await invitationRepo.getInvitationByWorkspaceId(
     workspaceId,
     page,
     limit,
+    status,
   );
-  console.log("INVITATION RESULT:", result);
+
   return Response.json(
     {
       message: "Invitation status fetched successfully",
       invitations: result.invitations,
-
       pagination: {
         page,
         limit,
@@ -276,8 +512,6 @@ export async function getInvitationStatus(
         totalPages: Math.ceil(result.total / limit),
       },
     },
-    {
-      status: 200,
-    },
+    { status: 200 },
   );
 }

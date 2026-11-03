@@ -3,31 +3,57 @@ import { getCurrentUser } from "@/lib/middleware/auth";
 import { requireWorkspaceRole } from "@/lib/middleware/workspacePermission";
 import { validateData, boardValidation } from "@/lib/validations/board";
 import { BoardRepo } from "@/repositories/boardRepo";
+import { BoardListRepo } from "@/repositories/boardListRepo";
+import { CardRepo } from "@/repositories/cardRepo";
+import { SprintRepo } from "@/repositories/sprintRepo";
 import { requireBoardRole } from "@/lib/middleware/boardPermission";
 import { db } from "@/db";
+import { AuditLogService } from "@/services/auditLogService";
+import { assertCanCreateBoard } from "@/services/planLimits";
+/* create board */
 
 /* create board */
 export async function createBoard(workspaceId: string, boardName: string) {
   const user = await getCurrentUser();
+
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
+
   const validation = validateData(boardValidation, { boardName });
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
   }
 
-  /* check user role if its owner or admin of that workspace then create board */
   await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
 
   const newBoard = await db.transaction(async (tx) => {
-    return BoardRepo.create(
+    await assertCanCreateBoard(tx, workspaceId);
+
+    const createdBoard = await BoardRepo.create(
       tx as unknown as typeof db,
       workspaceId,
       validation.data.boardName,
       user.userId,
     );
+
+    await AuditLogService.record(
+      {
+        performedBy: user.userId,
+        workspaceId,
+        boardId: createdBoard.id,
+        entityType: "board",
+        entityId: createdBoard.id,
+        action: "BOARD_CREATED",
+        details: {
+          boardName: createdBoard.boardName,
+        },
+      },
+      tx,
+    );
+
+    return createdBoard;
   });
 
   return Response.json(
@@ -35,11 +61,43 @@ export async function createBoard(workspaceId: string, boardName: string) {
       message: "Board created successfully",
       Board: newBoard,
     },
-    {
-      status: 201,
-    },
+    { status: 201 },
   );
 }
+
+// export async function createBoard(workspaceId: string, boardName: string) {
+//   const user = await getCurrentUser();
+//   if (!user) {
+//     throw new AppError("Unauthorized user", 401);
+//   }
+//   const validation = validateData(boardValidation, { boardName });
+
+//   if (!validation.success) {
+//     throw new AppError(validation.error, 400);
+//   }
+
+//   /* check user role if its owner or admin of that workspace then create board */
+//   await requireWorkspaceRole(user.userId, workspaceId, ["owner", "admin"]);
+
+//   const newBoard = await db.transaction(async (tx) => {
+//     return BoardRepo.create(
+//       tx as unknown as typeof db,
+//       workspaceId,
+//       validation.data.boardName,
+//       user.userId,
+//     );
+//   });
+
+//   return Response.json(
+//     {
+//       message: "Board created successfully",
+//       Board: newBoard,
+//     },
+//     {
+//       status: 201,
+//     },
+//   );
+// }
 
 /* get  all board according to its organization Id  */
 export async function getBoardByWorkspaceId(workspaceId: string) {
@@ -47,11 +105,8 @@ export async function getBoardByWorkspaceId(workspaceId: string) {
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  console.log(workspaceId);
   const user_id = user.userId;
   const boardDetails = await BoardRepo.getBoards(workspaceId, user_id);
-  console.log("See here board response");
-  console.log(boardDetails);
   return Response.json(
     {
       message: "Fetch boards successfully",
@@ -89,49 +144,220 @@ export async function getBoardById(boardId: string) {
   );
 }
 
+/* GET TASK + ACTIVE SPRINT TIME STATS FOR A BOARD */
+
+export async function getBoardStats(boardId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("Unauthorized user", 401);
+  }
+
+  await requireBoardRole(user.userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
+
+  const [lists, sprints] = await Promise.all([
+    BoardListRepo.getListByBoardId(boardId),
+    SprintRepo.getByBoardId(boardId),
+  ]);
+
+  // Same rule as the dashboard sprint table: the last list (by position)
+  // holds resolved cards. Lists are returned ordered by position.
+  const completedListId = lists.at(-1)?.id ?? null;
+  const activeSprint =
+    sprints.find((sprint) => sprint.status === "ACTIVE") ?? null;
+
+  const [taskCounts, sprintTime] = await Promise.all([
+    CardRepo.getBoardTaskCounts(boardId, completedListId),
+    activeSprint
+      ? CardRepo.getSprintTimeTotals(boardId, activeSprint.id)
+      : Promise.resolve(null),
+  ]);
+
+  return Response.json(
+    {
+      message: "Fetched board stats successfully",
+      stats: {
+        totalCards: taskCounts.total,
+        completedCards: taskCounts.completed,
+        activeSprint: activeSprint
+          ? {
+              id: activeSprint.id,
+              name: activeSprint.name,
+              startDate: activeSprint.startDate,
+              endDate: activeSprint.endDate,
+              estimateHours: sprintTime?.estimateHours ?? 0,
+              spentHours: sprintTime?.spentHours ?? 0,
+            }
+          : null,
+      },
+    },
+    { status: 200 },
+  );
+}
+
+// export async function updateBoardName(boardId: string, boardName: string) {
+//   const user = await getCurrentUser();
+
+//   if (!user) {
+//     throw new AppError("Unauthorized user", 401);
+//   }
+//   const user_id = user.userId;
+//   const validation = validateData(boardValidation, { boardName });
+
+//   if (!validation.success) {
+//     throw new AppError(validation.error, 400);
+//   }
+
+//   const { boardName: validateBoardName } = validation.data;
+
+//   await requireBoardRole(user_id, boardId, ["owner", "admin"]);
+//   const result = BoardRepo.updateBoardName(boardId, validateBoardName);
+//   return Response.json(
+//     {
+//       message: "Board Name update successfully",
+//       workspace: result,
+//     },
+//     {
+//       status: 201,
+//     },
+//   );
+// }
+
 export async function updateBoardName(boardId: string, boardName: string) {
   const user = await getCurrentUser();
 
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  const user_id = user.userId;
+
   const validation = validateData(boardValidation, { boardName });
 
   if (!validation.success) {
     throw new AppError(validation.error, 400);
   }
 
-  const { boardName: validateBoardName } = validation.data;
+  const validatedBoardName = validation.data.boardName;
 
-  await requireBoardRole(user_id, boardId, ["owner", "admin"]);
-  const result = BoardRepo.updateBoardName(boardId, validateBoardName);
+  await requireBoardRole(user.userId, boardId, ["owner", "admin"]);
+
+  const updatedBoard = await db.transaction(async (tx) => {
+    const previousBoard = await BoardRepo.findById(boardId, tx);
+
+    if (!previousBoard) {
+      throw new AppError("Board not found", 404);
+    }
+
+    const result = await BoardRepo.updateBoardName(
+      boardId,
+      validatedBoardName,
+      tx,
+    );
+
+    if (!result) {
+      throw new AppError("Board could not be updated", 404);
+    }
+
+    if (previousBoard.boardName !== result.boardName) {
+      await AuditLogService.record(
+        {
+          performedBy: user.userId,
+          workspaceId: previousBoard.organizationId,
+          boardId,
+          entityType: "board",
+          entityId: boardId,
+          action: "BOARD_UPDATED",
+          details: {
+            field: "boardName",
+            previousValue: previousBoard.boardName,
+            newValue: result.boardName,
+          },
+        },
+        tx,
+      );
+    }
+
+    return result;
+  });
+
   return Response.json(
     {
       message: "Board Name update successfully",
-      workspace: result,
+      workspace: updatedBoard,
     },
-    {
-      status: 201,
-    },
+    { status: 201 },
   );
 }
 
+// export async function deleteBoard(boardId: string) {
+//   const user = await getCurrentUser();
+//   if (!user) {
+//     throw new AppError("Unauthorized user", 401);
+//   }
+//   const user_id = user.userId;
+//   await requireBoardRole(user_id, boardId, ["owner"]);
+//   const result = BoardRepo.deleteBoard(boardId);
+//   return Response.json(
+//     {
+//       message: "Delete board successfully!",
+//       board: result,
+//     },
+//     {
+//       status: 201,
+//     },
+//   );
+// }
+
 export async function deleteBoard(boardId: string) {
   const user = await getCurrentUser();
+
   if (!user) {
     throw new AppError("Unauthorized user", 401);
   }
-  const user_id = user.userId;
-  await requireBoardRole(user_id, boardId, ["owner"]);
-  const result = BoardRepo.deleteBoard(boardId);
+
+  await requireBoardRole(user.userId, boardId, ["owner"]);
+
+  const deletedBoard = await db.transaction(async (tx) => {
+    const existingBoard = await BoardRepo.findById(boardId, tx);
+
+    if (!existingBoard) {
+      throw new AppError("Board not found", 404);
+    }
+
+    await AuditLogService.record(
+      {
+        performedBy: user.userId,
+        workspaceId: existingBoard.organizationId,
+        boardId,
+        entityType: "board",
+        entityId: boardId,
+        action: "BOARD_DELETED",
+        details: {
+          boardName: existingBoard.boardName,
+          createdBy: existingBoard.createdBy,
+        },
+      },
+      tx,
+    );
+
+    const result = await BoardRepo.deleteBoard(boardId, tx);
+
+    if (!result) {
+      throw new AppError("Board could not be deleted", 404);
+    }
+
+    return result;
+  });
+
   return Response.json(
     {
       message: "Delete board successfully!",
-      board: result,
+      board: deletedBoard,
     },
-    {
-      status: 201,
-    },
+    { status: 201 },
   );
 }

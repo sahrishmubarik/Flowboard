@@ -84,18 +84,18 @@ export const workspaceRepo = {
     return workspaceData;
   },
   /* get workspace by id */
-  async findById(workspaceId: string) {
-    const [workspaceData] = await db
-      .select({
-        id: workspace.id,
-        workspaceName: workspace.workspaceName,
-        createdBy: workspace.createdBy,
-        createdAt: workspace.createdAt,
-      })
-      .from(workspace)
-      .where(eq(workspace.id, workspaceId));
-    return workspaceData;
-  },
+  // async findById(workspaceId: string) {
+  //   const [workspaceData] = await db
+  //     .select({
+  //       id: workspace.id,
+  //       workspaceName: workspace.workspaceName,
+  //       createdBy: workspace.createdBy,
+  //       createdAt: workspace.createdAt,
+  //     })
+  //     .from(workspace)
+  //     .where(eq(workspace.id, workspaceId));
+  //   return workspaceData;
+  // },
 
   async create(
     transaction: DbTransaction,
@@ -115,20 +115,66 @@ export const workspaceRepo = {
 
     return row;
   },
-  async updateWorkspaceName(workspaceId: string, workspaceName: string) {
-    const [updatedWorkspace] = await db
-      .update(workspace)
-      .set({
-        workspaceName,
+  // async updateWorkspaceName(workspaceId: string, workspaceName: string) {
+  //   const [updatedWorkspace] = await db
+  //     .update(workspace)
+  //     .set({
+  //       workspaceName,
+  //     })
+  //     .where(eq(workspace.id, workspaceId))
+  //     .returning();
+
+  //   return updatedWorkspace;
+  // },
+
+  // async deleteWorkspace(workspaceId: string) {
+  //   const [deletedWorkspace] = await db
+  //     .delete(workspace)
+  //     .where(eq(workspace.id, workspaceId))
+  //     .returning({
+  //       id: workspace.id,
+  //       workspaceName: workspace.workspaceName,
+  //     });
+
+  //   return deletedWorkspace;
+  // },
+
+  async findById(workspaceId: string, transaction?: DbTransaction) {
+    const executor = transaction ?? db;
+
+    const [workspaceData] = await executor
+      .select({
+        id: workspace.id,
+        workspaceName: workspace.workspaceName,
+        createdBy: workspace.createdBy,
+        createdAt: workspace.createdAt,
       })
+      .from(workspace)
+      .where(eq(workspace.id, workspaceId));
+
+    return workspaceData;
+  },
+
+  async updateWorkspaceName(
+    workspaceId: string,
+    workspaceName: string,
+    transaction?: DbTransaction,
+  ) {
+    const executor = transaction ?? db;
+
+    const [updatedWorkspace] = await executor
+      .update(workspace)
+      .set({ workspaceName })
       .where(eq(workspace.id, workspaceId))
       .returning();
 
     return updatedWorkspace;
   },
 
-  async deleteWorkspace(workspaceId: string) {
-    const [deletedWorkspace] = await db
+  async deleteWorkspace(workspaceId: string, transaction?: DbTransaction) {
+    const executor = transaction ?? db;
+
+    const [deletedWorkspace] = await executor
       .delete(workspace)
       .where(eq(workspace.id, workspaceId))
       .returning({

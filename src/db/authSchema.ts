@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  varchar,
+  integer,
+} from "drizzle-orm/pg-core";
 
 // 1. Users Table (Core Registration and Auth Data)
 export const users = pgTable("user", {
@@ -8,6 +15,8 @@ export const users = pgTable("user", {
   password: text("password"),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Used to invalidate old JWT tokens
+  tokenVersion: integer("token_version").default(0).notNull(),
 });
 
 /* Verification email schema */

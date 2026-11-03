@@ -2,21 +2,45 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function UpdateWorkspaceCard() {
-  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const queryClient = useQueryClient();
 
   const params = useParams();
   const workspaceId = params.workspaceId as string;
+  const {
+    data: workspaceData,
+    isLoading: isWorkspaceLoading,
+    error: workspaceLoadError,
+  } = useQuery<{ workspace: { workspaceName: string } }>({
+    queryKey: ["workspace", workspaceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/workspace/${workspaceId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load workspace.");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId),
+  });
+  const currentWorkspaceName = workspaceData?.workspace.workspaceName ?? "";
+  const inputWorkspaceName = workspaceName ?? currentWorkspaceName;
 
   const handleUpdate = async () => {
     setMessage("");
     setError("");
 
-    if (!workspaceName.trim()) {
+    const updatedName = inputWorkspaceName.trim();
+
+    if (!updatedName) {
       setError("Please enter a workspace name.");
       return;
     }
@@ -30,7 +54,7 @@ export default function UpdateWorkspaceCard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          workspaceName: workspaceName.trim(),
+          workspaceName: updatedName,
         }),
       });
 
@@ -41,7 +65,11 @@ export default function UpdateWorkspaceCard() {
       }
 
       setMessage("Workspace name updated successfully.");
-      setWorkspaceName("");
+      setWorkspaceName(updatedName);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workspace", workspaceId] }),
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] }),
+      ]);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Something went wrong.",
@@ -53,7 +81,7 @@ export default function UpdateWorkspaceCard() {
 
   return (
     <section
-      className="w-full max-w-2xl overflow-hidden rounded-2xl p-0 shadow-sm"
+      className="w-full max-w-3xl overflow-hidden rounded-2xl p-0 shadow-sm"
       style={{
         border: "1px solid var(--color-border)",
         backgroundColor: "var(--color-card-bg)",
@@ -130,13 +158,18 @@ export default function UpdateWorkspaceCard() {
           <input
             id="workspaceName"
             type="text"
-            value={workspaceName}
+            value={inputWorkspaceName}
+            disabled={isWorkspaceLoading || Boolean(workspaceLoadError)}
             onChange={(event) => {
               setWorkspaceName(event.target.value);
               setError("");
               setMessage("");
             }}
-            placeholder="Enter workspace name"
+            placeholder={
+              isWorkspaceLoading
+                ? "Loading workspace name..."
+                : "Enter workspace name"
+            }
             className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-all"
             style={{
               border: "1px solid var(--color-border)",
@@ -144,6 +177,18 @@ export default function UpdateWorkspaceCard() {
               color: "var(--color-text-primary)",
             }}
           />
+
+          {workspaceLoadError && (
+            <p
+              role="alert"
+              className="mt-2 text-xs"
+              style={{ color: "var(--color-tag-red-text)" }}
+            >
+              {workspaceLoadError instanceof Error
+                ? workspaceLoadError.message
+                : "Failed to load workspace name."}
+            </p>
+          )}
 
           <p
             className="mt-2 text-xs leading-5"
@@ -231,7 +276,9 @@ export default function UpdateWorkspaceCard() {
           <button
             type="button"
             onClick={handleUpdate}
-            disabled={isLoading}
+            disabled={
+              isLoading || isWorkspaceLoading || Boolean(workspaceLoadError)
+            }
             className="ml-auto inline-flex min-w-[150px] items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               backgroundColor: "var(--color-primary)",

@@ -1,16 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import CreateCard from "@/components/card/CreateCard";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import BoardActionsMenu from "@/components/board/BoardActionsMenu";
 
-import {
-  ChevronDown,
-  MoreHorizontal,
-  Plus,
-  Share2,
-  SlidersHorizontal,
-  Star,
-} from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 
 type Workspace = {
   id: string;
@@ -25,6 +23,7 @@ type WorkspaceResponse = {
 type Board = {
   id: string;
   boardName: string;
+  role?: "owner" | "admin" | "manager" | "member";
 };
 
 type BoardResponse = {
@@ -46,11 +45,73 @@ type BoardMemberResponse = {
   };
 };
 
+type BoardList = {
+  id: string;
+  listName: string;
+  position: number;
+};
+
+type BoardListsResponse = {
+  lists?: BoardList[];
+  boardLists?: BoardList[];
+};
+
+type Sprint = {
+  id: string;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+};
+
+type SprintResponse = {
+  sprints: Sprint[];
+};
+
 export default function BoardHeader() {
   const params = useParams();
+  const [favoriteBoardId, setFavoriteBoardId] = useState<string | null>(null);
 
   const workspaceId = params.workspaceId as string;
   const boardId = params.boardId as string;
+  const listQuery = useQuery<BoardListsResponse>({
+    queryKey: ["board-header-lists", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/boardList`,
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch board lists");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId && boardId),
+  });
+  const sprintQuery = useQuery<SprintResponse>({
+    queryKey: ["sprints", workspaceId, boardId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/workspace/${workspaceId}/board/${boardId}/sprint`,
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message ?? "Failed to fetch sprints");
+      }
+
+      return data;
+    },
+    enabled: Boolean(workspaceId && boardId),
+  });
+
+  const boardLists = (listQuery.data?.boardLists ?? listQuery.data?.lists ?? [])
+    .slice()
+    .sort((first, second) => first.position - second.position);
+  const firstList = boardLists[0];
+  const activeSprintId =
+    sprintQuery.data?.sprints?.find((sprint) => sprint.status === "ACTIVE")
+      ?.id ?? null;
+  const isBoardFavorited = favoriteBoardId === boardId;
 
   // =====================================================
   // WORKSPACE
@@ -120,7 +181,6 @@ export default function BoardHeader() {
 
       const data = await response.json();
 
-      console.log("BOARD MEMBERS:", data);
 
       return data;
     },
@@ -192,6 +252,9 @@ export default function BoardHeader() {
 
   const workspaceName = workspaceData?.workspace.workspaceName;
   const boardName = boardData?.board.boardName;
+  const boardRole = boardData?.board.role;
+  // Owners/admins get the rename/delete menu in place of the plain chevron.
+  const canManageBoard = boardRole === "owner" || boardRole === "admin";
 
   const visibleMembers =
     boardMemberData?.data?.members?.filter(
@@ -208,7 +271,9 @@ export default function BoardHeader() {
   return (
     <main>
       <header
-        className="sticky top-0 z-30"
+        // z-40: above the board grid's sticky column header (z-30), so the
+        // notification dropdown is not covered; modals use z-50 and up.
+        className="sticky top-0 z-40"
         style={{
           borderColor: "var(--color-border)",
           backgroundColor: "var(--color-card-bg)",
@@ -232,14 +297,15 @@ export default function BoardHeader() {
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               {/* Organization */}
 
-              <span
+              <Link
+                href={`/dashboard/workspace/${workspaceId}`}
                 className="max-w-[120px] truncate text-xs sm:max-w-[180px] sm:text-sm lg:max-w-none lg:text-[15px]"
                 style={{
                   color: "var(--color-text-secondary)",
                 }}
               >
                 {workspaceName}
-              </span>
+              </Link>
 
               <span
                 className="shrink-0"
@@ -252,8 +318,8 @@ export default function BoardHeader() {
 
               {/* Board */}
 
-              <button
-                type="button"
+              <Link
+                href={`/dashboard/workspace/${workspaceId}/board/${boardId}`}
                 className="group flex min-w-0 items-center gap-1.5"
               >
                 <h1
@@ -265,26 +331,46 @@ export default function BoardHeader() {
                   {boardName}
                 </h1>
 
-                <ChevronDown
-                  size={16}
-                  className="shrink-0 transition"
-                  style={{
-                    color: "var(--color-text-muted)",
-                  }}
+                {!canManageBoard && (
+                  <ChevronDown
+                    size={16}
+                    className="shrink-0 transition"
+                    style={{
+                      color: "var(--color-text-muted)",
+                    }}
+                  />
+                )}
+              </Link>
+
+              {canManageBoard && boardName && (
+                <BoardActionsMenu
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  boardName={boardName}
+                  role={boardRole}
                 />
-              </button>
+              )}
 
               {/* Star */}
 
               <button
                 type="button"
+                onClick={() =>
+                  setFavoriteBoardId(isBoardFavorited ? null : boardId)
+                }
                 className="ml-1 hidden rounded-md p-1.5 transition lg:block"
                 style={{
                   color: "var(--color-priority-medium)",
                 }}
-                aria-label="Favorite board"
+                aria-label={
+                  isBoardFavorited ? "Remove board favorite" : "Favorite board"
+                }
+                aria-pressed={isBoardFavorited}
               >
-                <Star size={19} />
+                <Star
+                  size={19}
+                  fill={isBoardFavorited ? "currentColor" : "none"}
+                />
               </button>
             </div>
 
@@ -300,79 +386,63 @@ export default function BoardHeader() {
                   {visibleMembers.slice(0, 5).map((member, index) => (
                     <div
                       key={member.userId}
-                      title={`${member.name} (${member.role})`}
-                      className={`
+                      className={`group relative ${index > 0 ? "-ml-2" : ""}`}
+                    >
+                      <div
+                        role="img"
+                        tabIndex={0}
+                        aria-label={`${member.name} (${member.role})`}
+                        aria-describedby={`desktop-member-tooltip-${member.userId}`}
+                        className={`
                         flex h-8 w-8 items-center justify-center
                         rounded-full border-2
                         text-[11px] font-semibold text-white
-                        ${index > 0 ? "-ml-2" : ""}
                       `}
-                      style={{
-                        borderColor: "var(--color-card-bg)",
-                        backgroundColor: getAvatarColor(index),
-                      }}
-                    >
-                      {getInitials(member.name)}
+                        style={{
+                          borderColor: "var(--color-card-bg)",
+                          backgroundColor: getAvatarColor(index),
+                          cursor: "pointer",
+                        }}
+                      >
+                        {getInitials(member.name)}
+                      </div>
+                      <span
+                        id={`desktop-member-tooltip-${member.userId}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-(--color-text-secondary) bg-(--color-tag-neutral-bg) px-2.5 py-1.5 text-xs font-medium text-(--color-tag-neutral-text) opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      >
+                        {member.name} ({member.role})
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Share */}
-
-              <button
-                type="button"
-                className="flex h-9 items-center gap-2 rounded-md border px-4 text-sm font-medium transition"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-              >
-                <Share2 size={16} />
-                Share
-              </button>
-
-              {/* Settings */}
-
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-md border transition"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Board settings"
-              >
-                <SlidersHorizontal size={17} />
-              </button>
-
-              {/* More */}
-
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-md transition"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-                aria-label="More actions"
-              >
-                <MoreHorizontal size={19} />
-              </button>
-
               {/* New Card */}
 
-              <button
-                type="button"
-                className="flex h-9 items-center gap-2 rounded-md px-4 text-sm font-semibold text-white transition"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-              >
-                <Plus size={17} />
-                New card
-              </button>
+              {firstList && (
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={firstList.id}
+                  listName={firstList.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel="New card"
+                  triggerClassName="cursor-pointer flex h-9 items-center gap-2 rounded-md bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                  triggerDisabled={
+                    listQuery.isLoading ||
+                    sprintQuery.isLoading ||
+                    !activeSprintId
+                  }
+                  triggerIconSize={17}
+                />
+              )}
+            </div>
+
+            {/* Notifications: one instance for all screen sizes, so the
+                unread count is polled once. */}
+            <div className="ml-2 shrink-0 lg:ml-3">
+              <NotificationBell />
             </div>
           </div>
 
@@ -388,13 +458,22 @@ export default function BoardHeader() {
 
               <button
                 type="button"
+                onClick={() =>
+                  setFavoriteBoardId(isBoardFavorited ? null : boardId)
+                }
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition"
                 style={{
                   color: "var(--color-priority-medium)",
                 }}
-                aria-label="Favorite board"
+                aria-label={
+                  isBoardFavorited ? "Remove board favorite" : "Favorite board"
+                }
+                aria-pressed={isBoardFavorited}
               >
-                <Star size={18} />
+                <Star
+                  size={18}
+                  fill={isBoardFavorited ? "currentColor" : "none"}
+                />
               </button>
 
               {/* Members */}
@@ -404,20 +483,33 @@ export default function BoardHeader() {
                   {visibleMembers.slice(0, 4).map((member, index) => (
                     <div
                       key={member.userId}
-                      title={`${member.name} (${member.role})`}
-                      className={`
+                      className={`group relative ${index > 0 ? "-ml-2" : ""}`}
+                    >
+                      <div
+                        role="img"
+                        tabIndex={0}
+                        aria-label={`${member.name} (${member.role})`}
+                        aria-describedby={`mobile-member-tooltip-${member.userId}`}
+                        className={`
                         flex h-7 w-7 items-center justify-center
                         rounded-full border-2
                         text-[9px] font-semibold text-white
                         sm:h-8 sm:w-8 sm:text-[10px]
-                        ${index > 0 ? "-ml-2" : ""}
                       `}
-                      style={{
-                        borderColor: "var(--color-card-bg)",
-                        backgroundColor: getAvatarColor(index),
-                      }}
-                    >
-                      {getInitials(member.name)}
+                        style={{
+                          borderColor: "var(--color-card-bg)",
+                          backgroundColor: getAvatarColor(index),
+                        }}
+                      >
+                        {getInitials(member.name)}
+                      </div>
+                      <span
+                        id={`mobile-member-tooltip-${member.userId}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-(--color-text-secondary) bg-(--color-tag-neutral-bg) px-2.5 py-1.5 text-xs font-medium text-(--color-tag-neutral-text) opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      >
+                        {member.name} ({member.role})
+                      </span>
                     </div>
                   ))}
 
@@ -439,62 +531,27 @@ export default function BoardHeader() {
 
             {/* RIGHT */}
 
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {/* Share */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md border transition sm:h-9 sm:w-9"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Share"
-              >
-                <Share2 size={15} />
-              </button>
-
-              {/* Settings */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md border transition sm:h-9 sm:w-9"
-                style={{
-                  borderColor: "var(--color-border)",
-                  color: "var(--color-text-secondary)",
-                  backgroundColor: "var(--color-card-bg)",
-                }}
-                aria-label="Board settings"
-              >
-                <SlidersHorizontal size={15} />
-              </button>
-
-              {/* More */}
-
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md transition sm:h-9 sm:w-9"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-                aria-label="More actions"
-              >
-                <MoreHorizontal size={19} />
-              </button>
-
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 ">
               {/* New Card */}
 
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-white transition sm:h-9 sm:w-9"
-                style={{
-                  backgroundColor: "var(--color-primary)",
-                }}
-                aria-label="New card"
-              >
-                <Plus size={17} />
-              </button>
+              {firstList && (
+                <CreateCard
+                  workspaceId={workspaceId}
+                  boardId={boardId}
+                  listId={firstList.id}
+                  listName={firstList.listName}
+                  activeSprintId={activeSprintId}
+                  triggerLabel=""
+                  triggerClassName="cursor-pointer flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)] text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-9"
+                  triggerAriaLabel="New card"
+                  triggerDisabled={
+                    listQuery.isLoading ||
+                    sprintQuery.isLoading ||
+                    !activeSprintId
+                  }
+                  triggerIconSize={17}
+                />
+              )}
             </div>
           </div>
         </div>

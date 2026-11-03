@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { boardMembers } from "@/db/boardSchema";
-import { eq, and, count } from "drizzle-orm";
+import { board, boardMembers } from "@/db/boardSchema";
+import type { DbTransaction } from "@/db/types";
+import { eq, and, count, inArray } from "drizzle-orm";
 import { users } from "@/db/authSchema";
 
 export const boardMemberRepo = {
@@ -83,5 +84,91 @@ export const boardMemberRepo = {
       });
 
     return deletedMember;
+  },
+
+  async reactivateMember(
+    userId: string,
+    boardId: string,
+    role: "owner" | "admin" | "manager" | "member",
+    assignedBy: string,
+  ) {
+    const [member] = await db
+      .update(boardMembers)
+      .set({
+        status: "ACTIVE",
+        role,
+        assignedBy,
+      })
+      .where(
+        and(eq(boardMembers.userId, userId), eq(boardMembers.boardId, boardId)),
+      )
+      .returning({
+        id: boardMembers.id,
+        userId: boardMembers.userId,
+        boardId: boardMembers.boardId,
+        role: boardMembers.role,
+        status: boardMembers.status,
+      });
+
+    return member;
+  },
+  async getAllActiveBoardMember(boardId: string) {
+    return await db
+      .select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        role: boardMembers.role,
+      })
+      .from(boardMembers)
+      .innerJoin(users, eq(boardMembers.userId, users.id))
+      .where(
+        and(
+          eq(boardMembers.boardId, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
+  },
+  // IDs of a board's active members; runs inside the caller's transaction.
+  async getActiveMemberIds(boardId: string, tx?: DbTransaction) {
+    const executor = tx ?? db;
+
+    const rows = await executor
+      .select({ userId: boardMembers.userId })
+      .from(boardMembers)
+      .where(
+        and(
+          eq(boardMembers.boardId, boardId),
+          eq(boardMembers.status, "ACTIVE"),
+        ),
+      );
+
+    return rows.map((row) => row.userId);
+  },
+  // Deactivate (not delete) all of a user's board memberships in a workspace.
+  async deactivateAllInWorkspace(
+    userId: string,
+    workspaceId: string,
+    tx?: DbTransaction,
+  ) {
+    const executor = tx ?? db;
+
+    return executor
+      .update(boardMembers)
+      .set({ status: "DEACTIVATED" })
+      .where(
+        and(
+          eq(boardMembers.userId, userId),
+          eq(boardMembers.status, "ACTIVE"),
+          inArray(
+            boardMembers.boardId,
+            executor
+              .select({ id: board.id })
+              .from(board)
+              .where(eq(board.organizationId, workspaceId)),
+          ),
+        ),
+      )
+      .returning({ boardId: boardMembers.boardId });
   },
 };

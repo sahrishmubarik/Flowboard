@@ -2,8 +2,6 @@
 
 import {
   MoreHorizontal,
-  Search,
-  Bell,
   Users,
   UserPlus,
   Mail,
@@ -13,6 +11,8 @@ import {
 } from "lucide-react";
 
 import { useState } from "react";
+
+import PageHeader from "@/components/ui/PageHeader";
 
 export type WorkspaceAction =
   | "members"
@@ -26,6 +26,8 @@ type WorkspaceHeaderProps = {
   workspaceName?: string;
   boardCount: number;
   onAction: (action: WorkspaceAction) => void;
+  // Only the owner can delete a workspace, so others don't see the action.
+  canDelete?: boolean;
 };
 
 const actions = [
@@ -72,8 +74,12 @@ export default function WorkspaceHeader({
   workspaceName,
   boardCount,
   onAction,
+  canDelete = false,
 }: WorkspaceHeaderProps) {
   const [showActions, setShowActions] = useState(false);
+  const visibleActions = canDelete
+    ? actions
+    : actions.filter((action) => action.value !== "delete");
 
   const handleAction = (action: WorkspaceAction) => {
     setShowActions(false);
@@ -81,82 +87,13 @@ export default function WorkspaceHeader({
   };
 
   return (
-    <header className="mb-8 flex items-start justify-between gap-6">
-      {/* ================================================================ */}
-      {/* Workspace information                                            */}
-      {/* ================================================================ */}
-
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
-          <span>Workspace</span>
-
-          <span className="text-[var(--color-border)]">/</span>
-
-          <span>
-            {boardCount} {boardCount === 1 ? "board" : "boards"}
-          </span>
-        </div>
-
-        <h2
-          className="mt-2 truncate text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]"
-          style={{
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          {workspaceName}
-        </h2>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-          Organize your work, keep your team aligned, and move ideas from
-          planning to completion.
-        </p>
-      </div>
-
-      {/* ================================================================ */}
-      {/* Header actions                                                    */}
-      {/* ================================================================ */}
-
-      <div className="relative flex shrink-0 items-center gap-2">
-        {/* Search */}
-
-        <button
-          type="button"
-          aria-label="Search"
-          className="
-            flex h-10 w-10 items-center justify-center rounded-xl
-            border border-[var(--color-border)]
-            bg-[var(--color-card-bg)]
-            text-[var(--color-text-secondary)]
-            transition-all duration-200
-            hover:border-[var(--color-primary)]/40
-            hover:bg-[var(--color-primary-active-bg)]
-            hover:text-[var(--color-primary)]
-            cursor-pointer
-          "
-        >
-          <Search size={17} />
-        </button>
-
-        {/* Notifications */}
-
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="
-            flex h-10 w-10 items-center justify-center rounded-xl
-            border border-[var(--color-border)]
-            bg-[var(--color-card-bg)]
-            text-[var(--color-text-secondary)]
-            transition-all duration-200
-            hover:border-[var(--color-primary)]/40
-            hover:bg-[var(--color-primary-active-bg)]
-            hover:text-[var(--color-primary)]
-             cursor-pointer
-          "
-        >
-          <Bell size={17} />
-        </button>
-
+    <PageHeader
+      breadcrumbs={[{ label: "Workspace" }]}
+      meta={`${boardCount} ${boardCount === 1 ? "board" : "boards"}`}
+      title={workspaceName}
+      description="Organize your work, keep your team aligned, and move ideas from planning to completion."
+      actions={
+        <>
         {/* ============================================================ */}
         {/* More / workspace actions                                      */}
         {/* ============================================================ */}
@@ -219,7 +156,7 @@ export default function WorkspaceHeader({
               {/* Actions */}
 
               <div className="p-1.5 ">
-                {actions.map((action) => {
+                {visibleActions.map((action) => {
                   const Icon = action.icon;
                   const isDestructive = action.destructive;
 
@@ -270,7 +207,8 @@ export default function WorkspaceHeader({
             </div>
           </>
         )}
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }

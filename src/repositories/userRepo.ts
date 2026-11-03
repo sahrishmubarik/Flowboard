@@ -21,17 +21,29 @@ export const userRepo = {
     return user;
   },
   async getUserData(id: string) {
-  const [user] = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.id, id));
+    const [user] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, id));
 
-  return user;
-},
+    return user;
+  },
+  async getInvitationAccount(id: string) {
+    const [user] = await db
+      .select({
+        email: users.email,
+        emailVerified: users.emailVerified,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
+    return user;
+  },
   async create({ name, email, password }: CreateUserData) {
     const [row] = await db
       .insert(users)

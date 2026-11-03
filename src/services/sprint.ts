@@ -10,6 +10,7 @@ export async function createSprint(
   startDate: string,
   endDate: string,
   goal: string,
+  carryUnresolvedTickets: boolean,
 ) {
   const user = await getCurrentUser();
 
@@ -28,6 +29,7 @@ export async function createSprint(
     endDate,
     goal,
     userId,
+    carryUnresolvedTickets,
   );
 
   return NextResponse.json(
@@ -79,9 +81,14 @@ export async function updateSprintStatus(boardId: string, sprintId: string) {
 
   const userId = user.userId;
 
-  await requireBoardRole(userId, boardId, ["owner", "admin"]);
+  await requireBoardRole(userId, boardId, [
+    "owner",
+    "admin",
+    "manager",
+    "member",
+  ]);
 
-  const sprint = await SprintRepo.updateStatus(sprintId, boardId);
+  const sprint = await SprintRepo.updateStatus(sprintId, boardId, userId);
 
   return NextResponse.json(
     {
@@ -91,5 +98,60 @@ export async function updateSprintStatus(boardId: string, sprintId: string) {
     {
       status: 200,
     },
+  );
+}
+
+export async function updateSprintDetails(
+  boardId: string,
+  sprintId: string,
+  input: {
+    sprintName: string;
+    goal: string;
+    startDate: string;
+    endDate: string;
+    carryUnresolvedTickets: boolean;
+  },
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("User not found", 401);
+  }
+
+  await requireBoardRole(user.userId, boardId, ["owner", "admin"]);
+
+  const sprint = await SprintRepo.updateDetails(
+    sprintId,
+    boardId,
+    user.userId,
+    input,
+  );
+
+  return NextResponse.json(
+    {
+      message: "Sprint updated successfully!",
+      sprint,
+    },
+    { status: 200 },
+  );
+}
+
+export async function deleteSprint(boardId: string, sprintId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new AppError("User not found", 401);
+  }
+
+  await requireBoardRole(user.userId, boardId, ["owner", "admin"]);
+
+  const sprint = await SprintRepo.deleteSprint(sprintId, boardId, user.userId);
+
+  return NextResponse.json(
+    {
+      message: "Sprint deleted successfully!",
+      sprint,
+    },
+    { status: 200 },
   );
 }
