@@ -98,7 +98,7 @@ Built with Next.js (App Router), PostgreSQL and Drizzle ORM.
 | Rich text            | Tiptap (+ tiptap-markdown), react-markdown with rehype-sanitize |
 | Drag and drop        | dnd-kit                                                         |
 | Auth                 | JSON Web Tokens (`jsonwebtoken`), bcrypt password hashing       |
-| Email                | Mailgun                                                         |
+| Email                | Brevo (transactional email API)                                 |
 | File storage         | Vercel Blob                                                     |
 | Payments             | Stripe (Checkout, Billing, Customer Portal, webhooks)           |
 | Icons                | lucide-react, Font Awesome                                      |
@@ -113,7 +113,7 @@ Built with Next.js (App Router), PostgreSQL and Drizzle ORM.
 - Node.js 20.9 or newer
 - pnpm
 - A PostgreSQL database (the project uses Neon)
-- Accounts for Mailgun, Vercel Blob and Stripe (test mode is enough for development)
+- Accounts for Brevo, Vercel Blob and Stripe (test mode is enough for development)
 
 ### Setup
 
@@ -157,8 +157,9 @@ Create `.env.local` in the project root. It is git-ignored; never commit it.
 | `DATABASE_URL_UNPOOLED`              | yes      | Direct connection used by drizzle-kit for migrations                          |
 | `JWT_SECRET`                         | yes      | Signs session tokens. Use a long random string (32+ characters).              |
 | `NEXT_PUBLIC_APP_URL`                | yes      | Base URL for email links and Stripe return URLs, e.g. `http://localhost:3000` |
-| `MAILGUN_API_KEY`                    | yes      | Sending verification, reset and invitation emails                             |
-| `MAILGUN_DOMAIN`                     | yes      | Mailgun sending domain                                                        |
+| `BREVO_API_KEY`                      | yes      | Brevo API key for verification, reset and invitation emails                   |
+| `EMAIL_FROM_ADDRESS`                 | yes      | Sender address; must be a verified sender in Brevo                            |
+| `EMAIL_FROM_NAME`                    | no       | Sender name shown to recipients (default `Flowboard`)                         |
 | `BLOB_READ_WRITE_TOKEN`              | yes      | Vercel Blob uploads (read by `@vercel/blob`)                                  |
 | `STRIPE_SECRET_KEY`                  | yes      | Server-side Stripe API calls (`sk_test_...` / `sk_live_...`)                  |
 | `STRIPE_WEBHOOK_SECRET`              | yes      | Verifies Stripe webhook signatures (`whsec_...`)                              |
@@ -209,7 +210,7 @@ src/
 │   ├── middleware/          Auth (current user) and workspace/board role checks
 │   ├── validations/         Zod schemas
 │   ├── stripe/              Stripe client
-│   ├── email/               Mailgun email sending
+│   ├── email/               Email sending (Brevo) and email templates
 │   └── token/               Token generation and hashing
 └── proxy.ts                 Redirects signed-out users away from /dashboard
 ```
