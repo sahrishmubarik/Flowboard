@@ -1279,7 +1279,7 @@ Card creation belongs to BoardList.*/
           onDragCancel={resetDrag}
           onDragEnd={handleDragEnd}
         >
-          <div className="h-full overflow-auto">
+          <div className="board-scroll h-full overflow-auto">
             <div className="min-w-max">
               {/* Status headers. Each list has one sortable ID only. */}
               <div

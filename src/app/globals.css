@@ -2012,3 +2012,34 @@ body {
   --rdp-range_middle-color: var(--color-text-primary);
   --rdp-today-color: var(--color-primary);
 }
+
+/* Board canvas scrollbars (vertical and horizontal): thin, with theme
+   colours. Chrome, Edge and Safari use the ::-webkit-scrollbar rules;
+   Firefox uses scrollbar-width/scrollbar-color. Recent Chrome ignores the
+   webkit rules when those standard properties are set, so they apply to
+   Firefox only. */
+.board-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.board-scroll::-webkit-scrollbar-track,
+.board-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.board-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.board-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .board-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}
