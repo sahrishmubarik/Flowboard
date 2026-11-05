@@ -17,6 +17,8 @@ import {
   Users,
 } from "lucide-react";
 
+import SelectMenu from "@/components/ui/SelectMenu";
+
 type Board = {
   id: string;
   boardName: string;
@@ -490,54 +492,39 @@ export default function WorkspaceActivity({
   const firstShown = total === 0 ? 0 : (page - 1) * limit + 1;
   const lastShown = Math.min(page * limit, total);
 
-  const selectClass =
-    "cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] text-sm text-[var(--color-text-primary)] outline-none transition-colors hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
-
   const pageButtonClass =
     "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg)] text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--color-border)] disabled:hover:text-[var(--color-text-primary)]";
 
   return (
     <div className="space-y-5">
       {/* Toolbar */}
-      <div className="flex flex-col gap-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-          >
-            <KanbanSquare size={18} />
+      <div className="flex flex-col gap-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-5">
+        <div className="w-full min-w-0 sm:max-w-xs">
+          <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+            Board
           </span>
 
-          <div className="min-w-0 flex-1">
-            <label
-              htmlFor="activity-board"
-              className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
-            >
-              Board
-            </label>
-            <select
-              id="activity-board"
-              value={selectedBoardId}
-              disabled={loadingBoards || boards.length === 0}
-              onChange={(event) => {
-                setSelectedBoardId(event.target.value);
-                setPage(1);
-              }}
-              className={`${selectClass} mt-1 w-full max-w-xs px-3 py-2 font-medium`}
-            >
-              {boards.length === 0 && (
-                <option value="">
-                  {loadingBoards ? "Loading boards…" : "No boards available"}
-                </option>
-              )}
-
-              {boards.map((board) => (
-                <option key={board.id} value={board.id}>
-                  {board.boardName}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Same dropdown as the sidebar's organization switcher. */}
+          <SelectMenu
+            label="Board"
+            heading="Your boards"
+            value={selectedBoardId || null}
+            options={boards.map((board) => ({
+              value: board.id,
+              label: board.boardName,
+              badge: board.role,
+            }))}
+            onChange={(boardId) => {
+              setSelectedBoardId(boardId);
+              setPage(1);
+            }}
+            showInitial
+            description={selectedBoard?.role}
+            placeholder={
+              loadingBoards ? "Loading boards…" : "No boards available"
+            }
+            disabled={loadingBoards}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -548,25 +535,21 @@ export default function WorkspaceActivity({
             </span>
           )}
 
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            Show
-            <select
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
-                setPage(1);
-              }}
-              aria-label="Activities per page"
-              className={`${selectClass} px-2.5 py-1.5`}
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            per page
-          </label>
+          <SelectMenu
+            label="Events per page"
+            heading="Events per page"
+            value={limit}
+            options={PAGE_SIZE_OPTIONS.map((size) => ({
+              value: size,
+              label: `${size} per page`,
+            }))}
+            onChange={(size) => {
+              setLimit(size);
+              setPage(1);
+            }}
+            className="w-36"
+            panelClassName="right-0 w-40"
+          />
         </div>
       </div>
 
