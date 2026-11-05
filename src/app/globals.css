@@ -2002,3 +2002,13 @@ body {
   height: 0;
   pointer-events: none;
 }
+
+/* Sprint date range picker (react-day-picker): use the app's colours instead
+   of the library's fixed light ones, so the selected range is readable in
+   both themes. Two classes beat the library's own .rdp-root defaults. */
+.rdp-root.flowboard-day-picker {
+  --rdp-accent-color: var(--color-primary);
+  --rdp-accent-background-color: var(--color-primary-active-bg);
+  --rdp-range_middle-color: var(--color-text-primary);
+  --rdp-today-color: var(--color-primary);
+}

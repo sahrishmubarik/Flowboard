@@ -1654,6 +1654,7 @@ Card creation belongs to BoardList.*/
                     </p>
 
                     <DayPicker
+                      className="flowboard-day-picker"
                       mode="range"
                       selected={{
                         from: startDate
