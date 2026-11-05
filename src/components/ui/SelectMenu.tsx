@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 export type SelectMenuOption<T extends string | number> = {
@@ -8,6 +15,8 @@ export type SelectMenuOption<T extends string | number> = {
   label: string;
   // Small pill after the label, e.g. a role.
   badge?: string;
+  // Icon before the label, e.g. the role icon used in a table.
+  icon?: ReactNode;
 };
 
 type SelectMenuProps<T extends string | number> = {
@@ -26,10 +35,27 @@ type SelectMenuProps<T extends string | number> = {
   // Shown instead of the option label in the trigger, e.g. "10 per page".
   formatSelected?: (option: SelectMenuOption<T>) => string;
   disabled?: boolean;
+  // "sm" matches a 36px toolbar control (e.g. a search field next to it).
+  size?: "md" | "sm";
+  // "above" for controls near the bottom of the page, like a table footer.
+  placement?: "below" | "above";
   // Width/alignment of the open list; defaults to the trigger's width.
   panelClassName?: string;
   className?: string;
 };
+
+function OptionIcon({ icon, compact }: { icon: ReactNode; compact: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex shrink-0 items-center justify-center rounded-md bg-[var(--color-column-bg)] text-[var(--color-text-secondary)] ${
+        compact ? "h-5 w-5" : "h-6 w-6"
+      }`}
+    >
+      {icon}
+    </span>
+  );
+}
 
 function Initial({ text }: { text: string }) {
   return (
@@ -56,6 +82,8 @@ export default function SelectMenu<T extends string | number>({
   showInitial = false,
   formatSelected,
   disabled = false,
+  size = "md",
+  placement = "below",
   panelClassName = "left-0 right-0",
   className = "",
 }: SelectMenuProps<T>) {
@@ -66,6 +94,8 @@ export default function SelectMenu<T extends string | number>({
   const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
 
+  // The small size also tightens the open list.
+  const compact = size === "sm";
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selected = selectedIndex >= 0 ? options[selectedIndex] : null;
   const isDisabled = disabled || options.length === 0;
@@ -171,13 +201,24 @@ export default function SelectMenu<T extends string | number>({
         disabled={isDisabled}
         onClick={() => (isOpen ? setIsOpen(false) : open())}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex w-full cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`flex w-full cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60 ${
+          size === "sm" ? "h-9" : "py-2"
+        } ${
           isOpen
             ? "bg-[var(--color-column-bg)]"
             : "bg-[var(--color-app-bg)] hover:bg-[var(--color-column-bg)]"
         }`}
       >
         {showInitial && <Initial text={selected?.label ?? ""} />}
+
+        {selected?.icon && (
+          <span
+            aria-hidden="true"
+            className="flex shrink-0 text-[var(--color-text-secondary)]"
+          >
+            {selected.icon}
+          </span>
+        )}
 
         <span className="min-w-0 flex-1">
           <span
@@ -208,9 +249,17 @@ export default function SelectMenu<T extends string | number>({
 
       {isOpen && (
         <div
-          className={`absolute top-[calc(100%+4px)] z-[60] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-md)] ${panelClassName}`}
+          className={`absolute z-[60] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-md)] ${
+            placement === "above"
+              ? "bottom-[calc(100%+4px)]"
+              : "top-[calc(100%+4px)]"
+          } ${panelClassName}`}
         >
-          <div className="border-b border-[var(--color-border)] px-3 py-2">
+          <div
+            className={`border-b border-[var(--color-border)] px-3 ${
+              compact ? "py-1.5" : "py-2"
+            }`}
+          >
             <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
               {heading}
             </span>
@@ -224,7 +273,9 @@ export default function SelectMenu<T extends string | number>({
             tabIndex={-1}
             aria-activedescendant={`${listId}-${activeIndex}`}
             onKeyDown={handleListKeyDown}
-            className="max-h-64 space-y-0.5 overflow-y-auto p-1.5 outline-none"
+            className={`max-h-64 overflow-y-auto outline-none ${
+              compact ? "p-1" : "space-y-0.5 p-1.5"
+            }`}
           >
             {options.map((option, index) => {
               const isSelected = option.value === value;
@@ -239,7 +290,9 @@ export default function SelectMenu<T extends string | number>({
                   aria-selected={isSelected}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => choose(option)}
-                  className={`flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors ${
+                  className={`flex cursor-pointer items-center rounded-[var(--radius-md)] transition-colors ${
+                    compact ? "gap-2 px-2 py-1.5" : "gap-2.5 px-2.5 py-2"
+                  } ${
                     isSelected
                       ? "bg-[var(--color-primary-active-bg)]"
                       : isActive
@@ -248,6 +301,10 @@ export default function SelectMenu<T extends string | number>({
                   }`}
                 >
                   {showInitial && <Initial text={option.label} />}
+
+                  {option.icon && (
+                    <OptionIcon icon={option.icon} compact={compact} />
+                  )}
 
                   <span
                     className={`min-w-0 flex-1 truncate text-xs text-[var(--color-text-primary)] ${

@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import SelectMenu from "@/components/ui/SelectMenu";
 import { useToast } from "@/components/ui/ToastProvider";
 import { invitationsQueryKey } from "@/components/invitationStatusCard";
 import InviteMemberDialog from "@/components/members/InviteMemberDialog";
@@ -916,25 +917,31 @@ export default function PeopleTable({ workspaceId }: PeopleTableProps) {
               </div>
             )}
 
-            <label className="sr-only" htmlFor="people-role-filter">
-              Filter by role
-            </label>
-            <select
-              id="people-role-filter"
+            {/* Same dropdown style as the sidebar and the Activity page. */}
+            <SelectMenu<Role | "">
+              label="Filter by role"
+              heading="Filter by role"
               value={roleFilter}
-              onChange={(event) => {
-                setRoleFilter(event.target.value as Role | "");
+              options={[
+                {
+                  value: "",
+                  label: "All roles",
+                  icon: <Users size={14} aria-hidden="true" />,
+                },
+                ...(Object.keys(roleMeta) as Role[]).map((role) => ({
+                  value: role,
+                  label: roleMeta[role].label,
+                  icon: roleMeta[role].icon,
+                })),
+              ]}
+              onChange={(role) => {
+                setRoleFilter(role);
                 resetPaging();
               }}
-              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-active-bg)]"
-            >
-              <option value="">All roles</option>
-              {(Object.keys(roleMeta) as Role[]).map((role) => (
-                <option key={role} value={role}>
-                  {roleMeta[role].label}
-                </option>
-              ))}
-            </select>
+              size="sm"
+              className="w-40"
+              panelClassName="right-0 w-48"
+            />
           </div>
         </div>
       </div>
@@ -1073,23 +1080,24 @@ export default function PeopleTable({ workspaceId }: PeopleTableProps) {
             </p>
 
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-xs">
-                Rows
-                <select
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value));
-                    resetPaging();
-                  }}
-                  className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-input-bg)] px-2 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
-                >
-                  {PAGE_SIZES.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {/* Opens upward: it sits at the bottom of the table. */}
+              <SelectMenu
+                label="People per page"
+                heading="People per page"
+                value={pageSize}
+                options={PAGE_SIZES.map((size) => ({
+                  value: size,
+                  label: `${size} per page`,
+                }))}
+                onChange={(size) => {
+                  setPageSize(size);
+                  resetPaging();
+                }}
+                size="sm"
+                placement="above"
+                className="w-36"
+                panelClassName="right-0 w-40"
+              />
 
               {totalPages > 1 && (
                 <nav aria-label="Pagination" className="flex items-center gap-1">
