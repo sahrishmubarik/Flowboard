@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 
 type CreateBoardCardProps = {
@@ -71,7 +72,7 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
   };
 
   return (
-    <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-sm">
+    <section className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-md)]">
       {/* Header */}
       <div className="border-b border-[var(--color-border)] px-6 py-5">
         <div className="flex items-start gap-4">
@@ -103,6 +104,17 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
               Create your board, then start capturing ideas and tracking tasks.
             </p>
           </div>
+
+          {/* The card is the whole dialog, so it carries the close button. */}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            aria-label="Close"
+            className="-mr-1.5 -mt-1 ml-auto shrink-0 cursor-pointer rounded-[var(--radius-md)] p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -111,7 +123,7 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
         {/* Board Name */}
         <div>
           <label
-            htmlFor="CreateBoard"
+            htmlFor="boardName"
             className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]"
           >
             Board name
@@ -125,7 +137,7 @@ export default function CreateBoard({ onClose }: CreateBoardCardProps) {
               setBoardName(event.target.value);
               setError("");
             }}
-            placeholder="Enter workspace name"
+            placeholder="Enter board name"
             className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition-all placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:bg-[var(--color-card-bg)] focus:ring-4 focus:ring-[var(--color-primary-active-bg)]"
           />
 

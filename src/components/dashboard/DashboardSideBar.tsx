@@ -882,6 +882,8 @@ export default function DashboardSidebar() {
           isOpen={showCreateBoard}
           onClose={() => setShowCreateBoard(false)}
           title="Create Board"
+          bare
+          size="sm"
         >
           <CreateBoard onClose={() => setShowCreateBoard(false)} />
         </WorkspaceModal>

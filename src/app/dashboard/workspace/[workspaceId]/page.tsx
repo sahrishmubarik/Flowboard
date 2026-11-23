@@ -294,6 +294,8 @@ export default function WorkspaceDashboardPage() {
         <WorkspaceModal
           isOpen={workspaceAction !== null}
           onClose={() => setWorkspaceAction(null)}
+          bare={workspaceAction === "create-board"}
+          size={workspaceAction === "create-board" ? "sm" : "md"}
           title={
             workspaceAction === "members"
               ? "Workspace Members"

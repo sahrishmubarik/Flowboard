@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
-type ModalSize = "sm" | "md" | "lg" | "xl";
+export type ModalSize = "sm" | "md" | "lg" | "xl";
 
 type ModalProps = {
   isOpen: boolean;
@@ -31,6 +31,10 @@ type ModalProps = {
   // element, then the first focusable element, then the panel itself.
   // (Use data-autofocus, not autoFocus, so focus returns to the trigger.)
   initialFocusRef?: RefObject<HTMLElement | null>;
+  // No header, padding or frame: the children are the whole dialog (a card
+  // with its own heading and close button). `title` still names the dialog
+  // for screen readers.
+  bare?: boolean;
 };
 
 const sizeClass: Record<ModalSize, string> = {
@@ -169,6 +173,7 @@ export default function Modal({
   dismissible = true,
   role = "dialog",
   initialFocusRef,
+  bare = false,
 }: ModalProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -201,82 +206,95 @@ export default function Modal({
 
       {/* Panel: a bottom sheet on phones, a centered dialog from sm up. */}
 
-      <div
-        ref={panelRef}
-        role={role}
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
-        tabIndex={-1}
-        className={`relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-md)] outline-none sm:rounded-[var(--radius-xl)] ${sizeClass[size]}`}
-      >
-        {/* Header */}
+      {bare ? (
+        <div
+          ref={panelRef}
+          role={role}
+          aria-modal="true"
+          aria-label={typeof title === "string" ? title : undefined}
+          tabIndex={-1}
+          className={`relative z-10 flex max-h-[92vh] w-full flex-col overflow-y-auto outline-none ${sizeClass[size]}`}
+        >
+          {children}
+        </div>
+      ) : (
+        <div
+          ref={panelRef}
+          role={role}
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={description ? descriptionId : undefined}
+          tabIndex={-1}
+          className={`relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-md)] outline-none sm:rounded-[var(--radius-xl)] ${sizeClass[size]}`}
+        >
+          {/* Header */}
 
-        <div className="flex shrink-0 items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
-          {icon && (
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)]"
-              style={
-                iconTone === "danger"
-                  ? {
-                      backgroundColor: "var(--color-tag-red-bg)",
-                      color: "var(--color-tag-red-text)",
-                    }
-                  : {
-                      backgroundColor: "var(--color-primary-active-bg)",
-                      color: "var(--color-primary)",
-                    }
-              }
+          <div className="flex shrink-0 items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+            {icon && (
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)]"
+                style={
+                  iconTone === "danger"
+                    ? {
+                        backgroundColor: "var(--color-tag-red-bg)",
+                        color: "var(--color-tag-red-text)",
+                      }
+                    : {
+                        backgroundColor: "var(--color-primary-active-bg)",
+                        color: "var(--color-primary)",
+                      }
+                }
+              >
+                {icon}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 pt-0.5">
+              <h2
+                id={titleId}
+                className="text-lg font-semibold leading-6 text-[var(--color-text-primary)]"
+              >
+                {title}
+              </h2>
+
+              {description && (
+                <div
+                  id={descriptionId}
+                  className="mt-1.5 text-sm leading-6 text-[var(--color-text-secondary)]"
+                >
+                  {description}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={close}
+              disabled={!dismissible}
+              aria-label="Close"
+              className="-mr-1.5 -mt-1 shrink-0 rounded-[var(--radius-md)] p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {icon}
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+
+          {children !== undefined && children !== null && (
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+              {children}
             </div>
           )}
 
-          <div className="min-w-0 flex-1 pt-0.5">
-            <h2
-              id={titleId}
-              className="text-lg font-semibold leading-6 text-[var(--color-text-primary)]"
-            >
-              {title}
-            </h2>
+          {/* Footer */}
 
-            {description && (
-              <div
-                id={descriptionId}
-                className="mt-1.5 text-sm leading-6 text-[var(--color-text-secondary)]"
-              >
-                {description}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={close}
-            disabled={!dismissible}
-            aria-label="Close"
-            className="-mr-1.5 -mt-1 shrink-0 rounded-[var(--radius-md)] p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-card-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <X size={18} />
-          </button>
+          {footer && (
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--color-border)] px-5 py-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6">
+              {footer}
+            </div>
+          )}
         </div>
-
-        {/* Body */}
-
-        {children !== undefined && children !== null && (
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-            {children}
-          </div>
-        )}
-
-        {/* Footer */}
-
-        {footer && (
-          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--color-border)] px-5 py-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6">
-            {footer}
-          </div>
-        )}
-      </div>
+      )}
     </div>,
     document.body,
   );
