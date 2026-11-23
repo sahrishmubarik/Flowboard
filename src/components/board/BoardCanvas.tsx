@@ -1280,7 +1280,9 @@ Card creation belongs to BoardList.*/
           onDragEnd={handleDragEnd}
         >
           <div className="board-scroll h-full overflow-auto">
-            <div className="min-w-max">
+            {/* At least as tall as the screen, so with only a few members the
+                rows grow to fill it instead of leaving empty space below. */}
+            <div className="flex min-h-full min-w-max flex-col">
               {/* Status headers. Each list has one sortable ID only. */}
               <div
                 className="sticky top-0 z-30 flex"
@@ -1374,7 +1376,7 @@ Card creation belongs to BoardList.*/
                 return (
                   <div
                     key={member.id}
-                    className="flex min-h-[164px] items-stretch border-b"
+                    className="flex min-h-[164px] flex-1 items-stretch border-b"
                     style={{ borderColor: "var(--color-border)" }}
                   >
                     <div
