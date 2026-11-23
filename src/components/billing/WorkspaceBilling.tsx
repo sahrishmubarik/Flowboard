@@ -337,7 +337,7 @@ export default function WorkspaceBilling({
             ? Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-[400px] animate-pulse rounded-[var(--radius-xl)] bg-[var(--color-border)]"
+                  className="h-[480px] animate-pulse rounded-[var(--radius-xl)] bg-[var(--color-border)]"
                 />
               ))
             : data.plans.map((plan) => {
@@ -750,7 +750,7 @@ function PlanCard({
 
   return (
     <article
-      className={`relative flex flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--color-card-bg)] p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`relative flex min-h-[480px] flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--color-card-bg)] p-7 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         highlighted
           ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
           : "border-[var(--color-border)]"
@@ -782,14 +782,14 @@ function PlanCard({
         )}
       </div>
 
-      <h3 className="mt-4 text-base font-semibold text-[var(--color-text-primary)]">
+      <h3 className="mt-5 text-base font-semibold text-[var(--color-text-primary)]">
         {plan.name}
       </h3>
       <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
         {plan.tagline}
       </p>
 
-      <p className="mt-5 flex items-baseline gap-1.5">
+      <p className="mt-6 flex items-baseline gap-1.5">
         <span
           className="text-4xl font-semibold tracking-tight text-[var(--color-text-primary)]"
           style={{ fontFamily: "var(--font-display)" }}
@@ -801,7 +801,7 @@ function PlanCard({
         </span>
       </p>
 
-      <ul className="mt-5 flex-1 space-y-2.5 border-t border-[var(--color-border)] pt-5">
+      <ul className="mt-6 flex-1 space-y-3 border-t border-[var(--color-border)] pt-6">
         {plan.features.map((feature) => (
           <li
             key={feature}
@@ -822,7 +822,7 @@ function PlanCard({
           type="button"
           onClick={onUpgrade}
           disabled={disabled}
-          className={`mt-6 inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`mt-8 inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60 ${
             highlighted
               ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
               : "border border-[var(--color-border)] bg-[var(--color-card-bg)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
@@ -834,7 +834,7 @@ function PlanCard({
           {starting ? "Opening checkout…" : `Upgrade to ${plan.name}`}
         </button>
       ) : (
-        <p className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-app-bg)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)]">
+        <p className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-app-bg)] px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)]">
           {state !== "unavailable" && <Check size={16} aria-hidden="true" />}
           {state === "current"
             ? "Your current plan"
